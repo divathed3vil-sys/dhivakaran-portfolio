@@ -1,13 +1,15 @@
 'use client';
 
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef, type RefObject } from 'react';
 
 /**
  * WaveText — "developing" text reveal.
- * Each character develops from latent (light/dim) → brass flash → exposed ink
- * as it crosses the viewport, synced to scroll progress.
+ * Each character develops from latent (light/dim) → flash → exposed ink
+ * as scroll progresses, synced to a root element's travel through the viewport.
  *
- * Used in the About paragraph and contact headline.
+ * Pass `rootRef` to sync the reveal to a parent sticky-travel wrapper:
+ * progress 0 when the root just enters/pins, 1 when it's about to leave/unpin.
+ * Without `rootRef`, falls back to the container's own travel.
  *
  * Markup mirrors Pamidor pattern: [data-wave] > [data-word] > [data-char]
  */
@@ -15,17 +17,18 @@ export function WaveText({
   text,
   className = '',
   as: Tag = 'p',
+  rootRef,
 }: {
   text: string;
   className?: string;
   as?: React.ElementType;
+  rootRef?: RefObject<HTMLElement>;
 }) {
   const containerRef = useRef<HTMLElement>(null);
   const charsRef = useRef<HTMLElement[]>([]);
 
   const words = useMemo(() => text.split(' '), [text]);
 
-  // collect char refs into a flat array
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
@@ -35,7 +38,7 @@ export function WaveText({
     );
     charsRef.current = chars;
 
-    // if reduced motion, light everything immediately
+    // reduced motion: light everything immediately
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
       chars.forEach((c) => c.setAttribute('data-lit', ''));
       return;
@@ -44,23 +47,29 @@ export function WaveText({
     let rafId = 0;
     const update = () => {
       rafId = 0;
-      const rect = container.getBoundingClientRect();
+      // the root element whose scroll travel drives the reveal
+      const root = rootRef?.current || container;
+      const rect = root.getBoundingClientRect();
       const innerH = window.innerHeight;
 
-      // desktop pinned progress: (-top) / (height - innerH)
-      // mobile progress: (0.85*innerH - top) / (0.6*innerH)
+      // progress 0 → 1 across the root's travel through the viewport.
+      // For a sticky-travel wrapper taller than the viewport:
+      //   progress 0 when root.top reaches 0 (just pinned)
+      //   progress 1 when root.bottom reaches viewport bottom (about to unpin)
       let p: number;
-      if (rect.height > innerH * 0.8) {
-        p = (-rect.top) / (rect.height - innerH);
+      if (rect.height > innerH) {
+        p = -rect.top / (rect.height - innerH);
       } else {
-        p = (0.85 * innerH - rect.top) / (0.6 * innerH);
+        // shorter root: reveal as it crosses the center band
+        p = (0.7 * innerH - rect.top) / (0.5 * innerH + rect.height);
       }
       p = Math.max(0, Math.min(1, p));
 
       const total = chars.length;
+      // light chars 0..litCount with a slight lead so the last char
+      // is fully lit by the time the root unpinns
       const litCount = Math.round(p * total);
 
-      // light chars 0..litCount, unlight the rest
       for (let i = 0; i < total; i++) {
         if (i < litCount) {
           if (!chars[i].hasAttribute('data-lit')) {
@@ -87,7 +96,7 @@ export function WaveText({
       window.removeEventListener('resize', onScroll);
       if (rafId) cancelAnimationFrame(rafId);
     };
-  }, []);
+  }, [rootRef]);
 
   let charIdx = 0;
 
@@ -98,7 +107,11 @@ export function WaveText({
       data-wave=""
     >
       {words.map((word, wi) => (
-        <span key={wi} data-word="" style={{ display: 'inline-block', whiteSpace: 'nowrap' }}>
+        <span
+          key={wi}
+          data-word=""
+          style={{ display: 'inline-block', whiteSpace: 'nowrap' }}
+        >
           {word.split('').map((c) => {
             const idx = charIdx++;
             return (

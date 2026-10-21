@@ -68,38 +68,43 @@
 }
 
 /* ============================================================================
-   1. COLOR TOKENS — cinematic, warm, no blue, no red
+   1. COLOR TOKENS — white + black + single cinematic red accent.
+   Grayscale film treatment; red used ONLY for hover flashes, loader iris, focus.
    ============================================================================ */
 :root {
-  /* parchment / paper system */
-  --canvas: #ece6d9;       /* warm bone — page background */
-  --bone: #e2dccf;         /* slightly deeper bone for layered surfaces */
-  --bone-soft: #f1ece1;    /* lightest bone for cards on canvas */
-  --rule: #c9c2b4;         /* warm hairline on paper */
-  --chip: #b6ad9c;         /* chip border on paper */
-  --muted: #7b7264;        /* warm taupe — secondary copy */
+  /* paper system — clean white */
+  --canvas: #fafafa;       /* off-white page background */
+  --bone: #f2f2f2;         /* deeper white for layered surfaces */
+  --bone-soft: #fcfcfc;    /* lightest white for cards */
+  --rule: #d4d4d4;         /* hairline on white */
+  --chip: #b0b0b0;         /* chip border on white */
+  --muted: #6b6b6b;        /* secondary copy */
 
-  /* ink system */
-  --ink: #0b0a08;          /* deep warm onyx — body text */
-  --night: #100e0b;        /* rich cinematic black — dark sections */
-  --night-soft: #181612;   /* slightly lifted night for surfaces */
-  --night-body: #b8b0a2;   /* warm light gray on dark */
-  --night-muted: #948c7e;  /* muted label on dark */
-  --night-hr: #2a2722;     /* hairline on night */
+  /* ink system — pure black */
+  --ink: #0a0a0a;          /* near-black body text */
+  --night: #0a0a0a;        /* pure dark for dark sections */
+  --night-soft: #161616;   /* slightly lifted dark */
+  --night-body: #b0b0b0;   /* light gray on dark */
+  --night-muted: #888888;  /* muted label on dark */
+  --night-hr: #2a2a2a;     /* hairline on dark */
 
-  /* accents */
-  --brass: #b89968;        /* primary accent — warm brass/amber */
-  --brass-soft: #d4b78a;  /* lighter brass for hovers */
-  --oxblood: #7c2d2a;     /* deep cinematic red — used VERY sparingly */
+  /* accent — single cinematic red, used sparingly */
+  --accent: #d62929;        /* primary red accent */
+  --accent-soft: #ef4444;   /* lighter red */
+  --accent-deep: #991b1b;   /* deeper red */
+  /* legacy aliases — components still reference these names */
+  --brass: var(--accent);
+  --brass-soft: var(--accent-soft);
+  --oxblood: var(--accent-deep);
 
-  /* wave text (light → dark reveal) */
-  --wave-dim: rgba(11, 10, 8, 0.18);   /* latent — almost invisible */
-  --wave-flash: var(--brass);          /* developing flash */
-  --wave-lit: var(--ink);              /* exposed — full ink */
+  /* wave text — pure grayscale developing (light gray → mid → black) */
+  --wave-dim: rgba(10, 10, 10, 0.14);   /* latent — almost invisible */
+  --wave-flash: rgba(10, 10, 10, 0.5); /* developing — mid gray */
+  --wave-lit: rgba(10, 10, 10, 1);     /* exposed — full black */
 
-  /* selection */
-  --selection-bg: var(--brass);
-  --selection-fg: var(--canvas);
+  /* selection — red */
+  --selection-bg: var(--accent);
+  --selection-fg: #ffffff;
 
   /* layout scalar — drives ALL spacing (Pamidor pattern) */
   --px: clamp(1px, min(100vw / 1728, 100vh / 680), 1.6px);
@@ -111,7 +116,7 @@
   /* content canvas cap */
   --canvas-max: calc(1440 * var(--px));
 
-  /* radius language — essentially none, only micro-radius on chips */
+  /* radius language — essentially none */
   --r-chip: 3px;
   --r-card: 2px;
 }
@@ -144,7 +149,7 @@
     line-height: 1.55;
     letter-spacing: -0.01em;
     text-wrap: pretty;
-    overflow-x: hidden;
+    overflow-x: clip;  /* clip (not hidden) so position: sticky still works */
     font-feature-settings: "ss01", "ss02";
   }
 

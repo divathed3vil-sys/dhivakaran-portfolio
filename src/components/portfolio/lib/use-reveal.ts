@@ -8,7 +8,7 @@ import { useEffect, useRef } from 'react';
  */
 export function useReveal<T extends HTMLElement = HTMLDivElement>(
   delay = 0,
-  rootMargin = '0 0 -12% 0'
+  rootMargin = '0px 0px -12% 0px'
 ) {
   const ref = useRef<T>(null);
 

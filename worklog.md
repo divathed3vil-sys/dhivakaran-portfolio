@@ -78,3 +78,76 @@ Stage Summary:
 - Strictly static — no backend, no DB, no API, no analytics, no third-party integrations (per PAMIDOR handoff).
 - All content is clearly placeholders (portrait, artwork, skills, contacts) — ready for the user to swap in real content.
 - Awaiting user feedback on the creative direction; can iterate on any section's aesthetic, motion, or copy.
+
+---
+Task ID: 12-19
+Agent: main-orchestrator
+Task: Fix three user-reported issues: About sticky not pinning during reveal, Visual Lab should be a separate overlay entered via a card, and palette should be white/black.
+
+Work Log:
+- Palette retune (globals.css):
+  - Canvas: #FAFAFA (off-white), Ink/Night: #0A0A0A (pure black), Bone: #F2F2F2, Bone-soft: #FCFCFC, Rule: #D4D4D4, Muted: #6B6B6B
+  - Accent: single cinematic red --accent: #D62929, --accent-soft: #EF4444, --accent-deep: #991B1B
+  - Legacy aliases kept (--brass/--brass-soft/--oxblood → accent vars) so all components update automatically
+  - Wave text now pure grayscale developing (rgba(10,10,10,0.14) → 0.5 → 1) — no chromatic flash
+  - Selection: red bg, white fg
+  - Fixed body overflow-x: hidden → clip (was breaking position: sticky)
+- WaveText refactor (wave-text.tsx):
+  - Added optional rootRef prop — when provided, progress is computed from that element's travel
+  - New formula: progress = (-rootTop) / (rootHeight - innerH) — reveals DURING the pinned travel
+  - Falls back to container's own rect if no rootRef
+- About fixes (about.tsx):
+  - Added travelRef on the 200vh travel wrapper (bumped from 135vh → 200vh for 100vh of pinned travel)
+  - Passed travelRef to WaveText as rootRef
+  - Portrait insert filter → grayscale(1) for white/black aesthetic
+- Visual Lab → overlay (visual-lab.tsx):
+  - Converted from inline section to a fixed overlay (position:fixed, inset:0, z-index:80)
+  - Iris-open entrance animation (clip-path circle 0 → 150%)
+  - Esc key closes (overlay-level keydown listener)
+  - Body scroll lock while open (document.body.style.overflow = 'hidden')
+  - Removed IntersectionObserver (overlay is always in view — wheel/keys always pan)
+  - Added CLOSE button (top-right, red-bordered X)
+  - EXIT pill now calls onClose instead of navigating
+  - Tile filters all changed to grayscale(1) variants for white/black aesthetic
+  - Chrome text (labels, hints) changed from brass to white/canvas
+- New VisualLabCard (visual-lab-card.tsx):
+  - Section on home page between About and Skillset
+  - Bold typographic CTA: "A field of frames, infinite in every direction."
+  - Grayscale preview swatch (atmosphere image, masked)
+  - "Enter the Visual Lab →" CTA button (calls onEnter)
+  - role="button", tabIndex=0, keyboard accessible (Enter/Space)
+- Nav update (nav.tsx):
+  - "Visual Lab" menu link is now an action (not a href) — calls onEnterLab callback
+  - Nav accepts onEnterLab prop; small delay so menu closes first
+- page.tsx:
+  - Added labOpen state
+  - Renders VisualLabCard (onEnter) in the flow
+  - Conditionally renders {labOpen && <VisualLab onClose />} outside main
+  - Passes onEnterLab to Nav
+- Hero update (hero.tsx):
+  - Portrait filter → grayscale(1) contrast(1.08) brightness(0.92)
+  - Scroll-driven focus-pull now preserves grayscale: `grayscale(1) blur(Npx) brightness(...) contrast(1.08-...)`
+  - Cursor key light → white (rgba(255,255,255,0.14)) instead of brass
+  - Frame counter + scroll hint → white (var(--canvas)) with red accent for the hairline/dot
+  - Subtle red accent tint overlay (rgba(214,41,41,0.06)) instead of brass
+- Bug fix: use-reveal.ts rootMargin '0 0 -12% 0' → '0px 0px -12% 0px' (browser rejected unitless 0)
+
+Verification (agent-browser):
+- Palette: body bg rgb(250,250,250) = #FAFAFA ✓, text rgb(10,10,10) = #0A0A0A ✓
+- Hero: portrait filter grayscale(1) blur(0px) brightness(1) contrast(1.08) ✓, h1 color rgb(250,250,250) white on dark ✓
+- About sticky: at pin start stickyTop=0 pinned=true waveLit=0/545; after 450px scroll stillPinned=true waveLit=273 (50%); after 900px stillPinned=true waveLit=545 (100%) — page STOPS while text develops ✓
+- Visual Lab card: found on home page, title "A field of frames, infinite in every direction.", CTA present ✓
+- Overlay open: clicking card opens #visual-lab as fixed overlay z-80, body locked, CLOSE + EXIT buttons present ✓
+- Overlay depth-of-field: 56 tiles, center tile 109px from center, blur 0.62px (sharp) ✓
+- Close via X: overlayGone=true, bodyUnlocked=true ✓
+- Close via Esc: reopened then closedViaEsc=true ✓
+- Lint: 0 errors, 2 font-link warnings (acceptable)
+
+Stage Summary:
+- All three user-reported issues fixed and verified end-to-end:
+  1. About now truly pins (stickyTop stays 0) while the wave text develops 0→100% across 100vh of scroll travel
+  2. Visual Lab is now a separate full-screen overlay, entered via a card on the home page (or via the nav menu), with iris-open entrance, and closable via X button, EXIT pill, or Esc — no more trap
+  3. Palette is now white + black + a single restrained cinematic red accent; portrait and lab tiles are grayscale film treatment
+- Home page flow: Hero → About → VisualLabCard → Skillset → Contact → Footer
+- Overlay: VisualLab (fixed, iris-open, body-locked, closable 3 ways)
+- Still strictly static — no backend, no DB, no API (per PAMIDOR handoff)

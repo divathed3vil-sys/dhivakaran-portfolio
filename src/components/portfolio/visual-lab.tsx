@@ -9,12 +9,12 @@ const SOURCES = [
 ];
 
 const FILTERS = [
-  'sepia(0.2) contrast(1.05) brightness(0.92)',
-  'sepia(0.4) contrast(1.12) brightness(0.82) hue-rotate(-8deg)',
-  'sepia(0.55) contrast(1.18) brightness(0.74) hue-rotate(12deg)',
-  'grayscale(0.5) sepia(0.3) contrast(1.08) brightness(0.86)',
-  'sepia(0.15) contrast(1.22) brightness(0.8) hue-rotate(-4deg)',
-  'sepia(0.3) contrast(1.0) brightness(0.88)',
+  'grayscale(1) contrast(1.08) brightness(0.95)',
+  'grayscale(1) contrast(1.15) brightness(0.82)',
+  'grayscale(1) contrast(1.2) brightness(0.72)',
+  'grayscale(1) contrast(1.05) brightness(0.86)',
+  'grayscale(1) contrast(1.25) brightness(0.78)',
+  'grayscale(1) contrast(0.95) brightness(0.88)',
 ];
 
 const BG_POSITIONS = [
@@ -29,21 +29,25 @@ const BG_POSITIONS = [
 ];
 
 /**
- * Visual Lab — full-screen infinite drag/pan field with depth-of-field.
+ * Visual Lab — full-screen OVERLAY with infinite drag/pan field + depth-of-field.
+ *
+ * Entered via the VisualLabCard on the home page. This is a separate
+ * experience (fixed overlay, body scroll locked). Closes via the X button,
+ * the EXIT pill, or Esc — so the user is never trapped.
  *
  * Inventions:
- *  - Full-bleed (covers entire viewport, minimal chrome)
+ *  - Full-bleed overlay (covers entire viewport, minimal chrome)
+ *  - Iris-open entrance (clip-path circle 0 → 150%)
  *  - Toroidal wrap: drag/scroll in any direction infinitely
  *  - Depth-of-field: tiles near viewport center = sharp, edges = blurred
- *    (camera-lens distortion — the user's "getting focus and out of focus")
- *  - Grunge per tile: random warm filter, slight rotation, dust overlay
+ *  - Grunge per tile: grayscale film filter, slight rotation, dust overlay
  *  - Inertia on release (vx,vy * 0.95 per frame)
- *  - Wheel pans infinitely (preventDefault while lab is centered)
+ *  - Wheel pans infinitely (the overlay is fixed, so wheel = pan, never scroll)
  *  - Arrow keys pan
  *  - Hint fades after first input
- *  - "EXIT ↓" pill — the only way to leave (scroll = pan, not exit)
+ *  - Close (X top-right) + EXIT pill + Esc — multiple ways out
  */
-export function VisualLab() {
+export function VisualLab({ onClose }: { onClose: () => void }) {
   const sectionRef = useRef<HTMLElement>(null);
   const fieldRef = useRef<HTMLDivElement>(null);
   const hintRef = useRef<HTMLDivElement>(null);
@@ -96,7 +100,23 @@ export function VisualLab() {
     const vh = window.innerHeight;
     pan.current.x = -(fieldW / 2 - vw / 2);
     pan.current.y = -(fieldH / 2 - vh / 2);
+    pan.current.active = true; // overlay is always in view when mounted
   }, [fieldW, fieldH]);
+
+  // Esc to close + body scroll lock while overlay open + iris entrance
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    document.addEventListener('keydown', onKey);
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.removeEventListener('keydown', onKey);
+      document.body.style.overflow = prevOverflow;
+    };
+  }, [onClose]);
 
   // rAF loop — toroidal wrap + depth-of-field + inertia
   useEffect(() => {
@@ -219,9 +239,8 @@ export function VisualLab() {
       schedule();
     };
 
-    // wheel — pan instead of scroll (only when lab is centered)
+    // wheel — overlay is fixed, so wheel ALWAYS pans (never scrolls)
     const onWheel = (e: WheelEvent) => {
-      if (!pan.current.active) return;
       e.preventDefault();
       pan.current.x -= e.deltaX;
       pan.current.y -= e.deltaY;
@@ -232,9 +251,8 @@ export function VisualLab() {
       schedule();
     };
 
-    // arrow keys
+    // arrow keys — always pan while overlay open
     const onKey = (e: KeyboardEvent) => {
-      if (!pan.current.active) return;
       const step = 60;
       let handled = true;
       if (e.key === 'ArrowRight') pan.current.x += step;
@@ -254,23 +272,12 @@ export function VisualLab() {
       setHintGone(true);
     };
 
-    // activate when lab is centered
-    const io = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          pan.current.active = entry.intersectionRatio > 0.6;
-        });
-      },
-      { threshold: [0, 0.6, 1] }
-    );
-    io.observe(section);
-
     section.addEventListener('pointerdown', onPointerDown);
     section.addEventListener('pointermove', onPointerMove);
     section.addEventListener('pointerup', onPointerUp);
     section.addEventListener('pointercancel', onPointerUp);
     section.addEventListener('wheel', onWheel, { passive: false });
-    window.addEventListener('keydown', onKey);
+    // NOTE: Escape is handled by the overlay-level effect, not here
 
     // initial paint
     schedule();
@@ -291,13 +298,11 @@ export function VisualLab() {
     continuousRaf = requestAnimationFrame(loop);
 
     return () => {
-      io.disconnect();
       section.removeEventListener('pointerdown', onPointerDown);
       section.removeEventListener('pointermove', onPointerMove);
       section.removeEventListener('pointerup', onPointerUp);
       section.removeEventListener('pointercancel', onPointerUp);
       section.removeEventListener('wheel', onWheel);
-      window.removeEventListener('keydown', onKey);
       cancelAnimationFrame(rafId);
       cancelAnimationFrame(continuousRaf);
     };
@@ -310,14 +315,19 @@ export function VisualLab() {
       data-canvas="fixed"
       data-lenis-prevent=""
       aria-label="Visual Lab — infinite drag field"
+      role="dialog"
+      aria-modal="true"
       style={{
-        position: 'relative',
+        position: 'fixed',
+        inset: 0,
+        zIndex: 80,
         height: '100dvh',
-        minHeight: '100dvh',
+        width: '100vw',
         overflow: 'hidden',
         background: 'var(--night)',
         cursor: 'grab',
         touchAction: 'none',
+        animation: 'iris-open 0.7s var(--ease-curtain) both',
       }}
     >
       {/* field of tiles */}
@@ -343,7 +353,7 @@ export function VisualLab() {
               backgroundPosition: t.bgPos,
               willChange: 'transform, filter, opacity',
               boxShadow: '0 12px 32px -8px rgba(0, 0, 0, 0.6)',
-              border: '1px solid rgba(184, 153, 104, 0.08)',
+              border: '1px solid rgba(255, 255, 255, 0.08)',
             }}
           >
             {/* dust + scratch overlay per tile — grunge */}
@@ -383,7 +393,7 @@ export function VisualLab() {
           position: 'absolute',
           inset: 0,
           background:
-            'radial-gradient(ellipse at center, transparent 30%, rgba(16, 14, 11, 0.85) 100%)',
+            'radial-gradient(ellipse at center, transparent 30%, rgba(10, 10, 10, 0.85) 100%)',
           pointerEvents: 'none',
           zIndex: 2,
         }}
@@ -408,16 +418,17 @@ export function VisualLab() {
         className="leader-track text-label"
         style={{
           position: 'absolute',
-          top: '5rem',
+          top: '1.5rem',
           left: '1.5rem',
-          color: 'var(--brass-soft)',
-          opacity: 0.85,
+          color: 'var(--canvas)',
+          opacity: 0.8,
           zIndex: 5,
           lineHeight: 1.6,
+          pointerEvents: 'none',
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <span style={{ display: 'inline-block', width: '20px', height: '1.5px', background: 'var(--brass-soft)' }} />
+          <span style={{ display: 'inline-block', width: '20px', height: '1.5px', background: 'var(--accent)' }} />
           THE VISUAL LAB
         </div>
         <div style={{ opacity: 0.7, marginTop: '0.25rem' }}>
@@ -428,7 +439,43 @@ export function VisualLab() {
         </div>
       </div>
 
-      {/* center title — only when hint is visible, very subtle */}
+      {/* CLOSE button — top-right, red border accent */}
+      <button
+        type="button"
+        onClick={onClose}
+        aria-label="Close the Visual Lab"
+        style={{
+          position: 'absolute',
+          top: '1.5rem',
+          right: '1.5rem',
+          zIndex: 7,
+          width: '44px',
+          height: '44px',
+          display: 'inline-flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          border: '1.5px solid var(--accent)',
+          color: 'var(--canvas)',
+          background: 'rgba(10, 10, 10, 0.6)',
+          backdropFilter: 'blur(6px)',
+          cursor: 'pointer',
+          transition: 'background 0.3s var(--ease-out-soft), color 0.3s var(--ease-out-soft)',
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.background = 'var(--accent)';
+          e.currentTarget.style.color = 'var(--canvas)';
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.background = 'rgba(10, 10, 10, 0.6)';
+          e.currentTarget.style.color = 'var(--canvas)';
+        }}
+      >
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+          <path d="M2 2L14 14M14 2L2 14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+        </svg>
+      </button>
+
+      {/* hint — only visible until first input */}
       <div
         ref={hintRef}
         style={{
@@ -437,7 +484,7 @@ export function VisualLab() {
           left: '50%',
           transform: 'translateX(-50%)',
           color: 'var(--canvas)',
-          opacity: hintGone ? 0 : 0.7,
+          opacity: hintGone ? 0 : 0.6,
           transition: 'opacity 0.7s var(--ease-out-soft)',
           zIndex: 5,
           textAlign: 'center',
@@ -446,16 +493,17 @@ export function VisualLab() {
       >
         <div
           className="text-label"
-          style={{ color: 'var(--brass-soft)', letterSpacing: '0.2em' }}
+          style={{ color: 'var(--canvas)', letterSpacing: '0.2em' }}
         >
           ✦ DRAG · SCROLL · ARROW KEYS — TO WANDER ✦
         </div>
       </div>
 
-      {/* EXIT pill — the only way to leave */}
-      <a
-        href="#skillset"
-        aria-label="Exit the Visual Lab and continue to Skillset"
+      {/* EXIT pill — closes the overlay */}
+      <button
+        type="button"
+        onClick={onClose}
+        aria-label="Exit the Visual Lab"
         style={{
           position: 'absolute',
           bottom: '1.5rem',
@@ -465,28 +513,26 @@ export function VisualLab() {
           alignItems: 'center',
           gap: '0.6rem',
           padding: '0.65rem 1.1rem',
-          border: '1.5px solid var(--brass)',
+          border: '1.5px solid var(--accent)',
           color: 'var(--canvas)',
           fontFamily: 'var(--font-mono), monospace',
           fontSize: '0.75rem',
           letterSpacing: '0.12em',
           textTransform: 'uppercase',
-          background: 'rgba(16, 14, 11, 0.6)',
+          background: 'rgba(10, 10, 10, 0.6)',
           backdropFilter: 'blur(6px)',
-          textDecoration: 'none',
+          cursor: 'pointer',
           transition: 'background 0.3s var(--ease-out-soft), color 0.3s var(--ease-out-soft)',
         }}
         onMouseEnter={(e) => {
-          (e.currentTarget as HTMLAnchorElement).style.background = 'var(--brass)';
-          (e.currentTarget as HTMLAnchorElement).style.color = 'var(--ink)';
+          e.currentTarget.style.background = 'var(--accent)';
         }}
         onMouseLeave={(e) => {
-          (e.currentTarget as HTMLAnchorElement).style.background = 'rgba(16, 14, 11, 0.6)';
-          (e.currentTarget as HTMLAnchorElement).style.color = 'var(--canvas)';
+          e.currentTarget.style.background = 'rgba(10, 10, 10, 0.6)';
         }}
       >
-        EXIT ↓ TO SKILLSET
-      </a>
+        ✕ EXIT LAB
+      </button>
     </section>
   );
 }

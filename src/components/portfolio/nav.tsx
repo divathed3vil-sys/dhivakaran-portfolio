@@ -2,20 +2,26 @@
 
 import { useEffect, useState } from 'react';
 
-const NAV_LINKS = [
+type NavLink = {
+  label: string;
+  href?: string;
+  action?: 'lab';
+};
+
+const NAV_LINKS: NavLink[] = [
   { label: 'The Room', href: '#about' },
-  { label: 'Visual Lab', href: '#visual-lab' },
+  { label: 'Visual Lab', action: 'lab' },
   { label: 'Skillset', href: '#skillset' },
   { label: 'Contact', href: '#contact' },
 ];
 
-const MENU_LINKS = [...NAV_LINKS, { label: 'Top', href: '#top' }];
+const MENU_LINKS: NavLink[] = [...NAV_LINKS, { label: 'Top', href: '#top' }];
 
 /**
  * Nav — sticky/relative, wordmark + burger→X morph, full-height
  * slide-in menu, focus trap, Esc, scroll lock.
  */
-export function Nav() {
+export function Nav({ onEnterLab }: { onEnterLab?: () => void }) {
   const [open, setOpen] = useState(false);
 
   // esc to close, scroll lock when open
@@ -159,12 +165,21 @@ export function Nav() {
             ( MENU — DHIVAKARAN® )
           </div>
           <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
-            {MENU_LINKS.map((link, i) => (
-              <li key={link.href}>
-                <a
-                  href={link.href}
-                  onClick={() => setOpen(false)}
-                  style={{
+            {MENU_LINKS.map((link, i) => {
+              const handle = (e: React.MouseEvent) => {
+                setOpen(false);
+                if (link.action === 'lab' && onEnterLab) {
+                  e.preventDefault();
+                  // small delay so menu closes first
+                  setTimeout(onEnterLab, 100);
+                }
+              };
+              return (
+                <li key={link.label}>
+                  <a
+                    href={link.href || '#'}
+                    onClick={handle}
+                    style={{
                     display: 'block',
                     paddingBlock: '0.5rem',
                     fontSize: 'clamp(1.625rem, 4vw, 2.5rem)',
@@ -183,7 +198,8 @@ export function Nav() {
                   {link.label}
                 </a>
               </li>
-            ))}
+              );
+            })}
           </ul>
         </div>
 

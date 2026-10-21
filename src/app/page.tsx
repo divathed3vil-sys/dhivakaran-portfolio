@@ -1,10 +1,12 @@
 'use client';
 
+import { useState } from 'react';
 import { useLenis } from '@/components/portfolio/lib/use-lenis';
 import { IntroLoader } from '@/components/portfolio/intro-loader';
 import { Nav } from '@/components/portfolio/nav';
 import { Hero } from '@/components/portfolio/hero';
 import { About } from '@/components/portfolio/about';
+import { VisualLabCard } from '@/components/portfolio/visual-lab-card';
 import { VisualLab } from '@/components/portfolio/visual-lab';
 import { Skillset } from '@/components/portfolio/skillset';
 import { Contact } from '@/components/portfolio/contact';
@@ -12,6 +14,7 @@ import { Footer } from '@/components/portfolio/footer';
 
 export default function Home() {
   useLenis();
+  const [labOpen, setLabOpen] = useState(false);
 
   return (
     <div
@@ -23,15 +26,18 @@ export default function Home() {
       }}
     >
       <IntroLoader />
-      <Nav />
+      <Nav onEnterLab={() => setLabOpen(true)} />
       <main id="main" style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
         <Hero />
         <About />
-        <VisualLab />
+        <VisualLabCard onEnter={() => setLabOpen(true)} />
         <Skillset />
         <Contact />
       </main>
       <Footer />
+
+      {/* Visual Lab — separate full-screen overlay experience */}
+      {labOpen && <VisualLab onClose={() => setLabOpen(false)} />}
     </div>
   );
 }

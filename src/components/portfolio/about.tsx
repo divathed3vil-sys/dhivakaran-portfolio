@@ -32,6 +32,7 @@ const COLLABORATORS = [
  */
 export function About() {
   const sectionRef = useRef<HTMLElement>(null);
+  const travelRef = useRef<HTMLDivElement>(null);
 
   return (
     <section
@@ -43,8 +44,9 @@ export function About() {
         position: 'relative',
       }}
     >
-      {/* sticky travel wrapper — 135vh on desktop */}
-      <div style={{ height: '135vh', position: 'relative' }}>
+      {/* sticky travel wrapper — 200vh on desktop. The paragraph pins
+          here for 100vh of scroll while WaveText develops letter-by-letter. */}
+      <div ref={travelRef} style={{ height: '200vh', position: 'relative' }}>
         <div
           style={{
             position: 'sticky',
@@ -87,7 +89,7 @@ export function About() {
                   backgroundPosition: '50% 30%',
                   transform: 'rotate(-6deg)',
                   boxShadow: '0 18px 40px -12px rgba(11, 10, 8, 0.28)',
-                  filter: 'sepia(0.18) contrast(1.05) brightness(0.96)',
+                  filter: 'grayscale(1) contrast(1.08) brightness(0.92)',
                   shapeOutside: 'circle(50%)',
                   borderRadius: '2px',
                 }}
@@ -98,6 +100,7 @@ export function About() {
                 text={ABOUT_PARAGRAPH}
                 as="p"
                 className="text-lead"
+                rootRef={travelRef}
               />
             </div>
 

@@ -45,7 +45,7 @@ export function Hero() {
         const blur = p * 8;
         const scale = 1 + p * 0.08;
         const ty = p * 80; // portrait drifts down slightly
-        portrait.style.filter = `blur(${blur}px) brightness(${1 - p * 0.25}) contrast(${1 - p * 0.1})`;
+        portrait.style.filter = `grayscale(1) blur(${blur}px) brightness(${1 - p * 0.25}) contrast(${1.08 - p * 0.1})`;
         portrait.style.transform = `translate3d(0, ${ty * 0.4}px, 0) scale(${scale})`;
       }
 
@@ -95,7 +95,7 @@ export function Hero() {
         const rect = section.getBoundingClientRect();
         const x = e.clientX - rect.left;
         const y = e.clientY - rect.top;
-        light.style.background = `radial-gradient(circle 320px at ${x}px ${y}px, rgba(184, 153, 104, 0.18), transparent 70%)`;
+        light.style.background = `radial-gradient(circle 320px at ${x}px ${y}px, rgba(255, 255, 255, 0.14), transparent 70%)`;
       });
     };
 
@@ -117,7 +117,7 @@ export function Hero() {
       }}
       aria-label="Dhivakaran — opening"
     >
-      {/* portrait layer — full-bleed, integrated via brass color grade */}
+      {/* portrait layer — full-bleed, grayscale film treatment */}
       <div
         ref={portraitRef}
         data-hero-portrait=""
@@ -127,34 +127,35 @@ export function Hero() {
           backgroundImage: 'url(/images/portrait.png)',
           backgroundSize: 'cover',
           backgroundPosition: '50% 30%',
+          filter: 'grayscale(1) contrast(1.08) brightness(0.92)',
           transformOrigin: '60% 60%',
           transition: 'transform 0.95s var(--ease-reveal), filter 0.95s var(--ease-reveal)',
           willChange: 'transform, filter',
         }}
       />
 
-      {/* brass color grade overlay — integrates portrait into palette */}
+      {/* darkening gradient — for text legibility at the bottom */}
       <div
         data-hero-backdrop=""
         style={{
           position: 'absolute',
           inset: 0,
           background:
-            'linear-gradient(180deg, rgba(16, 14, 11, 0.35) 0%, rgba(16, 14, 11, 0.05) 35%, rgba(16, 14, 11, 0.15) 60%, rgba(16, 14, 11, 0.85) 100%)',
+            'linear-gradient(180deg, rgba(10, 10, 10, 0.35) 0%, rgba(10, 10, 10, 0.05) 35%, rgba(10, 10, 10, 0.15) 60%, rgba(10, 10, 10, 0.9) 100%)',
           transformOrigin: '66% 100%',
           transition: 'transform 0.95s var(--ease-reveal)',
           pointerEvents: 'none',
         }}
       />
 
-      {/* warm brass tint — palette cohesion */}
+      {/* subtle red accent tint — very faint, cinematic */}
       <div
         aria-hidden="true"
         style={{
           position: 'absolute',
           inset: 0,
           background:
-            'linear-gradient(135deg, rgba(184, 153, 104, 0.12) 0%, transparent 50%, rgba(124, 45, 42, 0.08) 100%)',
+            'linear-gradient(135deg, rgba(214, 41, 41, 0.06) 0%, transparent 50%, rgba(10, 10, 10, 0.1) 100%)',
           mixBlendMode: 'overlay',
           pointerEvents: 'none',
         }}
@@ -192,7 +193,7 @@ export function Hero() {
           data-hero-3d-lines=""
           className="text-label"
           style={{
-            color: 'var(--brass-soft)',
+            color: 'var(--accent-soft)',
             marginBottom: '1.5rem',
             transition: 'transform 0.95s var(--ease-reveal) 0.34s, opacity 0.7s var(--ease-opacity) 0.34s',
           }}
@@ -240,7 +241,7 @@ export function Hero() {
           position: 'absolute',
           top: '5rem',
           right: '1.5rem',
-          color: 'var(--brass-soft)',
+          color: 'var(--canvas)',
           opacity: 0.8,
           zIndex: 3,
           textAlign: 'right',
@@ -258,7 +259,7 @@ export function Hero() {
           position: 'absolute',
           bottom: '1.5rem',
           left: '1.5rem',
-          color: 'var(--brass-soft)',
+          color: 'var(--canvas)',
           opacity: 0.6,
           zIndex: 3,
           display: 'flex',
@@ -266,11 +267,11 @@ export function Hero() {
           gap: '0.5rem',
         }}
       >
-        <span style={{ display: 'inline-block', width: '24px', height: '1.5px', background: 'var(--brass-soft)' }} />
+        <span style={{ display: 'inline-block', width: '24px', height: '1.5px', background: 'var(--accent)' }} />
         SCROLL TO DEVELOP
       </div>
 
-      {/* closing hairline — brass */}
+      {/* closing hairline — accent red */}
       <div
         aria-hidden="true"
         style={{
@@ -279,7 +280,7 @@ export function Hero() {
           right: 0,
           bottom: 0,
           height: '1.5px',
-          background: 'var(--brass)',
+          background: 'var(--accent)',
           opacity: 0.5,
           zIndex: 4,
         }}
