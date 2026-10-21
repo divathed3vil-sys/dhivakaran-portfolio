@@ -1,0 +1,535 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+/* ============================================================================
+   DHIVAKARAN — CINEMATIC DESIGN SYSTEM
+   "The Developing Room": scroll = photographic development.
+   Palette: warm parchment + deep onyx + brass + oxblood. No blue. No red.
+   Type: Fraunces (display+body) + JetBrains Mono (labels).
+   Layout: one --px scalar drives every margin, padding, gap, radius, border.
+   ============================================================================ */
+
+@theme inline {
+  /* ---- shadcn compatibility (kept so existing components still work) ---- */
+  --color-background: var(--canvas);
+  --color-foreground: var(--ink);
+  --color-card: var(--canvas);
+  --color-card-foreground: var(--ink);
+  --color-popover: var(--canvas);
+  --color-popover-foreground: var(--ink);
+  --color-primary: var(--ink);
+  --color-primary-foreground: var(--canvas);
+  --color-secondary: var(--bone-soft);
+  --color-secondary-foreground: var(--ink);
+  --color-muted: var(--bone-soft);
+  --color-muted-foreground: var(--muted);
+  --color-accent: var(--brass);
+  --color-accent-foreground: var(--ink);
+  --color-destructive: var(--oxblood);
+  --color-border: var(--rule);
+  --color-input: var(--rule);
+  --color-ring: var(--brass);
+
+  /* ---- cinematic palette (mapped to Tailwind) ---- */
+  --color-canvas: var(--canvas);
+  --color-ink: var(--ink);
+  --color-night: var(--night);
+  --color-night-soft: var(--night-soft);
+  --color-bone: var(--bone);
+  --color-bone-soft: var(--bone-soft);
+  --color-muted: var(--muted);
+  --color-rule: var(--rule);
+  --color-chip: var(--chip);
+  --color-brass: var(--brass);
+  --color-brass-soft: var(--brass-soft);
+  --color-oxblood: var(--oxblood);
+  --color-night-body: var(--night-body);
+  --color-night-muted: var(--night-muted);
+  --color-night-hr: var(--night-hr);
+
+  --font-sans: "Fraunces", ui-serif, Georgia, serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", monospace;
+  --font-display: "Fraunces", ui-serif, Georgia, serif;
+
+  --radius-sm: 2px;
+  --radius-md: 3px;
+  --radius-lg: 3px;
+  --radius-xl: 4px;
+
+  --ease-out-soft: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-curtain: cubic-bezier(0.65, 0, 0.35, 1);
+  --ease-reveal: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-door: cubic-bezier(0.55, 0, 0.25, 1);
+  --ease-trail-in: cubic-bezier(0.45, 0, 0.25, 1);
+  --ease-trail-out: cubic-bezier(0.55, 0, 0.45, 1);
+  --ease-opacity: cubic-bezier(0.33, 1, 0.68, 1);
+}
+
+/* ============================================================================
+   1. COLOR TOKENS — cinematic, warm, no blue, no red
+   ============================================================================ */
+:root {
+  /* parchment / paper system */
+  --canvas: #ece6d9;       /* warm bone — page background */
+  --bone: #e2dccf;         /* slightly deeper bone for layered surfaces */
+  --bone-soft: #f1ece1;    /* lightest bone for cards on canvas */
+  --rule: #c9c2b4;         /* warm hairline on paper */
+  --chip: #b6ad9c;         /* chip border on paper */
+  --muted: #7b7264;        /* warm taupe — secondary copy */
+
+  /* ink system */
+  --ink: #0b0a08;          /* deep warm onyx — body text */
+  --night: #100e0b;        /* rich cinematic black — dark sections */
+  --night-soft: #181612;   /* slightly lifted night for surfaces */
+  --night-body: #b8b0a2;   /* warm light gray on dark */
+  --night-muted: #948c7e;  /* muted label on dark */
+  --night-hr: #2a2722;     /* hairline on night */
+
+  /* accents */
+  --brass: #b89968;        /* primary accent — warm brass/amber */
+  --brass-soft: #d4b78a;  /* lighter brass for hovers */
+  --oxblood: #7c2d2a;     /* deep cinematic red — used VERY sparingly */
+
+  /* wave text (light → dark reveal) */
+  --wave-dim: rgba(11, 10, 8, 0.18);   /* latent — almost invisible */
+  --wave-flash: var(--brass);          /* developing flash */
+  --wave-lit: var(--ink);              /* exposed — full ink */
+
+  /* selection */
+  --selection-bg: var(--brass);
+  --selection-fg: var(--canvas);
+
+  /* layout scalar — drives ALL spacing (Pamidor pattern) */
+  --px: clamp(1px, min(100vw / 1728, 100vh / 680), 1.6px);
+
+  /* font family aliases (components reference these) */
+  --font-fraunces: "Fraunces", ui-serif, Georgia, serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", monospace;
+
+  /* content canvas cap */
+  --canvas-max: calc(1440 * var(--px));
+
+  /* radius language — essentially none, only micro-radius on chips */
+  --r-chip: 3px;
+  --r-card: 2px;
+}
+
+/* ============================================================================
+   2. BASE
+   ============================================================================ */
+@layer base {
+  * {
+    border-color: var(--rule);
+  }
+
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-size-adjust: 100%;
+    scrollbar-gutter: stable;
+    scroll-behavior: smooth;
+  }
+
+  html:focus-within {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    background-color: var(--canvas);
+    color: var(--ink);
+    font-family: var(--font-fraunces), ui-serif, Georgia, serif;
+    font-size: clamp(0.9375rem, 1.111vw, 1rem);
+    line-height: 1.55;
+    letter-spacing: -0.01em;
+    text-wrap: pretty;
+    overflow-x: hidden;
+    font-feature-settings: "ss01", "ss02";
+  }
+
+  ::selection {
+    background: var(--selection-bg);
+    color: var(--selection-fg);
+    text-shadow: none;
+  }
+
+  /* paper grain overlay — site-wide, very subtle */
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 9999;
+    opacity: 0.045;
+    mix-blend-mode: multiply;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+    background-size: 200px 200px;
+  }
+
+  /* warm vignette — very subtle, dark sections only */
+  body::after {
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 9998;
+    background: radial-gradient(
+      ellipse at center,
+      transparent 60%,
+      rgba(11, 10, 8, 0.08) 100%
+    );
+    opacity: 0;
+    transition: opacity 0.6s var(--ease-out-soft);
+  }
+  body:has(.night-active)::after {
+    opacity: 1;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-fraunces), ui-serif, Georgia, serif;
+    font-weight: 500;
+    letter-spacing: -0.02em;
+  }
+
+  a {
+    color: inherit;
+    text-decoration: none;
+  }
+
+  button {
+    font-family: inherit;
+  }
+
+  /* focus ring — brass, only on keyboard */
+  :focus-visible {
+    outline: 2px solid var(--brass);
+    outline-offset: 3px;
+  }
+
+  img {
+    color: transparent;
+  }
+}
+
+/* ============================================================================
+   3. TYPE SCALE — clamp-based, independent of --px (Pamidor pattern)
+   ============================================================================ */
+@layer components {
+  .text-display {
+    font-size: clamp(2.5rem, 7.5vw, 7rem);
+    line-height: 0.88;
+    letter-spacing: -0.03em;
+    font-weight: 500;
+  }
+
+  .text-section {
+    font-size: clamp(2rem, 7.222vw, 6.5rem);
+    line-height: 1;
+    letter-spacing: -0.02em;
+    font-weight: 500;
+  }
+
+  .text-project {
+    font-size: clamp(1.625rem, 4.167vw, 3.75rem);
+    line-height: 1.05;
+    letter-spacing: -0.015em;
+    font-weight: 500;
+  }
+
+  .text-subhead {
+    font-size: clamp(1.3125rem, 2.778vw, 2.5rem);
+    line-height: 1.2;
+    letter-spacing: -0.015em;
+    font-weight: 500;
+  }
+
+  .text-lead {
+    font-size: clamp(1.3125rem, 2.5vw, 2.125rem);
+    line-height: 1.35;
+    letter-spacing: -0.015em;
+    font-weight: 400;
+  }
+
+  .text-body-lg {
+    font-size: clamp(1.0625rem, 1.25vw, 1.125rem);
+    line-height: 1.5;
+    letter-spacing: -0.01em;
+    font-weight: 400;
+  }
+
+  .text-body {
+    font-size: clamp(0.9375rem, 1.111vw, 1rem);
+    line-height: 1.55;
+    letter-spacing: -0.01em;
+    font-weight: 400;
+  }
+
+  .text-label {
+    font-family: var(--font-mono), ui-monospace, monospace;
+    font-size: clamp(0.6875rem, 0.833vw, 0.75rem);
+    line-height: 1.4;
+    letter-spacing: 0.08em;
+    font-weight: 500;
+    text-transform: uppercase;
+  }
+
+  .text-stat {
+    font-size: clamp(2rem, 7.222vw, 6.5rem);
+    line-height: 1;
+    letter-spacing: -0.02em;
+    font-weight: 500;
+  }
+
+  .text-mono {
+    font-family: var(--font-mono), ui-monospace, monospace;
+    letter-spacing: 0.02em;
+  }
+}
+
+/* ============================================================================
+   4. LAYOUT UTILITIES
+   ============================================================================ */
+@layer components {
+  /* content canvas cap — Pamidor 1440px sheet */
+  .canvas-max {
+    max-width: var(--canvas-max);
+    margin-inline: auto;
+    padding-inline: 1.5rem;
+  }
+  @media (min-width: 640px) {
+    .canvas-max { padding-inline: 2.5rem; }
+  }
+  @media (min-width: 1024px) {
+    .canvas-max { padding-inline: 4rem; }
+  }
+
+  .px-n { padding: calc(N * var(--px)); }
+
+  .hairline {
+    height: 1.5px;
+    background: var(--rule);
+    width: 100%;
+    border: 0;
+  }
+  .hairline-night {
+    height: 1.5px;
+    background: var(--night-hr);
+    width: 100%;
+    border: 0;
+  }
+
+  /* film leader counter */
+  .leader-track {
+    font-family: var(--font-mono), ui-monospace, monospace;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.1em;
+  }
+}
+
+/* ============================================================================
+   5. MOTION — keyframes & primitives
+   ============================================================================ */
+@layer components {
+  /* page enter (inner sections mount) */
+  .page-enter {
+    animation: page-enter 0.52s var(--ease-out-soft) both;
+  }
+  @keyframes page-enter {
+    from { opacity: 0; transform: translate3d(0, calc(10 * var(--px)), 0); }
+    to   { opacity: 1; transform: translate3d(0, 0, 0); }
+  }
+
+  /* loader letter rise */
+  @keyframes loader-letter-in {
+    from { transform: translateY(110%); opacity: 0; }
+    to   { transform: translateY(0); opacity: 1; }
+  }
+
+  /* loader letter out */
+  @keyframes loader-letter-out {
+    from { transform: translateY(0); opacity: 1; }
+    to   { transform: translateY(-60%); opacity: 0; }
+  }
+
+  /* hero 3D rise — pre-load state set by data-loading */
+  html[data-loading="true"] [data-hero-3d] {
+    transform: perspective(calc(900 * var(--px))) rotateX(44deg)
+      translateY(calc(46 * var(--px)));
+    transform-origin: 50% 100%;
+    opacity: 0;
+  }
+  html[data-loading="true"] [data-hero-3d-lines] > * {
+    transform: perspective(calc(900 * var(--px))) rotateX(44deg)
+      translateY(calc(46 * var(--px)));
+    transform-origin: 50% 100%;
+    opacity: 0;
+  }
+  html[data-loading="true"] [data-hero-portrait] {
+    transform: perspective(calc(1400 * var(--px))) rotateY(-10deg)
+      rotateX(6deg) translateY(calc(34 * var(--px))) scale(1.06);
+    transform-origin: 60% 60%;
+  }
+  html[data-loading="true"] [data-hero-backdrop] {
+    transform: scale(1.04);
+  }
+
+  /* reveal primitive */
+  [data-reveal="waiting"] {
+    opacity: 0;
+    transform: translate3d(0, calc(13 * var(--px)), 0);
+    transition: transform 0.7s var(--ease-reveal), opacity 0.7s var(--ease-reveal);
+  }
+  [data-reveal="shown"] {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+
+  /* hover wave — char color sweep */
+  [data-hw] .hw-char {
+    display: inline-block;
+    transition: color 0.4s var(--ease-out-soft);
+    transition-delay: calc(var(--hw-i, 0) * 16ms);
+    color: var(--hw-base, currentColor);
+  }
+  [data-hw]:hover .hw-char,
+  [data-hw-on] .hw-char {
+    animation: hw-sweep 0.4s var(--ease-out-soft) both;
+    animation-delay: calc(var(--hw-i, 0) * 16ms);
+  }
+  @keyframes hw-sweep {
+    0% { color: var(--hw-base, currentColor); }
+    45% { color: var(--oxblood); }
+    100% { color: var(--hw-base, currentColor); }
+  }
+
+  /* scroll wave — char develops from latent → exposed */
+  [data-wave] [data-char] {
+    color: var(--wave-dim);
+    transition: color 0.4s var(--ease-out-soft);
+    display: inline-block;
+  }
+  [data-wave] [data-char][data-lit] {
+    animation: char-wave 0.4s var(--ease-out-soft) both;
+  }
+  @keyframes char-wave {
+    0%  { color: var(--wave-dim); }
+    30% { color: var(--wave-flash); }
+    100% { color: var(--wave-lit); }
+  }
+
+  /* marquee */
+  .marquee-track {
+    width: max-content;
+    display: inline-flex;
+    animation: marquee 38s linear infinite;
+  }
+  .marquee-track.reverse {
+    animation-direction: reverse;
+    animation-duration: 46s;
+  }
+  @keyframes marquee {
+    to { transform: translateX(-50%); }
+  }
+  .marquee-wrapper:hover .marquee-track {
+    animation-play-state: paused;
+  }
+
+  /* route curtain */
+  .curtain-cover {
+    animation: curtain-cover 0.667s var(--ease-curtain) both;
+  }
+  @keyframes curtain-cover {
+    from { transform: translateY(100%); }
+    to   { transform: translateY(0); }
+  }
+  .curtain-reveal {
+    animation: curtain-reveal 0.754s var(--ease-out-soft) both;
+  }
+  @keyframes curtain-reveal {
+    from { transform: translateY(0); }
+    to   { transform: translateY(-100%); }
+  }
+
+  /* clip reveal — footer */
+  .clip-reveal {
+    clip-path: inset(5% 7% 0% 7%);
+    transition: clip-path 0.1s linear;
+  }
+
+  /* aperture iris open — loader exit */
+  @keyframes iris-open {
+    from { clip-path: circle(0% at 50% 50%); }
+    to   { clip-path: circle(150% at 50% 50%); }
+  }
+
+  /* anamorphic flare sweep — skill card hover */
+  @keyframes flare-sweep {
+    0%   { transform: translateX(-120%) skewX(-15deg); opacity: 0; }
+    20%  { opacity: 1; }
+    80%  { opacity: 1; }
+    100% { transform: translateX(120%) skewX(-15deg); opacity: 0; }
+  }
+
+  /* focus pull — for visual lab depth-of-field */
+  .focus-pull {
+    transition: filter 0.4s var(--ease-out-soft),
+      transform 0.4s var(--ease-out-soft);
+  }
+}
+
+/* ============================================================================
+   6. ACCESSIBILITY — reduced motion
+   ============================================================================ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  html[data-loading="true"] [data-hero-3d],
+  html[data-loading="true"] [data-hero-3d-lines] > *,
+  html[data-loading="true"] [data-hero-portrait],
+  html[data-loading="true"] [data-hero-backdrop] {
+    transform: none !important;
+    opacity: 1 !important;
+  }
+  [data-reveal="waiting"] {
+    opacity: 1 !important;
+    transform: none !important;
+  }
+  .marquee-track {
+    animation: none !important;
+  }
+}
+
+/* ============================================================================
+   7. CUSTOM SCROLLBAR — minimal, warm
+   ============================================================================ */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: var(--canvas);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--chip);
+  border-radius: 0;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--muted);
+}
+
+/* touch targets — 44px minimum */
+@media (pointer: coarse) {
+  button,
+  a[role="button"],
+  .touch-target {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}

@@ -1,0 +1,226 @@
+'use client';
+
+import { useRef } from 'react';
+import { WaveText } from './wave-text';
+
+const ABOUT_PARAGRAPH =
+  'I work between brand systems and product surfaces, between art direction and the quiet mechanics of motion. Most days the studio is a developing room — a little dark, a little warm, a few prints hanging to dry. An idea walks in half-formed; I hold it under the light until it stops moving. Then we lay it down on paper. This is the slow part, the honest part, the part where a thing either becomes itself, or doesn\u2019t. There is no rush, but there is no pause either — the room is always open, and the next print is always somewhere on its way in.';
+
+const COLLABORATORS = [
+  'ATELIER NORTH',
+  'KOVIL PRESS',
+  'STUDIO MERIDIAN',
+  'NIGHT SOIL CO.',
+  'HALF-LIGHT FILMS',
+  'PAPER & ASH',
+  'COMMON WARE',
+  'LONG ROOM',
+];
+
+/**
+ * About — sticky-travel paragraph with scroll-wave developing text.
+ * The paragraph pins while the 135vh wrapper scrolls past it; each character
+ * develops from latent (light/dim) → brass flash → exposed ink.
+ *
+ * Inventions:
+ *  - Sticky "perfect framing" — paragraph never moves while you scroll past
+ *  - WaveText char-by-char reveal (light → dark)
+ *  - NO vertical line on scroll (removed per user request)
+ *  - Rotated portrait insert floating inside the text flow
+ *  - "A little room to wander." handwritten-style aside
+ *  - Two opposing brass-on-parchment collaborator marquees
+ */
+export function About() {
+  const sectionRef = useRef<HTMLElement>(null);
+
+  return (
+    <section
+      id="about"
+      ref={sectionRef}
+      data-canvas="home"
+      style={{
+        background: 'var(--canvas)',
+        position: 'relative',
+      }}
+    >
+      {/* sticky travel wrapper — 135vh on desktop */}
+      <div style={{ height: '135vh', position: 'relative' }}>
+        <div
+          style={{
+            position: 'sticky',
+            top: 0,
+            height: '100vh',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'flex-start',
+          }}
+        >
+          <div className="canvas-max" style={{ width: '100%' }}>
+            {/* eyebrow */}
+            <div
+              className="text-label"
+              style={{
+                color: 'var(--muted)',
+                marginBottom: 'calc(28 * var(--px))',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.75rem',
+              }}
+            >
+              <span style={{ display: 'inline-block', width: '24px', height: '1.5px', background: 'var(--muted)' }} />
+              ( STUDIO · A LITTLE ROOM TO WANDER )
+            </div>
+
+            {/* paragraph with floating portrait insert */}
+            <div style={{ position: 'relative', maxWidth: 'calc(1129 * var(--px))' }}>
+              {/* floating portrait insert — inside text flow */}
+              <div
+                style={{
+                  float: 'left',
+                  width: '19%',
+                  minWidth: '120px',
+                  maxWidth: '220px',
+                  aspectRatio: '1 / 1',
+                  margin: '0.35rem 1.5rem 0.5rem 0',
+                  backgroundImage: 'url(/images/portrait.png)',
+                  backgroundSize: 'cover',
+                  backgroundPosition: '50% 30%',
+                  transform: 'rotate(-6deg)',
+                  boxShadow: '0 18px 40px -12px rgba(11, 10, 8, 0.28)',
+                  filter: 'sepia(0.18) contrast(1.05) brightness(0.96)',
+                  shapeOutside: 'circle(50%)',
+                  borderRadius: '2px',
+                }}
+                aria-hidden="true"
+              />
+
+              <WaveText
+                text={ABOUT_PARAGRAPH}
+                as="p"
+                className="text-lead"
+              />
+            </div>
+
+            {/* "A little room to wander." aside — handwritten italic */}
+            <div
+              style={{
+                marginTop: 'calc(40 * var(--px))',
+                display: 'flex',
+                alignItems: 'baseline',
+                gap: '1rem',
+                flexWrap: 'wrap',
+              }}
+            >
+              <span
+                style={{
+                  fontFamily: 'var(--font-fraunces), serif',
+                  fontStyle: 'italic',
+                  fontWeight: 300,
+                  fontSize: 'clamp(1.5rem, 3vw, 2.25rem)',
+                  color: 'var(--ink)',
+                  letterSpacing: '-0.02em',
+                  lineHeight: 1.1,
+                }}
+              >
+                A little room to wander.
+              </span>
+              <span
+                className="text-label"
+                style={{ color: 'var(--muted)' }}
+              >
+                — STUDIO NOTE, 0250
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* hairline + collaborator marquees */}
+      <div className="canvas-max" style={{ paddingBottom: 'calc(64 * var(--px))' }}>
+        <hr className="hairline" style={{ margin: 0 }} />
+
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: '1fr',
+            gap: 'calc(24 * var(--px))',
+            marginTop: 'calc(40 * var(--px))',
+          }}
+        >
+          {/* label */}
+          <div className="text-label" style={{ color: 'var(--muted)' }}>
+            ( CLIENTS &amp; COLLABORATIONS · PLACEHOLDERS )
+          </div>
+
+          {/* two opposing marquees */}
+          <div
+            className="marquee-wrapper"
+            style={{
+              overflow: 'hidden',
+              whiteSpace: 'nowrap',
+              borderTop: '1.5px solid var(--rule)',
+              borderBottom: '1.5px solid var(--rule)',
+              paddingBlock: 'calc(18 * var(--px))',
+            }}
+          >
+            <div className="marquee-track" style={{ gap: 'calc(52 * var(--px))' }}>
+              {[...COLLABORATORS, ...COLLABORATORS].map((name, i) => (
+                <span
+                  key={i}
+                  style={{
+                    fontFamily: 'var(--font-fraunces), serif',
+                    fontWeight: 500,
+                    fontSize: 'clamp(1.5rem, 3.5vw, 2.5rem)',
+                    color: 'var(--ink)',
+                    opacity: 0.5,
+                    letterSpacing: '-0.02em',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  {name}
+                  <span style={{ color: 'var(--brass)', marginLeft: 'calc(52 * var(--px))' }} aria-hidden="true">
+                    ✦
+                  </span>
+                </span>
+              ))}
+            </div>
+          </div>
+
+          <div
+            className="marquee-wrapper"
+            style={{
+              overflow: 'hidden',
+              whiteSpace: 'nowrap',
+              paddingBlock: 'calc(18 * var(--px))',
+            }}
+          >
+            <div
+              className="marquee-track reverse"
+              style={{ gap: 'calc(52 * var(--px))' }}
+            >
+              {[...COLLABORATORS, ...COLLABORATORS].reverse().map((name, i) => (
+                <span
+                  key={i}
+                  style={{
+                    fontFamily: 'var(--font-fraunces), serif',
+                    fontWeight: 500,
+                    fontSize: 'clamp(1.5rem, 3.5vw, 2.5rem)',
+                    color: 'var(--ink)',
+                    opacity: 0.5,
+                    letterSpacing: '-0.02em',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  {name}
+                  <span style={{ color: 'var(--brass)', marginLeft: 'calc(52 * var(--px))' }} aria-hidden="true">
+                    ✦
+                  </span>
+                </span>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
