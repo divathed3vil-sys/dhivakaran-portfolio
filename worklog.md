@@ -151,3 +151,34 @@ Stage Summary:
 - Home page flow: Hero → About → VisualLabCard → Skillset → Contact → Footer
 - Overlay: VisualLab (fixed, iris-open, body-locked, closable 3 ways)
 - Still strictly static — no backend, no DB, no API (per PAMIDOR handoff)
+
+---
+Task ID: 20-23
+Agent: main-orchestrator
+Task: Add the missing Selected Work section between About and VisualLabCard; curate big list of crazy ideas for user selection.
+
+Work Log:
+- Created src/components/portfolio/selected-work.tsx:
+  - Accordion of 5 placeholder projects (Atelier North, Kovil Press, Night Soil Co., Half-Light Films, Paper & Ash)
+  - Desktop: hover-driven accordion. Active row expands; cover image reveals with BLUR-TO-FOCUS pull (blur 14px → 0px on active)
+  - Non-active rows dim to opacity 0.45; active title turns accent red (rgb(214,41,41))
+  - Covers: grayscale(1) + contrast + dust overlay + slight rotation + frame border + frame number mono label
+  - Metadata (role/category/year) fades + slides in when active
+  - Touch/no-hover: IntersectionObserver (rootMargin -45%/-45%) picks row nearest viewport center
+  - Mobile (≤1023px): stacked cards, cover always visible (16/10), no accordion
+  - "VIEW FULL INDEX →" placeholder link at the bottom
+  - Reduced-motion: transitions disabled
+- Wired into page.tsx between About and VisualLabCard
+- Added "Selected Work → #work" to nav menu links (between The Room and Visual Lab)
+
+Verification (agent-browser):
+- Section found, title "Selected frames", 5 rows, all keyboard-accessible (tabindex=0, cursor:pointer)
+- Default active row 0: title rgb(214,41,41) red ✓, cover blur(0px) sharp ✓
+- Real hover on row 2 (via agent-browser hover): r1Active=true, r1TitleColor=rgb(214,41,41) red ✓, r0Opacity=0.45 dimmed ✓, r1CoverBlur=0 focused ✓
+- Lint: 0 errors, 2 font-link warnings (unchanged)
+
+Stage Summary:
+- Missing Selected Work section added and verified (accordion + blur-to-focus covers + grunge + responsive).
+- Page flow now: Hero → About (pins + develops) → SelectedWork (accordion) → VisualLabCard → Skillset → Contact → Footer.
+- Big list of 25+ crazy blur/focus/grunge/motion ideas presented to user for selection (see chat message).
+- Implementation of selected ideas will be non-destructive: layered on top of existing sections with reduced-motion fallbacks, no breakage.

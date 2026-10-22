@@ -6,6 +6,7 @@ import { IntroLoader } from '@/components/portfolio/intro-loader';
 import { Nav } from '@/components/portfolio/nav';
 import { Hero } from '@/components/portfolio/hero';
 import { About } from '@/components/portfolio/about';
+import { SelectedWork } from '@/components/portfolio/selected-work';
 import { VisualLabCard } from '@/components/portfolio/visual-lab-card';
 import { VisualLab } from '@/components/portfolio/visual-lab';
 import { Skillset } from '@/components/portfolio/skillset';
@@ -30,6 +31,7 @@ export default function Home() {
       <main id="main" style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
         <Hero />
         <About />
+        <SelectedWork />
         <VisualLabCard onEnter={() => setLabOpen(true)} />
         <Skillset />
         <Contact />
