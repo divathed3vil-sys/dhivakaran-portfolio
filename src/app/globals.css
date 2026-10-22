@@ -5,7 +5,7 @@
 
 /* ============================================================================
    DHIVAKARAN — CINEMATIC DESIGN SYSTEM
-   "The Developing Room": scroll = photographic development.
+   "The Developing Tray": scroll = photographic development.
    Palette: warm parchment + deep onyx + brass + oxblood. No blue. No red.
    Type: Fraunces (display+body) + JetBrains Mono (labels).
    Layout: one --px scalar drives every margin, padding, gap, radius, border.
@@ -512,21 +512,16 @@
 }
 
 /* ============================================================================
-   7. CUSTOM SCROLLBAR — minimal, warm
+   7. SCROLLBAR — hidden (user requested no side scrolling bar)
    ============================================================================ */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 0;
+  height: 0;
+  display: none;
 }
-::-webkit-scrollbar-track {
-  background: var(--canvas);
-}
-::-webkit-scrollbar-thumb {
-  background: var(--chip);
-  border-radius: 0;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: var(--muted);
+html {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
 }
 
 /* touch targets — 44px minimum */
@@ -544,7 +539,7 @@
    Each effect has a reduced-motion + touch fallback. Intensity capped.
    ============================================================================ */
 
-/* ---- #14 scroll-velocity motion blur — REMOVED (replaced by CursorDOF which has a clear zone around the cursor) ---- */
+/* ---- Blur system — see BlurEffects component (scroll blur + edge vignette + random flicker) ---- */
 
 /* ---- #18 magnetic cursor (subtle attraction + soft trailing glow) ---- */
 .magnetic-glow {

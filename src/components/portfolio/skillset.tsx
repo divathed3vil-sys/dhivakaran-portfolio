@@ -100,7 +100,7 @@ const SKILLS: Skill[] = [
     title: 'Production',
     category: 'DIRECTION · CASTING · SETS',
     description:
-      'Direction, casting, set design. Making the room where the image can happen.',
+      'Direction, casting, set design. Making the frame where the image can happen.',
     rotation: -0.4,
     offsetX: 8,
     offsetY: 6,
@@ -108,13 +108,13 @@ const SKILLS: Skill[] = [
 ];
 
 /**
- * Skillset — "the developing room" specimen wall.
+ * Skillset — a specimen wall of nine disciplines.
  *
  * Inventions:
  *  - NOT a table. Skills are pinned to a dark curator's wall as specimen cards
  *    in an intentionally disordered grid (rotations ±1.5°, hand-pinned offsets)
  *  - Each card "develops" on entry: exposure meter fills light→brass→dark,
- *    card sharpens from blur to focus (the unifying developing-room metaphor)
+ *    card sharpens from blur to focus (the unifying developing-tray metaphor)
  *  - Anamorphic lens flare sweeps each card on hover (cinematic, brass)
  *  - Etched index, Fraunces title, brass-mono category, ink-stain exposure meter
  *  - Placeholder skills — user swaps in real ones later
@@ -185,7 +185,7 @@ export function Skillset() {
         position: 'relative',
         overflow: 'hidden',
       }}
-      aria-label="Skillset — the developing room"
+      aria-label="Skillset"
     >
       {/* ambient red glow */}
       <div

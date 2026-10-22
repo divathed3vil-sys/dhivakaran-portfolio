@@ -501,7 +501,7 @@ export function VisualLab({ onClose }: { onClose: () => void }) {
           className="text-label"
           style={{ color: 'var(--canvas)', letterSpacing: '0.2em' }}
         >
-          ✦ DRAG · SCROLL · ARROW KEYS — TO WANDER ✦
+          ✦ DRAG · SCROLL · ARROW KEYS — TO EXPLORE ✦
         </div>
       </div>
 

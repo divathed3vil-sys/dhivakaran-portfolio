@@ -5,7 +5,7 @@ import { WaveText } from './wave-text';
 import { useBloom, useHeadingRack } from './lib/use-bloom-rack';
 
 const ABOUT_PARAGRAPH =
-  'I work between brand systems and product surfaces, between art direction and the quiet mechanics of motion. Most days the studio is a developing room — a little dark, a little warm, a few prints hanging to dry. An idea walks in half-formed; I hold it under the light until it stops moving. Then we lay it down on paper. This is the slow part, the honest part, the part where a thing either becomes itself, or doesn\u2019t. There is no rush, but there is no pause either — the room is always open, and the next print is always somewhere on its way in.';
+  'Hi, I\u2019m Diva \u2014 a graphic designer and video editor who enjoys turning ideas into visuals with a little personality. From graphic design and visual identities to video edits, motion, VFX and 3D, I like exploring different ways to tell a story and make an idea come to life. I enjoy experimenting, getting a little carried away with the details, and making things that feel just right. Your vision, my creativity \u2014 let\u2019s make it real.';
 
 const COLLABORATORS = [
   'ATELIER NORTH',
@@ -15,7 +15,7 @@ const COLLABORATORS = [
   'HALF-LIGHT FILMS',
   'PAPER & ASH',
   'COMMON WARE',
-  'LONG ROOM',
+  'LONG EXPOSURE',
 ];
 
 /**
@@ -28,7 +28,7 @@ const COLLABORATORS = [
  *  - WaveText char-by-char reveal (light → dark)
  *  - NO vertical line on scroll (removed per user request)
  *  - Rotated portrait insert floating inside the text flow
- *  - "A little room to wander." handwritten-style aside
+ *  - Italic signature "— Diva"
  *  - Two opposing brass-on-parchment collaborator marquees
  */
 export function About() {
@@ -71,9 +71,9 @@ export function About() {
                 maxWidth: '14ch',
               }}
             >
-              A little room
+              A little
               <br />
-              <em style={{ fontStyle: 'italic', fontWeight: 300, color: 'var(--muted)' }}>to wander</em>
+              <em style={{ fontStyle: 'italic', fontWeight: 300, color: 'var(--muted)' }}>about me</em>
             </h2>
 
             {/* paragraph with floating portrait insert */}
@@ -108,7 +108,7 @@ export function About() {
               />
             </div>
 
-            {/* "A little room to wander." aside — handwritten italic */}
+            {/* aside — handwritten italic signature */}
             <div
               style={{
                 marginTop: 'calc(40 * var(--px))',
@@ -129,13 +129,7 @@ export function About() {
                   lineHeight: 1.1,
                 }}
               >
-                The room is always open.
-              </span>
-              <span
-                className="text-label"
-                style={{ color: 'var(--muted)' }}
-              >
-                — 0250
+                — Diva
               </span>
             </div>
           </div>

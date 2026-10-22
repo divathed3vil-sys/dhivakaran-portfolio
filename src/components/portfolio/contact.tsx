@@ -17,15 +17,15 @@ import { useBloom } from './lib/use-bloom-rack';
 const CONTACTS = [
   {
     label: 'WHATSAPP',
-    value: '+00 0000 000 000',
-    href: 'https://wa.me/000000000000',
+    value: '+94 77 089 5006',
+    href: 'https://wa.me/94770895006',
     icon: MessageCircle,
     note: 'REPLIES MOST DAYS · COLOMBO TIME',
   },
   {
     label: 'EMAIL',
-    value: 'hello@dhivakaran.studio',
-    href: 'mailto:hello@dhivakaran.studio',
+    value: 'dhivakaranmohanraj@gmail.com',
+    href: 'mailto:dhivakaranmohanraj@gmail.com',
     icon: Mail,
     note: 'BRIEFS, INTROS, LONG MESSAGES WELCOME',
   },
@@ -338,7 +338,7 @@ export function Contact() {
                 letterSpacing: '-0.02em',
               }}
             >
-              — Dhivakaran M
+              — Diva
             </div>
             <div
               className="text-mono text-label"

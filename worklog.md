@@ -281,3 +281,59 @@ Stage Summary:
 - Portrait kept natural (slight desaturation, not full grayscale) — respects the photo while integrating with the white/black palette.
 - Blur fixed: the conflicting random scroll-velocity blur is gone; replaced by a cursor-following depth-of-field with a clear zone — content where you look is sharp, content elsewhere is subtly soft. Constant + predictable, never conflicts with reading.
 - Nothing else broke — all 17 prior effects still render and function; only the one conflicting blur was swapped.
+
+---
+Task ID: 32-37
+Agent: main-orchestrator
+Task: Blur rebuild (user hated the cursor-following DOF); hide scrollbar; clear room/door/wander metaphors; user's real about paragraph + contact info.
+
+Work Log:
+- Blur rebuild (the cursor-following DOF was too much — user "hate it fully"):
+  - REMOVED CursorDOF from EffectsProvider (deleted the cursor-following depth-of-field entirely)
+  - NEW component blur-effects.tsx with THREE very-subtle backdrop-filter overlays (NOT body filter — body filter breaks position:fixed on nav/glow/viewfinder):
+    1. SCROLL BLUR (0.4px) — only while page is moving. opacity 0 by default, set to 1 on scroll, back to 0 after 150ms idle. Fades via 0.15s opacity transition. So "no blur at all" when stopped.
+    2. EDGE VIGNETTE BLUR (0.6px) — permanent, only at very outer edges. mask radial-gradient(ellipse 92% 92% at center, transparent 72%, black 100%) → clear center, blur at extreme edges only.
+    3. RANDOM FLICKER (0.4px) — uses the same overlay as scroll blur. Every 1-2.5s (very often, very random), opacity → 1 for 300-600ms (very brief, very low). Like a film camera's focus occasionally drifting.
+  - All off on prefers-reduced-motion.
+- Scrollbar hidden: globals.css section 7 now `::-webkit-scrollbar { width:0; display:none }` + `html { scrollbar-width: none }`. Verified scrollbarWidth=0.
+- Removed dead body[data-scroll-fast] CSS + comment.
+- About content (user's exact requests):
+  - Title: "A little room / to wander" → "A little / about me" (italic "about me")
+  - Paragraph: replaced with user's exact text "Hi, I'm Diva — a graphic designer and video editor who enjoys turning ideas into visuals with a little personality. From graphic design and visual identities to video edits, motion, VFX and 3D, I like exploring different ways to tell a story and make an idea come to life. I enjoy experimenting, getting a little carried away with the details, and making things that feel just right. Your vision, my creativity — let's make it real."
+  - Aside: "The room is always open. — 0250" → "— Diva" (italic signature)
+  - Collaborator: 'LONG ROOM' → 'LONG EXPOSURE'
+- Cleared ALL room/door/wander metaphors (user-facing):
+  - nav.tsx: "The Room" → "About"
+  - footer.tsx: tagline "The room is always open. / The next print is on its way in." → "Your vision, my creativity. / Let's make it real."
+  - skillset.tsx: aria-label "Skillset — the developing room" → "Skillset"; Production description "Making the room where..." → "Making the frame where..."
+  - visual-lab.tsx: hint "TO WANDER" → "TO EXPLORE"
+  - visual-lab-card.tsx: "a camera lens, wandering" → "a camera lens, drifting"
+  - Code comments + globals.css comment cleaned too
+  - (--ease-door CSS var kept — it's a code identifier, not user-facing; renaming risks churn)
+- Contact info (user's real details):
+  - WhatsApp: +94 77 089 5006, href https://wa.me/94770895006
+  - Email: dhivakaranmohanraj@gmail.com, href mailto:dhivakaranmohanraj@gmail.com
+  - Footer email link: updated to dhivakaranmohanraj@gmail.com
+  - Contact signature: "— Dhivakaran M" → "— Diva" (matches the about's personal voice)
+
+Verification (agent-browser):
+- Lint: 0 errors, 2 font-link warnings (unchanged)
+- blurOverlayCount: 2 (scroll/flicker overlay + edge overlay both render)
+- Scroll blur overlay: opacity 0.66 during active scroll (mid-transition), opacity 0 after scroll fully settles (via 150ms timeout + Lenis easing completion) — "no blur at all when stopped" confirmed
+- Edge blur overlay: opacity 1 (permanent), backdrop blur(0.6px), mask radial-gradient(92% 92%, transparent 72%→black 100%) — vignette blur at edges only
+- scrollbarWidth: 0 (hidden)
+- aboutTitle: "A little about me" ✓
+- aboutParaStart: "Hi, I'm Diva — a graphic designer and video editor who enjoy..." ✓ (user's exact text)
+- aboutAsideDiva: true ✓ ("— Diva")
+- noRoomInAbout: true ✓
+- contactPhone: true (+94 77 089 5006) ✓
+- contactEmail: true (dhivakaranmohanraj@gmail.com) ✓
+- footerTagline: true ("Your vision...") ✓
+- footerEmail: true ✓
+- No remaining room/door/wander in user-facing rendered text (grep confirms only code comments + CSS var names remain, all not user-facing)
+
+Stage Summary:
+- Blur is now very very subtle and non-intrusive: a 0.4px blur ONLY while scrolling (clears the instant scroll stops), a permanent 0.6px vignette blur at the very extreme edges, and occasional 0.4px random flickers (very often, very brief). No more cursor-following DOF.
+- Side scrollbar removed.
+- About section uses the user's real self-introduction ("Hi, I'm Diva...") and "A little / about me" title; all room/door/wander metaphors cleared from the rendered page.
+- Real contact details wired in (WhatsApp +94 77 089 5006, email dhivakaranmohanraj@gmail.com) in both the Contact section and footer.

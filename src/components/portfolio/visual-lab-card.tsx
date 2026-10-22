@@ -138,7 +138,7 @@ export function VisualLabCard({ onEnter }: { onEnter: () => void }) {
             >
               Drag, scroll, or arrow-key your way across a toroidally-wrapped
               contact sheet. Frames pull focus as they near the centre and
-              fall out of focus at the edges — a camera lens, wandering.
+              fall out of focus at the edges — a camera lens, drifting.
             </p>
 
             {/* CTA */}

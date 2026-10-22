@@ -117,15 +117,15 @@ export function Footer() {
                 maxWidth: '32ch',
               }}
             >
-              The room is always open.
+              Your vision, my creativity.
               <br />
-              The next print is on its way in.
+              Let\u2019s make it real.
             </p>
           </div>
 
           <div style={{ textAlign: 'right' }}>
             <a
-              href="mailto:hello@dhivakaran.studio"
+              href="mailto:dhivakaranmohanraj@gmail.com"
               style={{
                 fontFamily: 'var(--font-fraunces), serif',
                 fontWeight: 500,
@@ -144,7 +144,7 @@ export function Footer() {
                 e.currentTarget.style.borderColor = 'rgba(184, 153, 104, 0.4)';
               }}
             >
-              hello@dhivakaran.studio
+              dhivakaranmohanraj@gmail.com
             </a>
           </div>
         </div>

@@ -3,14 +3,14 @@
 import { type ReactNode } from 'react';
 import { useMagneticCursor } from './lib/use-magnetic-cursor';
 import { LightLeak } from './light-leak';
-import { CursorDOF } from './cursor-dof';
+import { BlurEffects } from './blur-effects';
 
 /**
  * EffectsProvider — orchestrates the global, cross-cutting effects:
  *  - #18 magnetic cursor trailing glow (fixed element)
  *  - #7 light-leak sweep at section boundaries
- *  - CursorDOF — cursor-following depth-of-field with a clear zone
- *    (replaces the old scroll-velocity blur, which randomly conflicted with content)
+ *  - BlurEffects — scroll-activated blur + permanent edge vignette + random
+ *    subtle flickers (very low intensity, only while scrolling + at edges)
  *
  * Section-specific effects are applied inline in their components.
  */
@@ -21,7 +21,7 @@ export function EffectsProvider({ children }: { children: ReactNode }) {
     <>
       {children}
       <LightLeak />
-      <CursorDOF />
+      <BlurEffects />
       <div className="magnetic-glow" ref={glowRef} aria-hidden="true" />
     </>
   );
