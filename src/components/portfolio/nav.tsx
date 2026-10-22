@@ -12,7 +12,7 @@ const NAV_LINKS: NavLink[] = [
   { label: 'About', href: '#about' },
   { label: 'Selected Work', href: '#work' },
   { label: 'Visual Lab', action: 'lab' },
-  { label: 'Skillset', href: '#skillset' },
+  { label: 'Experiences', href: '#skillset' },
   { label: 'Contact', href: '#contact' },
 ];
 
@@ -202,7 +202,7 @@ export function Nav({ onEnterLab }: { onEnterLab?: () => void }) {
           className="text-label"
           style={{ color: 'var(--night-muted)', lineHeight: 1.6 }}
         >
-          <div>Colombo · 06.47 N 79.86 E</div>
+          <div>Dhivakaran M</div>
         </div>
       </aside>
     </>

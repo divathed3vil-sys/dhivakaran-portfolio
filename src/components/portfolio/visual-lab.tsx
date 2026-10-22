@@ -71,18 +71,18 @@ export function VisualLab({ onClose }: { onClose: () => void }) {
   const { tiles, fieldW, fieldH } = useMemo(() => {
     const cols = 8;
     const rows = 7;
-    const cellW = 340;
-    const cellH = 340;
+    const cellW = 290;
+    const cellH = 290;
     const arr: Tile[] = [];
     for (let r = 0; r < rows; r++) {
       for (let c = 0; c < cols; c++) {
         const idx = r * cols + c;
-        const sizeJitter = 0.78 + ((idx * 13) % 40) / 100;
+        const sizeJitter = 0.92 + ((idx * 13) % 16) / 100;
         arr.push({
-          lx: c * cellW + (((idx * 37) % 60) - 30),
-          ly: r * cellH + (((idx * 53) % 60) - 30),
-          w: 260 * sizeJitter,
-          h: 260 * sizeJitter * (0.88 + ((idx * 7) % 24) / 100),
+          lx: c * cellW + (((idx * 37) % 20) - 10),
+          ly: r * cellH + (((idx * 53) % 20) - 10),
+          w: 280 * sizeJitter,
+          h: 280 * sizeJitter * (0.92 + ((idx * 7) % 12) / 100),
           src: SOURCES[idx % SOURCES.length],
           bgPos: BG_POSITIONS[idx % BG_POSITIONS.length],
           filter: FILTERS[idx % FILTERS.length],
@@ -322,7 +322,7 @@ export function VisualLab({ onClose }: { onClose: () => void }) {
       style={{
         position: 'fixed',
         inset: 0,
-        zIndex: 80,
+        zIndex: 9999,
         height: '100dvh',
         width: '100vw',
         overflow: 'hidden',

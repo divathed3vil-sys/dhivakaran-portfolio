@@ -4,11 +4,6 @@ import { useEffect, useRef } from 'react';
 import {
   MessageCircle,
   Mail,
-  Instagram,
-  Linkedin,
-  Twitter,
-  Dribbble,
-  Github,
 } from 'lucide-react';
 import { WaveText } from './wave-text';
 import { BokehField } from './bokeh-field';
@@ -20,7 +15,7 @@ const CONTACTS = [
     value: '+94 77 089 5006',
     href: 'https://wa.me/94770895006',
     icon: MessageCircle,
-    note: 'REPLIES MOST DAYS · COLOMBO TIME',
+    note: 'REPLIES MOST DAYS',
   },
   {
     label: 'EMAIL',
@@ -29,14 +24,6 @@ const CONTACTS = [
     icon: Mail,
     note: 'BRIEFS, INTROS, LONG MESSAGES WELCOME',
   },
-];
-
-const SOCIALS = [
-  { label: 'Instagram', href: 'https://instagram.com/dhivakaran', Icon: Instagram, handle: '@dhivakaran' },
-  { label: 'LinkedIn', href: 'https://linkedin.com/in/dhivakaran', Icon: Linkedin, handle: 'in/dhivakaran' },
-  { label: 'Dribbble', href: 'https://dribbble.com/dhivakaran', Icon: Dribbble, handle: 'dhivakaran' },
-  { label: 'Twitter / X', href: 'https://x.com/dhivakaran', Icon: Twitter, handle: '@dhivakaran' },
-  { label: 'GitHub', href: 'https://github.com/dhivakaran', Icon: Github, handle: 'dhivakaran' },
 ];
 
 /**
@@ -249,110 +236,26 @@ export function Contact() {
           ))}
         </div>
 
-        {/* socials */}
-        <div
-          style={{
-            paddingBlock: 'calc(32 * var(--px))',
-            borderBottom: '1.5px solid var(--rule)',
-          }}
-        >
-          <div className="text-mono text-label" style={{ color: 'var(--muted)', marginBottom: 'calc(20 * var(--px))' }}>
-            Socials
-          </div>
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 180px), 1fr))',
-              gap: 'calc(16 * var(--px))',
-            }}
-          >
-            {SOCIALS.map(({ label, href, Icon, handle }) => (
-              <a
-                key={label}
-                href={href}
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label={`${label} — ${handle}`}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.75rem',
-                  padding: '0.85rem 1rem',
-                  border: '1.5px solid var(--rule)',
-                  textDecoration: 'none',
-                  color: 'var(--ink)',
-                  transition: 'border-color 0.3s var(--ease-out-soft), color 0.3s var(--ease-out-soft)',
-                  minHeight: '56px',
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.borderColor = 'var(--brass)';
-                  e.currentTarget.style.color = 'var(--oxblood)';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.borderColor = 'var(--rule)';
-                  e.currentTarget.style.color = 'var(--ink)';
-                }}
-              >
-                <Icon size={18} strokeWidth={1.5} aria-hidden="true" />
-                <span style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.2 }}>
-                  <span
-                    className="text-mono text-label"
-                    style={{ color: 'var(--muted)' }}
-                  >
-                    {label.toUpperCase()}
-                  </span>
-                  <span
-                    style={{
-                      fontFamily: 'var(--font-fraunces), serif',
-                      fontSize: '0.95rem',
-                      letterSpacing: '-0.01em',
-                    }}
-                  >
-                    {handle}
-                  </span>
-                </span>
-              </a>
-            ))}
-          </div>
-        </div>
-
         {/* signature */}
         <div
           style={{
             marginTop: 'calc(40 * var(--px))',
             display: 'flex',
-            justifyContent: 'space-between',
+            justifyContent: 'flex-end',
             alignItems: 'flex-end',
-            flexWrap: 'wrap',
-            gap: '1rem',
           }}
         >
-          <div>
-            <div
-              style={{
-                fontFamily: 'var(--font-fraunces), serif',
-                fontStyle: 'italic',
-                fontWeight: 300,
-                fontSize: 'clamp(1.25rem, 2.5vw, 1.75rem)',
-                color: 'var(--ink)',
-                letterSpacing: '-0.02em',
-              }}
-            >
-              — Diva
-            </div>
-            <div
-              className="text-mono text-label"
-              style={{ color: 'var(--muted)', marginTop: '0.5rem' }}
-            >
-              COLOMBO · 06.47 N 79.86 E
-            </div>
-          </div>
           <div
-            className="text-mono text-label"
-            style={{ color: 'var(--muted)', textAlign: 'right', lineHeight: 1.6 }}
+            style={{
+              fontFamily: 'var(--font-fraunces), serif',
+              fontStyle: 'italic',
+              fontWeight: 300,
+              fontSize: 'clamp(1.25rem, 2.5vw, 1.75rem)',
+              color: 'var(--ink)',
+              letterSpacing: '-0.02em',
+            }}
           >
-            <div>PRINT NO. 0250</div>
-            <div>EDITION OF ONE</div>
+            - Diva
           </div>
         </div>
       </div>

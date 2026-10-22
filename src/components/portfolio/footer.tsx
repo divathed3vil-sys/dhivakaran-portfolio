@@ -117,9 +117,7 @@ export function Footer() {
                 maxWidth: '32ch',
               }}
             >
-              Your vision, my creativity.
-              <br />
-              Let\u2019s make it real.
+              Your vision, my creativity - let’s make it real.
             </p>
           </div>
 
@@ -132,16 +130,16 @@ export function Footer() {
                 fontSize: 'clamp(1.125rem, 2vw, 1.5rem)',
                 color: 'var(--canvas)',
                 textDecoration: 'none',
-                borderBottom: '1.5px solid rgba(184, 153, 104, 0.4)',
+                borderBottom: '1.5px solid rgba(214, 41, 41, 0.4)',
                 paddingBottom: '2px',
                 transition: 'border-color 0.3s var(--ease-out-soft)',
                 letterSpacing: '-0.01em',
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.borderColor = 'var(--brass)';
+                e.currentTarget.style.borderColor = 'var(--accent)';
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.borderColor = 'rgba(184, 153, 104, 0.4)';
+                e.currentTarget.style.borderColor = 'rgba(214, 41, 41, 0.4)';
               }}
             >
               dhivakaranmohanraj@gmail.com
@@ -168,32 +166,32 @@ export function Footer() {
           >
             <span>© 0250 DHIVAKARAN M®</span>
             <span>ALL FRAMES RESERVED</span>
-            <span style={{ opacity: 0.6 }}>BUILT BY HAND · COLOMBO</span>
+            <span style={{ opacity: 0.6 }}>Thanks to ZLM and ARENA</span>
           </div>
           <a
             href="#top"
             aria-label="Back to top"
             className="text-mono text-label"
             style={{
-              color: 'var(--brass-soft)',
+              color: 'var(--accent-soft)',
               textDecoration: 'none',
               display: 'inline-flex',
               alignItems: 'center',
               gap: '0.5rem',
-              border: '1.5px solid rgba(184, 153, 104, 0.4)',
+              border: '1.5px solid rgba(214, 41, 41, 0.4)',
               padding: '0.5rem 0.9rem',
               transition: 'border-color 0.3s var(--ease-out-soft), color 0.3s var(--ease-out-soft)',
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.borderColor = 'var(--brass)';
+              e.currentTarget.style.borderColor = 'var(--accent)';
               e.currentTarget.style.color = 'var(--canvas)';
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.borderColor = 'rgba(184, 153, 104, 0.4)';
-              e.currentTarget.style.color = 'var(--brass-soft)';
+              e.currentTarget.style.borderColor = 'rgba(214, 41, 41, 0.4)';
+              e.currentTarget.style.color = 'var(--accent-soft)';
             }}
           >
-            ↑ BACK TO FRAME 0000
+            ↑ Back to top
           </a>
         </div>
       </div>

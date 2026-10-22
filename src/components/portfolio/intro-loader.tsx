@@ -145,18 +145,6 @@ export function IntroLoader() {
         ))}
       </div>
 
-      {/* sub-line removed — keep loader minimal */}
-      <div
-        className="text-label"
-        style={{
-          color: 'var(--night-muted)',
-          opacity: 0.5,
-          marginTop: '0.5rem',
-        }}
-      >
-        0250 ASA · DAYLIGHT
-      </div>
-
       <style>{`
         @keyframes iris-pulse {
           0%, 100% { transform: scale(0.4); opacity: 0.4; }

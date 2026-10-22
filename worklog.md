@@ -364,3 +364,77 @@ Verification (agent-browser):
 Stage Summary:
 - The Selected Work ("Selected frames") section is now fully sharp when in view — no tilt-shift blur, no heading-rack blur. All other section titles are also sharp (the heading-rack blur removal applies globally, but only the variable-weight is kept).
 - The only blur that remains anywhere: the global scroll-activated 0.4px blur (only while page is moving, clears on stop), the permanent 0.6px edge vignette blur (only at extreme edges), and random 0.4px flickers (very brief, very subtle). None of these blur content the user is reading while stationary on a section.
+
+---
+Task ID: 41-50
+Agent: main-orchestrator
+Task: Major content + design refactor per user's detailed brief — hero, about, selected work, visual lab card, skillset→experiences, contact, footer, visual lab overlay.
+
+Work Log:
+- about_image.png copied to public/images/about.png (1086×1448, user's about portrait)
+- Hero rewritten:
+  - h1 fontWeight 500→700, fontSize clamp(3rem,9vw,9rem) — bolder + larger
+  - Text block moved from bottom (flex-end) to face-level (flex-start + paddingTop 22vh)
+  - Removed: eyebrow "Dhivakaran M — Portfolio", frame counter "FRAME 0000 / 0024", "SCROLL TO DEVELOP", vertical rail, counterRef
+  - Subline: "A designer working out of Colombo." → "A designer working from the heart."
+  - Darkening gradient changed to left-weighted (subject on right, text legibility on left)
+  - Kept: focus-pull on scroll, cursor key light, closing hairline
+- About rewritten:
+  - Paragraph: em-dash (—) → hyphen (-), user's exact text (without the last line which is now the standout)
+  - Standout line extracted: "Your vision, my creativity - let's make it real." — separated via top hairline + larger Fraunces + accent-red italic on "let's make it real."
+  - Float portrait: portrait.png → about.png, bg-position 50% 35%
+  - REMOVED: entire collaborator/clients + two opposing marquees section
+  - Signature: "— Diva" → "- Diva" (hyphen)
+- Selected Work rewritten (grid only):
+  - Removed: accordion, layout toggle (grid/accordion), Z-parallax, neg-flash, activeIdx state, all placeholder projects (Atelier North etc.), "Five of five", "VIEW FULL INDEX"
+  - 3 category grids: Book Covers (4 cells), Posters (4 cells), Thumbnails (3 cells)
+  - Each cell: grayscale image + frame label + halftone + scratch-host
+  - Kept: bloom, heading rack
+- Visual Lab Card fully redesigned:
+  - Blurry glimpse of the lab (12-tile grid, blur 22px default → 6px on hover)
+  - Darkening overlay adapts on hover
+  - "Enter The Visual Lab" text: blur(8px) + translateY(10px) default → sharp + settled on hover (phase reveal)
+  - No scroll reaction. Mouse-hover only. role=button, click opens overlay
+- Skillset → "Experiences":
+  - Title: "The Cabinet of nine" → "Experiences / across craft & code"
+  - Removed: 9 placeholder skills (Brand Design, Production, etc.)
+  - 3 groups with 11 real skills:
+    - Software: Photoshop, Premiere Pro, After Effects
+    - Creative: Poster Design, Thumbnail Design, Video Editing, Motion Graphics, VFX, Sound Design
+    - IT: Programming & AI, Linux (descriptions from user's IT profile)
+  - Kept: dolly-zoom, bokeh, bloom, specimen cards, exposure meters, anamorphic flare
+- Contact cleaned:
+  - REMOVED: Socials section entirely (Instagram/LinkedIn/Dribbble/Twitter/GitHub), unused icon imports, SOCIALS array
+  - REMOVED: "PRINT NO. 0250" + "EDITION OF ONE" + "COLOMBO · 06.47 N 79.86 E"
+  - WhatsApp note: "REPLIES MOST DAYS · COLOMBO TIME" → "REPLIES MOST DAYS"
+  - Signature: "— Diva" → "- Diva" (hyphen)
+  - Kept: WhatsApp +94 77 089 5006, email dhivakaranmohanraj@gmail.com, WaveText headline, bloom, bokeh
+- Footer fixed:
+  - REMOVED: "BUILT BY HAND · COLOMBO"
+  - ADDED: "Thanks to ZLM and ARENA" (AI acknowledgment per user request)
+  - FIXED tagline bug: "Let\u2019s make it real." (literal \u2019 in JSX text — the "error" user saw) → "Your vision, my creativity - let's make it real." (real apostrophe, regular hyphen, one line)
+  - "↑ BACK TO FRAME 0000" → "↑ Back to top"
+  - Email border/hover colors: old brass rgba → accent-red rgba (palette consistency)
+- Intro loader: removed "0250 ASA · DAYLIGHT" filler subline
+- Visual Lab overlay:
+  - Denser grid: cellW 340→290, tileW 260→280 (sizeJitter 0.78→0.92), gap reduced from ~80px to ~10px
+  - z-index 80 → 9999 (above the blur overlays at 9988-9989, so CLOSE/EXIT buttons are clickable — the "buttons not working" issue)
+  - Verified: CLOSE button click closes the overlay (labClosed: true)
+- Nav: "Skillset" label → "Experiences" (href still #skillset); menu footer "Colombo..." → "Dhivakaran M"
+
+Verification (agent-browser):
+- Lint: 0 errors, 2 font-link warnings (unchanged)
+- heroName "Dhivakaran M", heroH1Weight "700" (bolder), heroSubline "A designer working from the heart.", no SCROLL TO DEVELOP, no FRAME 0000
+- aboutTitle "A little about me", no collaborators (ATELIER NORTH gone), standout present, signature "- Diva", no em-dash
+- workTitle "Selected frames", no accordion, no toggle, 3 categories, no "Five of five"
+- expTitle "Experiences across craft & code", 11 cards, no "Brand Design" placeholder
+- contact: no Socials, no PRINT NO, no COLOMBO (verified bodyHasColombo: false), signature "- Diva"
+- footer: no BUILT BY HAND, "Thanks to ZLM and ARENA" present, tagline "Your vision, my creativity - let's make it real." (no \u2019 literal bug)
+- labCardText "Enter The Visual Lab"
+- Visual Lab overlay: z-index 9999, 56 tiles, firstTileW 257.6 (denser), CLOSE button works (labClosed: true)
+- No literal \u2019 escape bug anywhere in rendered text
+
+Stage Summary:
+- Major refactor complete: hero (bolder, face-level, minimal), about (standout line, about.png, no collaborators), selected work (3 category grids, no accordion), visual lab card (blurry glimpse + hover reveal), skillset→experiences (3 groups, 11 real skills), contact (no socials/PRINT/COLOMBO), footer (Thanks to ZLM and ARENA, tagline fixed), visual lab overlay (denser + buttons fixed).
+- All colors use universal CSS vars (continuity preserved). No LLM names in rendered text. All filler small text removed per user request.
+- Ready for next content upload (real project images for the 3 category grids, real skill details, etc.).

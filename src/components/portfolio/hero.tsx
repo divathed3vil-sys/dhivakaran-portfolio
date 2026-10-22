@@ -1,28 +1,18 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
-import { VerticalRail } from './vertical-rail';
 
 /**
- * Hero — full-bleed integrated portrait.
- * The portrait IS the page: full-bleed object-cover with a brass color-grade
- * and grain so it reads as canvas, not as a dropped photo.
- *
- * Inventions:
- *  - 3D rise reveal on load (driven by html[data-loading])
- *  - Focus pull on scroll: portrait defocuses as you leave the hero (camera pull)
- *  - Frame counter in the corner synced to scroll (film-camera feel)
- *  - Cursor-follow brass key light (soft radial)
- *  - Name parallaxes up faster than portrait (parallax depth)
+ * Hero — full-bleed portrait. Subject on the right, name at face-level on the left.
+ * Bold, minimal: just the name + a humble subline. No filler chrome.
  */
 export function Hero() {
   const sectionRef = useRef<HTMLElement>(null);
   const portraitRef = useRef<HTMLDivElement>(null);
   const nameRef = useRef<HTMLDivElement>(null);
-  const counterRef = useRef<HTMLSpanElement>(null);
   const keyLightRef = useRef<HTMLDivElement>(null);
 
-  // scroll-driven: focus pull + parallax + frame counter
+  // scroll-driven: focus pull + name parallax
   useEffect(() => {
     if (typeof window === 'undefined') return;
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
@@ -33,19 +23,17 @@ export function Hero() {
       const section = sectionRef.current;
       const portrait = portraitRef.current;
       const name = nameRef.current;
-      const counter = counterRef.current;
       if (!section) return;
 
       const rect = section.getBoundingClientRect();
       const h = section.offsetHeight;
-      // progress 0 → 1 as hero scrolls out of view
       const p = Math.max(0, Math.min(1, -rect.top / h));
 
-      // focus pull: blur 0 → 8px, scale 1 → 1.08 as we leave
+      // focus pull: portrait defocuses as we leave the hero
       if (portrait) {
         const blur = p * 8;
         const scale = 1 + p * 0.08;
-        const ty = p * 80; // portrait drifts down slightly
+        const ty = p * 80;
         portrait.style.filter = `saturate(0.82) blur(${blur}px) brightness(${0.94 - p * 0.25}) contrast(${1.05 - p * 0.1})`;
         portrait.style.transform = `translate3d(0, ${ty * 0.4}px, 0) scale(${scale})`;
       }
@@ -54,12 +42,6 @@ export function Hero() {
       if (name) {
         name.style.transform = `translate3d(0, ${-p * 120}px, 0)`;
         name.style.opacity = String(1 - p * 0.6);
-      }
-
-      // frame counter: 0001 → 0024 as we leave the hero
-      if (counter) {
-        const frame = Math.round(p * 24);
-        counter.textContent = String(frame).padStart(4, '0');
       }
     };
 
@@ -116,9 +98,9 @@ export function Hero() {
         overflow: 'hidden',
         background: 'var(--night)',
       }}
-      aria-label="Dhivakaran — opening"
+      aria-label="Dhivakaran M — opening"
     >
-      {/* portrait layer — full-bleed. Subject on the right, text overlays the left negative space. */}
+      {/* portrait layer — subject on the right */}
       <div
         ref={portraitRef}
         data-hero-portrait=""
@@ -135,29 +117,16 @@ export function Hero() {
         }}
       />
 
-      {/* darkening gradient — for text legibility at the bottom */}
+      {/* darkening gradient for text legibility on the left */}
       <div
         data-hero-backdrop=""
         style={{
           position: 'absolute',
           inset: 0,
           background:
-            'linear-gradient(180deg, rgba(10, 10, 10, 0.35) 0%, rgba(10, 10, 10, 0.05) 35%, rgba(10, 10, 10, 0.15) 60%, rgba(10, 10, 10, 0.9) 100%)',
+            'linear-gradient(90deg, rgba(10, 10, 10, 0.55) 0%, rgba(10, 10, 10, 0.15) 35%, transparent 55%, rgba(10, 10, 10, 0.2) 100%)',
           transformOrigin: '66% 100%',
           transition: 'transform 0.95s var(--ease-reveal)',
-          pointerEvents: 'none',
-        }}
-      />
-
-      {/* subtle red accent tint — very faint, cinematic */}
-      <div
-        aria-hidden="true"
-        style={{
-          position: 'absolute',
-          inset: 0,
-          background:
-            'linear-gradient(135deg, rgba(214, 41, 41, 0.06) 0%, transparent 50%, rgba(10, 10, 10, 0.1) 100%)',
-          mixBlendMode: 'overlay',
           pointerEvents: 'none',
         }}
       />
@@ -175,7 +144,7 @@ export function Hero() {
         }}
       />
 
-      {/* copy block */}
+      {/* copy block — at face level on the left */}
       <div
         ref={nameRef}
         className="canvas-max"
@@ -185,93 +154,46 @@ export function Hero() {
           height: '100%',
           display: 'flex',
           flexDirection: 'column',
-          justifyContent: 'flex-end',
-          paddingBottom: 'calc(54 * var(--px))',
+          justifyContent: 'flex-start',
+          paddingTop: '22vh',
         }}
       >
-        {/* eyebrow */}
-        <div
-          data-hero-3d-lines=""
-          className="text-label"
-          style={{
-            color: 'var(--accent-soft)',
-            marginBottom: '1.5rem',
-            transition: 'transform 0.95s var(--ease-reveal) 0.34s, opacity 0.7s var(--ease-opacity) 0.34s',
-          }}
-        >
-          Dhivakaran M — Portfolio
-        </div>
-
-        {/* name */}
+        {/* name — bold */}
         <h1
           data-hero-3d=""
-          className="text-display"
           style={{
             color: 'var(--canvas)',
             margin: 0,
             lineHeight: 0.88,
             maxWidth: '14ch',
+            fontFamily: 'var(--font-fraunces), serif',
+            fontWeight: 700,
+            fontSize: 'clamp(3rem, 9vw, 9rem)',
+            letterSpacing: '-0.03em',
             transition: 'transform 0.95s var(--ease-reveal) 0.14s, opacity 0.7s var(--ease-opacity) 0.14s',
             textShadow: '0 2px 40px rgba(10, 10, 10, 0.6)',
           }}
         >
           Dhivakaran{' '}
-          <em style={{ fontStyle: 'italic', fontWeight: 300, color: 'var(--accent-soft)' }}>M</em>
+          <em style={{ fontStyle: 'italic', fontWeight: 700, color: 'var(--accent-soft)' }}>M</em>
         </h1>
 
-        {/* subline */}
+        {/* subline — humble */}
         <p
           data-hero-3d-lines=""
           className="text-body-lg"
           style={{
-            color: 'var(--night-body)',
-            marginBlock: '1.5rem 0',
-            maxWidth: '38ch',
+            color: 'var(--canvas)',
+            opacity: 0.8,
+            marginBlock: '1.5rem 0 0',
+            maxWidth: '40ch',
             transition: 'transform 0.95s var(--ease-reveal) 0.52s, opacity 0.7s var(--ease-opacity) 0.52s',
           }}
         >
           Brands, products &amp; the art in between.
           <br />
-          A designer working out of Colombo.
+          A designer working from the heart.
         </p>
-      </div>
-
-      <VerticalRail text="DHIVAKARAN M · PORTFOLIO · 0250" side="right" />
-
-      {/* frame counter — corner */}
-      <div
-        className="leader-track text-label"
-        style={{
-          position: 'absolute',
-          top: '5rem',
-          right: '1.5rem',
-          color: 'var(--canvas)',
-          opacity: 0.8,
-          zIndex: 3,
-          textAlign: 'right',
-          lineHeight: 1.5,
-        }}
-      >
-        <div>FRAME <span ref={counterRef}>0000</span> / 0024</div>
-      </div>
-
-      {/* scroll hint — bottom left */}
-      <div
-        className="text-label"
-        style={{
-          position: 'absolute',
-          bottom: '1.5rem',
-          left: '1.5rem',
-          color: 'var(--canvas)',
-          opacity: 0.6,
-          zIndex: 3,
-          display: 'flex',
-          alignItems: 'center',
-          gap: '0.5rem',
-        }}
-      >
-        <span style={{ display: 'inline-block', width: '24px', height: '1.5px', background: 'var(--accent)' }} />
-        SCROLL TO DEVELOP
       </div>
 
       {/* closing hairline — accent red */}
