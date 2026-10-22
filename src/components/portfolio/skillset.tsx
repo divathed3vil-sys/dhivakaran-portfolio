@@ -1,6 +1,8 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { BokehField } from './bokeh-field';
+import { useBloom, useHeadingRack } from './lib/use-bloom-rack';
 
 type Skill = {
   index: string;
@@ -120,7 +122,33 @@ const SKILLS: Skill[] = [
 export function Skillset() {
   const sectionRef = useRef<HTMLElement>(null);
   const cardRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const bloomRef = useBloom<HTMLDivElement>();
+  const titleRef = useHeadingRack<HTMLHeadingElement>();
   const [exposedCards, setExposedCards] = useState<Set<number>>(new Set());
+
+  // #16 dolly-zoom on section entry
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const section = sectionRef.current;
+    if (!section) return;
+    const inner = section.querySelector('[data-dolly]');
+    if (!inner) return;
+    inner.setAttribute('data-dolly', 'pending');
+    const io = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((e) => {
+          if (e.isIntersecting && e.intersectionRatio > 0.25) {
+            inner.setAttribute('data-dolly', 'active');
+            io.unobserve(section);
+          }
+        });
+      },
+      { threshold: [0, 0.25] }
+    );
+    io.observe(section);
+    return () => io.disconnect();
+  }, []);
 
   useEffect(() => {
     const io = new IntersectionObserver(
@@ -159,7 +187,7 @@ export function Skillset() {
       }}
       aria-label="Skillset — the developing room"
     >
-      {/* ambient brass glow */}
+      {/* ambient red glow */}
       <div
         aria-hidden="true"
         style={{
@@ -172,29 +200,17 @@ export function Skillset() {
           maxWidth: '900px',
           maxHeight: '900px',
           background:
-            'radial-gradient(circle, rgba(184, 153, 104, 0.08) 0%, transparent 60%)',
+            'radial-gradient(circle, rgba(214, 41, 41, 0.06) 0%, transparent 60%)',
           pointerEvents: 'none',
         }}
       />
 
-      <div className="canvas-max" style={{ position: 'relative' }}>
-        {/* eyebrow */}
-        <div
-          className="text-label"
-          style={{
-            color: 'var(--night-muted)',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.75rem',
-            marginBottom: 'calc(28 * var(--px))',
-          }}
-        >
-          <span style={{ display: 'inline-block', width: '24px', height: '1.5px', background: 'var(--night-muted)' }} />
-          ( THE SKILLSET — A DEVELOPING ROOM )
-        </div>
+      <BokehField count={8} />
 
+      <div ref={bloomRef} data-dolly="" className="canvas-max" style={{ position: 'relative' }}>
         {/* title */}
         <h2
+          ref={titleRef}
           className="text-section"
           style={{
             color: 'var(--canvas)',
@@ -208,7 +224,7 @@ export function Skillset() {
             style={{
               fontStyle: 'italic',
               fontWeight: 300,
-              color: 'var(--brass-soft)',
+              color: 'var(--accent-soft)',
             }}
           >
             of nine
@@ -418,8 +434,8 @@ export function Skillset() {
             paddingTop: 'calc(20 * var(--px))',
           }}
         >
-          <span>( PLACEHOLDERS — REAL SKILLSET INCOMING )</span>
-          <span>NINE OF NINE · ALL EXPOSED</span>
+          <span>Nine of nine</span>
+          <span>all exposed</span>
         </div>
       </div>
     </section>

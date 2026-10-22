@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
+import { VerticalRail } from './vertical-rail';
 
 /**
  * Hero — full-bleed integrated portrait.
@@ -198,7 +199,7 @@ export function Hero() {
             transition: 'transform 0.95s var(--ease-reveal) 0.34s, opacity 0.7s var(--ease-opacity) 0.34s',
           }}
         >
-          ( DESIGNER · BRAND · PRODUCT · ART DIRECTION )
+          Dhivakaran M — Portfolio
         </div>
 
         {/* name */}
@@ -209,12 +210,13 @@ export function Hero() {
             color: 'var(--canvas)',
             margin: 0,
             lineHeight: 0.88,
-            maxWidth: '12ch',
+            maxWidth: '14ch',
             transition: 'transform 0.95s var(--ease-reveal) 0.14s, opacity 0.7s var(--ease-opacity) 0.14s',
-            textShadow: '0 2px 40px rgba(16, 14, 11, 0.6)',
+            textShadow: '0 2px 40px rgba(10, 10, 10, 0.6)',
           }}
         >
-          Dhivakaran
+          Dhivakaran{' '}
+          <em style={{ fontStyle: 'italic', fontWeight: 300, color: 'var(--accent-soft)' }}>M</em>
         </h1>
 
         {/* subline */}
@@ -230,9 +232,11 @@ export function Hero() {
         >
           Brands, products &amp; the art in between.
           <br />
-          A designer working out of Colombo — scroll to expose the print.
+          A designer working out of Colombo.
         </p>
       </div>
+
+      <VerticalRail text="DHIVAKARAN M · PORTFOLIO · 0250" side="right" />
 
       {/* frame counter — corner */}
       <div
@@ -249,7 +253,6 @@ export function Hero() {
         }}
       >
         <div>FRAME <span ref={counterRef}>0000</span> / 0024</div>
-        <div style={{ opacity: 0.6, marginTop: '0.25rem' }}>DEVELOPING ROOM</div>
       </div>
 
       {/* scroll hint — bottom left */}

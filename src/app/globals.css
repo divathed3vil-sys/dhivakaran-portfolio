@@ -538,3 +538,312 @@
     min-width: 44px;
   }
 }
+
+/* ============================================================================
+   8. EFFECTS LAYER — non-destructive, layered on top of existing sections.
+   Each effect has a reduced-motion + touch fallback. Intensity capped.
+   ============================================================================ */
+
+/* ---- #14 scroll-velocity motion blur (whole page, momentary) ---- */
+body {
+  transition: filter 0.2s linear;
+}
+body[data-scroll-fast="true"] {
+  filter: blur(2px);
+}
+@media (prefers-reduced-motion: reduce) {
+  body[data-scroll-fast="true"] { filter: none !important; }
+}
+
+/* ---- #18 magnetic cursor (subtle attraction + soft trailing glow) ---- */
+.magnetic-glow {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 9990;
+  background: radial-gradient(circle, rgba(214, 41, 41, 0.18), transparent 70%);
+  transform: translate(-50%, -50%);
+  transition: transform 0.18s var(--ease-out-soft), opacity 0.3s var(--ease-out-soft);
+  opacity: 0;
+  mix-blend-mode: screen;
+}
+@media (hover: hover) and (pointer: fine) {
+  body[data-cursor-ready] .magnetic-glow { opacity: 1; }
+}
+@media (pointer: coarse), (prefers-reduced-motion: reduce) {
+  .magnetic-glow { display: none !important; }
+}
+
+/* ---- #8 halftone overlay (static, subtle, on images) ---- */
+.halftone {
+  position: relative;
+}
+.halftone::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='6' height='6'><circle cx='3' cy='3' r='0.7' fill='rgba(10,10,10,0.18)'/></svg>");
+  background-size: 4px 4px;
+  mix-blend-mode: multiply;
+  opacity: 0.35;
+  z-index: 1;
+}
+
+/* ---- #6 variable-focus hover (hero/About portraits; racks blur 8px→0) ---- */
+.var-focus {
+  filter: blur(3px);
+  transition: filter 0.6s var(--ease-out-soft), transform 0.6s var(--ease-out-soft);
+}
+.var-focus:hover,
+.var-focus:focus-visible {
+  filter: blur(0px);
+  transform: scale(1.01);
+}
+@media (prefers-reduced-motion: reduce) {
+  .var-focus { filter: none !important; transform: none !important; }
+}
+
+/* ---- #23 developing-tray bloom (section content entry) ---- */
+[data-bloom] {
+  clip-path: circle(0% at 50% 50%);
+  filter: blur(8px) brightness(1.15);
+  opacity: 0;
+  transition: clip-path 0.7s var(--ease-reveal),
+              filter 0.7s var(--ease-reveal),
+              opacity 0.5s var(--ease-opacity);
+}
+[data-bloom][data-bloomed] {
+  clip-path: circle(150% at 50% 50%);
+  filter: blur(0px) brightness(1);
+  opacity: 1;
+}
+@media (prefers-reduced-motion: reduce) {
+  [data-bloom] {
+    clip-path: none !important;
+    filter: none !important;
+    opacity: 1 !important;
+  }
+}
+
+/* ---- #2 focus rack on section headings (synced with #24 weight) ---- */
+[data-rack] {
+  transition: filter 0.5s var(--ease-out-soft), font-weight 0.5s var(--ease-out-soft);
+  will-change: filter;
+}
+[data-rack="out"] {
+  filter: blur(4px);
+}
+[data-rack="in"] {
+  filter: blur(0px);
+}
+
+/* ---- #24 variable font weight on scroll (Fraunces 300→700) ---- */
+/* Fraunces loaded via Google Fonts supports the full weight range.
+   The weight is driven by scroll progress via inline style or data attribute. */
+
+/* ---- #7 light-leak sweep (subtle, at key section boundaries) ---- */
+.light-leak {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9991;
+  opacity: 0;
+  background: linear-gradient(
+    115deg,
+    transparent 30%,
+    rgba(214, 41, 41, 0.08) 45%,
+    rgba(239, 68, 68, 0.05) 55%,
+    transparent 70%
+  );
+  mix-blend-mode: screen;
+}
+.light-leak.sweeping {
+  animation: light-leak-sweep 0.9s var(--ease-out-soft);
+}
+@keyframes light-leak-sweep {
+  0% { opacity: 0; transform: translateX(-30%); }
+  30% { opacity: 1; }
+  70% { opacity: 1; }
+  100% { opacity: 0; transform: translateX(30%); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .light-leak { display: none !important; }
+}
+
+/* ---- #1 tilt-shift miniature (Selected Work only) ---- */
+.tilt-shift .tilt-shift-inner {
+  transition: filter 0.4s var(--ease-out-soft);
+}
+.tilt-shift[data-tilt="active"] .tilt-shift-inner {
+  filter: blur(0px);
+}
+.tilt-shift[data-tilt="idle"] .tilt-shift-inner {
+  filter: blur(0px);
+}
+.tilt-shift[data-tilt="edge"] .tilt-shift-inner {
+  filter: blur(3px);
+}
+@media (prefers-reduced-motion: reduce) {
+  .tilt-shift .tilt-shift-inner { filter: none !important; }
+}
+
+/* ---- #10 scratched-emulsion hover (Selected Work covers) ---- */
+.scratch-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='400' height='300'><filter id='s'><feTurbulence type='fractalNoise' baseFrequency='0.02 0.6' numOctaves='2' seed='5'/><feColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.6 0'/></filter><rect width='100%25' height='100%25' filter='url(%23s)'/></svg>");
+  background-size: 400px 300px;
+  mix-blend-mode: screen;
+  transition: opacity 0.4s var(--ease-out-soft);
+}
+.scratch-host:hover .scratch-overlay,
+.scratch-host:focus-visible .scratch-overlay {
+  opacity: 0.7;
+  animation: scratch-drift 4s linear infinite;
+}
+@keyframes scratch-drift {
+  from { background-position: 0 0; }
+  to { background-position: -400px 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .scratch-overlay { display: none !important; }
+}
+
+/* ---- #28 negative-invert flash on Work row activation (400ms) ---- */
+.neg-flash {
+  animation: neg-flash 0.4s var(--ease-out-soft);
+}
+@keyframes neg-flash {
+  0% { filter: grayscale(1) invert(0); }
+  40% { filter: grayscale(0.3) invert(0.3) hue-rotate(180deg); }
+  100% { filter: grayscale(1) invert(0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .neg-flash { animation: none !important; }
+}
+
+/* ---- #16 dolly-zoom (Skillset entry) ---- */
+[data-dolly] {
+  transition: transform 0.8s var(--ease-out-soft);
+  will-change: transform;
+}
+[data-dolly="pending"] {
+  transform: scale(0.97);
+}
+[data-dolly="active"] {
+  transform: scale(1);
+}
+@media (prefers-reduced-motion: reduce) {
+  [data-dolly] { transform: none !important; }
+}
+
+/* ---- #4 bokeh dust motes (dark sections) ---- */
+.bokeh-field {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 1;
+}
+.bokeh-mote {
+  position: absolute;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.5), transparent 70%);
+  filter: blur(8px);
+  opacity: 0.12;
+  animation: bokeh-drift linear infinite;
+}
+@keyframes bokeh-drift {
+  0% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(var(--bx, 40px), var(--by, -30px)) scale(1.15); }
+  100% { transform: translate(0, 0) scale(1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .bokeh-mote { animation: none !important; opacity: 0.08 !important; }
+}
+
+/* ---- #21 viewfinder cursor (Visual Lab only) ---- */
+.viewfinder {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 180px;
+  height: 120px;
+  pointer-events: none;
+  z-index: 9995;
+  transform: translate(-50%, -50%);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.4);
+  opacity: 0;
+  transition: opacity 0.3s var(--ease-out-soft);
+  mix-blend-mode: difference;
+}
+.viewfinder::before,
+.viewfinder::after {
+  content: "";
+  position: absolute;
+  background: rgba(255, 255, 255, 0.6);
+}
+.viewfinder::before {
+  top: 50%;
+  left: 30%;
+  right: 30%;
+  height: 1px;
+}
+.viewfinder::after {
+  left: 50%;
+  top: 30%;
+  bottom: 30%;
+  width: 1px;
+}
+.viewfinder .vf-label {
+  position: absolute;
+  top: -22px;
+  left: 0;
+  font-family: var(--font-mono), monospace;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  color: rgba(255, 255, 255, 0.7);
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+body[data-vf-active="true"] .viewfinder { opacity: 1; }
+body[data-vf-active="true"] { cursor: none; }
+@media (pointer: coarse), (prefers-reduced-motion: reduce) {
+  .viewfinder { display: none !important; }
+}
+
+/* ---- #26 vertical-RL credit rail (Hero side only) ---- */
+.vertical-rail {
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  font-family: var(--font-mono), monospace;
+  font-size: 0.7rem;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--canvas);
+  opacity: 0.45;
+}
+
+/* ---- #30 contact-sheet grid (Selected Work alt layout) ---- */
+.contact-sheet-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr));
+  gap: calc(20 * var(--px));
+}
+.contact-sheet-cell {
+  position: relative;
+  aspect-ratio: 3 / 2;
+  overflow: hidden;
+  border: 6px solid var(--canvas);
+  box-shadow: 0 8px 24px -8px rgba(10, 10, 10, 0.3);
+  cursor: pointer;
+}
+

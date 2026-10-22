@@ -68,7 +68,7 @@ export function Nav({ onEnterLab }: { onEnterLab?: () => void }) {
             }}
             aria-label="Dhivakaran — back to top"
           >
-            <span>DHIVAKARAN</span>
+            <span>DHIVAKARAN M</span>
             <span style={{ fontSize: '0.7em', verticalAlign: 'super' }}>®</span>
           </a>
 
@@ -159,12 +159,6 @@ export function Nav({ onEnterLab }: { onEnterLab?: () => void }) {
         }}
       >
         <div>
-          <div
-            className="text-label"
-            style={{ color: 'var(--night-muted)', marginBottom: '2.5rem' }}
-          >
-            ( MENU — DHIVAKARAN® )
-          </div>
           <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
             {MENU_LINKS.map((link, i) => {
               const handle = (e: React.MouseEvent) => {
@@ -208,8 +202,7 @@ export function Nav({ onEnterLab }: { onEnterLab?: () => void }) {
           className="text-label"
           style={{ color: 'var(--night-muted)', lineHeight: 1.6 }}
         >
-          <div style={{ marginBottom: '0.5rem' }}>COLOMBO · 06.47 N 79.86 E</div>
-          <div>SCROLL TO EXPOSE THE PRINT</div>
+          <div>Colombo · 06.47 N 79.86 E</div>
         </div>
       </aside>
     </>

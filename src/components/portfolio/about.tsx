@@ -2,6 +2,7 @@
 
 import { useRef } from 'react';
 import { WaveText } from './wave-text';
+import { useBloom, useHeadingRack } from './lib/use-bloom-rack';
 
 const ABOUT_PARAGRAPH =
   'I work between brand systems and product surfaces, between art direction and the quiet mechanics of motion. Most days the studio is a developing room — a little dark, a little warm, a few prints hanging to dry. An idea walks in half-formed; I hold it under the light until it stops moving. Then we lay it down on paper. This is the slow part, the honest part, the part where a thing either becomes itself, or doesn\u2019t. There is no rush, but there is no pause either — the room is always open, and the next print is always somewhere on its way in.';
@@ -33,6 +34,8 @@ const COLLABORATORS = [
 export function About() {
   const sectionRef = useRef<HTMLElement>(null);
   const travelRef = useRef<HTMLDivElement>(null);
+  const bloomRef = useBloom<HTMLDivElement>();
+  const titleRef = useHeadingRack<HTMLHeadingElement>();
 
   return (
     <section
@@ -57,26 +60,27 @@ export function About() {
             justifyContent: 'flex-start',
           }}
         >
-          <div className="canvas-max" style={{ width: '100%' }}>
-            {/* eyebrow */}
-            <div
-              className="text-label"
+          <div ref={bloomRef} className="canvas-max" style={{ width: '100%' }}>
+            {/* title */}
+            <h2
+              ref={titleRef}
+              className="text-section"
               style={{
-                color: 'var(--muted)',
-                marginBottom: 'calc(28 * var(--px))',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.75rem',
+                color: 'var(--ink)',
+                margin: '0 0 calc(28 * var(--px))',
+                maxWidth: '14ch',
               }}
             >
-              <span style={{ display: 'inline-block', width: '24px', height: '1.5px', background: 'var(--muted)' }} />
-              ( STUDIO · A LITTLE ROOM TO WANDER )
-            </div>
+              A little room
+              <br />
+              <em style={{ fontStyle: 'italic', fontWeight: 300, color: 'var(--muted)' }}>to wander</em>
+            </h2>
 
             {/* paragraph with floating portrait insert */}
             <div style={{ position: 'relative', maxWidth: 'calc(1129 * var(--px))' }}>
               {/* floating portrait insert — inside text flow */}
               <div
+                className="halftone var-focus"
                 style={{
                   float: 'left',
                   width: '19%',
@@ -88,7 +92,7 @@ export function About() {
                   backgroundSize: 'cover',
                   backgroundPosition: '50% 30%',
                   transform: 'rotate(-6deg)',
-                  boxShadow: '0 18px 40px -12px rgba(11, 10, 8, 0.28)',
+                  boxShadow: '0 18px 40px -12px rgba(10, 10, 10, 0.28)',
                   filter: 'grayscale(1) contrast(1.08) brightness(0.92)',
                   shapeOutside: 'circle(50%)',
                   borderRadius: '2px',
@@ -125,13 +129,13 @@ export function About() {
                   lineHeight: 1.1,
                 }}
               >
-                A little room to wander.
+                The room is always open.
               </span>
               <span
                 className="text-label"
                 style={{ color: 'var(--muted)' }}
               >
-                — STUDIO NOTE, 0250
+                — 0250
               </span>
             </div>
           </div>
@@ -152,7 +156,7 @@ export function About() {
         >
           {/* label */}
           <div className="text-label" style={{ color: 'var(--muted)' }}>
-            ( CLIENTS &amp; COLLABORATIONS · PLACEHOLDERS )
+            Clients &amp; Collaborations
           </div>
 
           {/* two opposing marquees */}

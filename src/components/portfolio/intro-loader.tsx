@@ -51,7 +51,7 @@ export function IntroLoader() {
 
   if (phase === 'done') return null;
 
-  const letters = 'DHIVAKARAN'.split('');
+  const letters = 'DHIVAKARAN M'.split('');
   const word = phase === 'in';
 
   return (
@@ -145,16 +145,16 @@ export function IntroLoader() {
         ))}
       </div>
 
-      {/* sub-line */}
+      {/* sub-line removed — keep loader minimal */}
       <div
         className="text-label"
         style={{
           color: 'var(--night-muted)',
-          opacity: 0.6,
+          opacity: 0.5,
           marginTop: '0.5rem',
         }}
       >
-        DEVELOPING ROOM · 0250 ASA · DAYLIGHT
+        0250 ASA · DAYLIGHT
       </div>
 
       <style>{`

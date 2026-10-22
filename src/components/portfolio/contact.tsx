@@ -11,6 +11,8 @@ import {
   Github,
 } from 'lucide-react';
 import { WaveText } from './wave-text';
+import { BokehField } from './bokeh-field';
+import { useBloom } from './lib/use-bloom-rack';
 
 const CONTACTS = [
   {
@@ -51,6 +53,7 @@ const SOCIALS = [
 export function Contact() {
   const sectionRef = useRef<HTMLElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
+  const bloomRef = useBloom<HTMLDivElement>();
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -122,8 +125,13 @@ export function Contact() {
         }}
       />
 
+      <BokehField count={6} />
+
       <div
-        ref={panelRef}
+        ref={(node) => {
+          panelRef.current = node;
+          bloomRef.current = node;
+        }}
         className="canvas-max"
         style={{
           position: 'relative',
@@ -141,14 +149,10 @@ export function Contact() {
           className="text-label"
           style={{
             color: 'var(--muted)',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.75rem',
             marginBottom: 'calc(28 * var(--px))',
           }}
         >
-          <span style={{ display: 'inline-block', width: '24px', height: '1.5px', background: 'var(--muted)' }} />
-          ( THE FINAL PRINT · LEAVE A MARK )
+          The final print
         </div>
 
         {/* oversized developing headline */}
@@ -252,18 +256,8 @@ export function Contact() {
             borderBottom: '1.5px solid var(--rule)',
           }}
         >
-          <div
-            className="text-mono text-label"
-            style={{
-              color: 'var(--muted)',
-              marginBottom: 'calc(20 * var(--px))',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.75rem',
-            }}
-          >
-            <span style={{ display: 'inline-block', width: '24px', height: '1.5px', background: 'var(--muted)' }} />
-            SOCIALS · PLACEHOLDERS
+          <div className="text-mono text-label" style={{ color: 'var(--muted)', marginBottom: 'calc(20 * var(--px))' }}>
+            Socials
           </div>
           <div
             style={{
@@ -344,7 +338,7 @@ export function Contact() {
                 letterSpacing: '-0.02em',
               }}
             >
-              — Dhivakaran
+              — Dhivakaran M
             </div>
             <div
               className="text-mono text-label"

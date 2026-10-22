@@ -182,3 +182,66 @@ Stage Summary:
 - Page flow now: Hero → About (pins + develops) → SelectedWork (accordion) → VisualLabCard → Skillset → Contact → Footer.
 - Big list of 25+ crazy blur/focus/grunge/motion ideas presented to user for selection (see chat message).
 - Implementation of selected ideas will be non-destructive: layered on top of existing sections with reduced-motion fallbacks, no breakage.
+
+---
+Task ID: 24-27
+Agent: main-orchestrator
+Task: Implement user's 17 selected crazy ideas (#1,2,4,5,6,7,8,10,14,16,18,21,23,24,26,28,30) non-destructively; rename to "Dhivakaran M"; remove all parenthetical eyebrows + meta-notes.
+
+Work Log:
+- Conflict resolution (planned, not destructive):
+  - #6/#8/#10/#28 hover effects scope-separated (6=hero+about portraits, 8=static on all, 10=continuous on Work covers, 28=momentary on Work activation)
+  - #1/#2/#14/#23 scroll-blur effects target different layers (14=whole page momentary, 1=Work-only, 2=headings, 23=content entry)
+  - #2+#24 synced on headings (blur rack + variable weight, same scroll progress)
+  - #7 demoted to subtle light-leak sweep (composes with #23 bloom)
+  - #18 = magnetic attraction + trailing glow, no custom dot
+  - #4 reduced to 6-8 motes
+  - #26 = Hero side only
+- New CSS utilities in globals.css (section 8): tilt-shift, halftone, var-focus, bloom, heading-rack, light-leak, scratch-overlay, neg-flash, dolly-zoom, bokeh-mote, viewfinder, vertical-rail, contact-sheet-grid. All with reduced-motion + touch fallbacks.
+- New hooks:
+  - lib/use-scroll-velocity.ts (#14) — body[data-scroll-fast] when velocity > threshold
+  - lib/use-bloom-rack.ts — useBloom (#23, with 1.5s safety timeout so content never stuck hidden) + useHeadingRack (#2+#24, blur rack + Fraunces weight 300→700 bell curve)
+  - lib/use-magnetic-cursor.ts (#18) — trailing red glow + magnetic attraction within 80px of interactive elements
+- New components:
+  - bokeh-field.tsx (#4) — 6-8 drifting blurred light motes
+  - viewfinder-cursor.tsx (#21) — camera viewfinder frame + crosshairs, replaces cursor in lab only
+  - light-leak.tsx (#7) — fixed overlay, plays 0.9s sweep at 4 section boundaries
+  - vertical-rail.tsx (#26) — vertical-RL mono label on Hero side
+  - effects-provider.tsx — orchestrates #14+#18+#7 globally, wraps the page
+- SelectedWork rewrite with layered effects:
+  - #1 tilt-shift (section-level data-tilt attribute, 3px blur at edges)
+  - #5 Z-parallax (data-speed on cover 0.7× + metadata 1.2×, subtle ±5px differential)
+  - #8 halftone class on covers
+  - #10 scratch-host + scratch-overlay on covers (continuous drift on hover)
+  - #28 neg-flash on row activation (400ms invert flash via prevActiveRef)
+  - #30 accordion/grid toggle (button group, aria-pressed)
+  - #23 bloom on content
+  - #2/#24 heading rack + variable weight
+  - All placeholder/meta eyebrows removed ("( SELECTED WORK · 0005 · PLACEHOLDERS )" gone)
+- About updates: removed eyebrow, added title "A little room / to wander", bloom on content, heading rack, var-focus + halftone on float portrait, aside changed to "The room is always open. — 0250", collaborator label "Clients & Collaborations"
+- Hero updates: name "Dhivakaran M" (M in italic accent-soft), eyebrow → "Dhivakaran M — Portfolio", VerticalRail on right side, removed "DEVELOPING ROOM" subtitle, subline simplified
+- Skillset updates: removed eyebrow, #16 dolly-zoom (data-dolly pending→active on entry), #4 bokeh (8 motes), #23 bloom, #2/#24 heading rack, ambient glow → red, footer note "Nine of nine / all exposed"
+- Contact updates: removed eyebrows ("The final print", "Socials"), #4 bokeh (6 motes), #23 bloom on panel, signature "— Dhivakaran M"
+- Visual Lab overlay: #4 bokeh (6 motes), #21 ViewfinderCursor, simplified chrome label "0049 frames · one plane"
+- Visual Lab card: removed eyebrow ("The Visual Lab"), removed corner note "SEPARATE EXPERIENCE / OPENS FULL-SCREEN", simplified accent label
+- Footer: wordmark "Dhivakaran M®" (clamp 14vw max to fit), removed "( A NOTE FROM THE ROOM )" + "( WRITE )", legal "© 0250 DHIVAKARAN M®"
+- Nav: wordmark "DHIVAKARAN M®", removed menu eyebrow "( MENU — DHIVAKARAN® )", footer location "Colombo · 06.47 N 79.86 E"
+- Intro loader: wordmark "DHIVAKARAN M", subline simplified to "0250 ASA · DAYLIGHT"
+- layout.tsx metadata: title/og/twitter → "Dhivakaran M"
+- Fixed: duplicate import in skillset.tsx (useBloom/useHeadingRack imported twice)
+
+Verification (agent-browser):
+- Lint: 0 errors, 2 font-link warnings
+- No runtime errors in browser console
+- heroName "Dhivakaran M", navWm "DHIVAKARAN M®", footerWm "Dhivakaran M®", signatureM true
+- All parenthetical eyebrows removed (heroEyebrowGone/aboutEyebrowGone/workEyebrowGone all true)
+- Effects present: verticalRail, magneticGlow, lightLeak, aboutBloom, workToggle, skillsetBokeh(8), skillsetDolly(pending), contactBokeh(6), contactBloom
+- Interactions verified: scroll-velocity blur fires (data-scroll-fast=true during fast scroll), heading rack active (data-rack=in, weight 606.5 on bell curve), grid toggle switches (5 contact-sheet cells, accordion hidden), lab overlay opens (6 bokeh motes + viewfinder element + 56 tiles)
+- Bloom safety: aboutBloomed + workBloomed both true; 1.5s safety timeout guarantees content never stuck hidden
+
+Stage Summary:
+- All 17 selected effects implemented non-destructively (layered on top, reduced-motion + touch fallbacks, intensity capped).
+- Name updated to "Dhivakaran M" everywhere (hero, footer, nav, loader, contact signature, metadata).
+- All parenthetical eyebrow small-text + meta "PLACEHOLDERS" notes removed across all sections.
+- Nothing existing broke — every prior section (hero, about, visual lab, skillset, contact, footer, nav) still renders and functions; the Selected Work section gained the most layering.
+- Page flow unchanged: Hero → About → SelectedWork → VisualLabCard → Skillset → Contact → Footer (+ Visual Lab overlay).

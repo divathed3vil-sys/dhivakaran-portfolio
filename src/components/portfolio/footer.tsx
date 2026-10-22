@@ -72,7 +72,7 @@ export function Footer() {
             margin: 0,
             fontFamily: 'var(--font-fraunces), serif',
             fontWeight: 500,
-            fontSize: 'clamp(3rem, 17vw, 16rem)',
+            fontSize: 'clamp(3rem, 14vw, 14rem)',
             lineHeight: 0.85,
             letterSpacing: '-0.04em',
             color: 'var(--canvas)',
@@ -81,7 +81,7 @@ export function Footer() {
             overflow: 'hidden',
           }}
         >
-          DHIVAKARAN<span style={{ color: 'var(--brass)', fontSize: '0.4em', verticalAlign: 'super' }}>®</span>
+          Dhivakaran M<span style={{ color: 'var(--accent)', fontSize: '0.4em', verticalAlign: 'super' }}>®</span>
         </h2>
 
         {/* hairline */}
@@ -104,12 +104,6 @@ export function Footer() {
           }}
         >
           <div>
-            <div
-              className="text-label"
-              style={{ color: 'var(--night-muted)', marginBottom: '0.75rem' }}
-            >
-              ( A NOTE FROM THE ROOM )
-            </div>
             <p
               style={{
                 margin: 0,
@@ -130,12 +124,6 @@ export function Footer() {
           </div>
 
           <div style={{ textAlign: 'right' }}>
-            <div
-              className="text-label"
-              style={{ color: 'var(--night-muted)', marginBottom: '0.75rem' }}
-            >
-              ( WRITE )
-            </div>
             <a
               href="mailto:hello@dhivakaran.studio"
               style={{
@@ -178,7 +166,7 @@ export function Footer() {
             className="text-mono text-label"
             style={{ color: 'var(--night-muted)', display: 'flex', gap: '1.5rem', flexWrap: 'wrap' }}
           >
-            <span>© 0250 DHIVAKARAN®</span>
+            <span>© 0250 DHIVAKARAN M®</span>
             <span>ALL FRAMES RESERVED</span>
             <span style={{ opacity: 0.6 }}>BUILT BY HAND · COLOMBO</span>
           </div>

@@ -34,14 +34,10 @@ export function VisualLabCard({ onEnter }: { onEnter: () => void }) {
           className="text-label"
           style={{
             color: 'var(--muted)',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.75rem',
             marginBottom: 'calc(28 * var(--px))',
           }}
         >
-          <span style={{ display: 'inline-block', width: '24px', height: '1.5px', background: 'var(--muted)' }} />
-          ( THE VISUAL LAB — A SEPARATE ROOM )
+          The Visual Lab
         </div>
 
         {/* the card */}
@@ -107,7 +103,7 @@ export function VisualLabCard({ onEnter }: { onEnter: () => void }) {
                 marginBottom: 'calc(20 * var(--px))',
               }}
             >
-              ◉ 0049 FRAMES · ONE PLANE · INFINITE
+              0049 frames · one plane · infinite
             </div>
 
             <h2

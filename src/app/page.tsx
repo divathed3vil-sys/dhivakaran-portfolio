@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useLenis } from '@/components/portfolio/lib/use-lenis';
+import { EffectsProvider } from '@/components/portfolio/effects-provider';
 import { IntroLoader } from '@/components/portfolio/intro-loader';
 import { Nav } from '@/components/portfolio/nav';
 import { Hero } from '@/components/portfolio/hero';
@@ -18,28 +19,30 @@ export default function Home() {
   const [labOpen, setLabOpen] = useState(false);
 
   return (
-    <div
-      style={{
-        minHeight: '100vh',
-        display: 'flex',
-        flexDirection: 'column',
-        background: 'var(--canvas)',
-      }}
-    >
-      <IntroLoader />
-      <Nav onEnterLab={() => setLabOpen(true)} />
-      <main id="main" style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-        <Hero />
-        <About />
-        <SelectedWork />
-        <VisualLabCard onEnter={() => setLabOpen(true)} />
-        <Skillset />
-        <Contact />
-      </main>
-      <Footer />
+    <EffectsProvider>
+      <div
+        style={{
+          minHeight: '100vh',
+          display: 'flex',
+          flexDirection: 'column',
+          background: 'var(--canvas)',
+        }}
+      >
+        <IntroLoader />
+        <Nav onEnterLab={() => setLabOpen(true)} />
+        <main id="main" style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+          <Hero />
+          <About />
+          <SelectedWork />
+          <VisualLabCard onEnter={() => setLabOpen(true)} />
+          <Skillset />
+          <Contact />
+        </main>
+        <Footer />
 
-      {/* Visual Lab — separate full-screen overlay experience */}
-      {labOpen && <VisualLab onClose={() => setLabOpen(false)} />}
-    </div>
+        {/* Visual Lab — separate full-screen overlay experience */}
+        {labOpen && <VisualLab onClose={() => setLabOpen(false)} />}
+      </div>
+    </EffectsProvider>
   );
 }

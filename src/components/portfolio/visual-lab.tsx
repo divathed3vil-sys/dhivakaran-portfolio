@@ -1,6 +1,8 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { BokehField } from './bokeh-field';
+import { ViewfinderCursor } from './viewfinder-cursor';
 
 const SOURCES = [
   '/images/portrait.png',
@@ -386,6 +388,10 @@ export function VisualLab({ onClose }: { onClose: () => void }) {
         ))}
       </div>
 
+      <ViewfinderCursor />
+
+      <BokehField count={6} />
+
       {/* vignette + grain — cinematic depth */}
       <div
         aria-hidden="true"
@@ -432,7 +438,7 @@ export function VisualLab({ onClose }: { onClose: () => void }) {
           THE VISUAL LAB
         </div>
         <div style={{ opacity: 0.7, marginTop: '0.25rem' }}>
-          0049 FRAMES · ONE PLANE · INFINITE
+          0049 frames · one plane
         </div>
         <div style={{ opacity: 0.5, marginTop: '0.15rem' }}>
           OFFSET <span ref={counterRef}>0000</span>

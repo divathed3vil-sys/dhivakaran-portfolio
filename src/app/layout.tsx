@@ -3,29 +3,29 @@ import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
 
 export const metadata: Metadata = {
-  title: "Dhivakaran — Brands, products & the art in between.",
+  title: "Dhivakaran M — Brands, products & the art in between.",
   description:
-    "Dhivakaran. A designer working between brand, product and art direction. This site is a developing room — scroll to expose the print.",
+    "Dhivakaran M. A designer working between brand, product and art direction.",
   keywords: [
-    "Dhivakaran",
+    "Dhivakaran M",
     "portfolio",
     "brand design",
     "product design",
     "art direction",
     "motion",
   ],
-  authors: [{ name: "Dhivakaran" }],
+  authors: [{ name: "Dhivakaran M" }],
   openGraph: {
-    title: "Dhivakaran — Brands, products & the art in between.",
+    title: "Dhivakaran M — Brands, products & the art in between.",
     description:
-      "A designer working between brand, product and art direction. Scroll to expose the print.",
+      "A designer working between brand, product and art direction.",
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Dhivakaran — Brands, products & the art in between.",
+    title: "Dhivakaran M — Brands, products & the art in between.",
     description:
-      "A designer working between brand, product and art direction. Scroll to expose the print.",
+      "A designer working between brand, product and art direction.",
   },
 };
 
