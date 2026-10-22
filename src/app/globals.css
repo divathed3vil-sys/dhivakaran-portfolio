@@ -544,16 +544,7 @@
    Each effect has a reduced-motion + touch fallback. Intensity capped.
    ============================================================================ */
 
-/* ---- #14 scroll-velocity motion blur (whole page, momentary) ---- */
-body {
-  transition: filter 0.2s linear;
-}
-body[data-scroll-fast="true"] {
-  filter: blur(2px);
-}
-@media (prefers-reduced-motion: reduce) {
-  body[data-scroll-fast="true"] { filter: none !important; }
-}
+/* ---- #14 scroll-velocity motion blur — REMOVED (replaced by CursorDOF which has a clear zone around the cursor) ---- */
 
 /* ---- #18 magnetic cursor (subtle attraction + soft trailing glow) ---- */
 .magnetic-glow {

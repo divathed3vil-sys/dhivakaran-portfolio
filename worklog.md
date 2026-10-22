@@ -245,3 +245,39 @@ Stage Summary:
 - All parenthetical eyebrow small-text + meta "PLACEHOLDERS" notes removed across all sections.
 - Nothing existing broke — every prior section (hero, about, visual lab, skillset, contact, footer, nav) still renders and functions; the Selected Work section gained the most layering.
 - Page flow unchanged: Hero → About → SelectedWork → VisualLabCard → Skillset → Contact → Footer (+ Visual Lab overlay).
+
+---
+Task ID: 28-31
+Agent: main-orchestrator
+Task: Replace landing portrait with user's uploaded image; reposition hero to subject-right/text-left; fix blur (no blur around cursor + remove conflicting random blur).
+
+Work Log:
+- User uploaded /home/z/my-project/upload/Portfolio_landing_image.png (2064×1152, 2.9MB)
+- VLM analysis: man with short dark hair + beard, plain black t-shirt, facing AWAY showing right profile, subject on RIGHT third, smooth gray gradient background with empty negative space on left, monochromatic, no text/UI in image. Perfect fit for white/black palette.
+- Copied user image to public/images/portrait.png (overwrites AI placeholder — all components referencing /images/portrait.png auto-update: hero, about float, visual lab tiles)
+- Hero portrait updates:
+  - background-position: 50% 30% → 75% 25% (subject on the right, text overlays left negative space)
+  - filter: grayscale(1) → saturate(0.82) contrast(1.05) brightness(0.94) (KEEP NATURAL — image is already monochromatic; slight desaturation integrates with palette without losing human warmth)
+  - scroll focus-pull filter updated to match (saturate(0.82) + blur/brightness/contrast, no grayscale)
+- About float portrait: bg-position 50% 30% → 70% 30% (subject shows in small square crop); filter grayscale → saturate(0.7); removed conflicting var-focus class (inline filter was overriding the hover rack)
+- Blur fix — REPLACED the conflicting scroll-velocity blur with a cursor-following depth-of-field:
+  - REMOVED useScrollVelocity from EffectsProvider (the "random conflicting" blur)
+  - REMOVED body[data-scroll-fast] CSS rule from globals.css
+  - NEW component cursor-dof.tsx: fixed overlay, backdrop-filter blur(1.5px), radial mask with ~195px clear zone at cursor (transparent 0-65% of 300px, opaque at edges). JS updates --cx/--cy CSS vars on mousemove (rAF-throttled). Off on touch + reduced-motion.
+  - Added CursorDOF to EffectsProvider
+- Result: content near where the user looks (cursor) is sharp; content far away is subtly soft (1.5px). Constant + predictable (not random/velocity-triggered). No more whole-page blur during fast scroll.
+
+Verification (agent-browser):
+- Lint: 0 errors, 2 font-link warnings (unchanged)
+- portraitBg: url(http://localhost:3000/images/portrait.png) — user's image loaded
+- bgPos: 75% 25% — subject positioned right
+- portraitFilter: saturate(0.82) blur(0px) brightness(0.94) contrast(1.05) — natural, no grayscale
+- CursorDOF: backdropFilter blur(1.5px) + maskImage radial-gradient(300px, transparent 0-65%, black 100%) — rendering correctly, ~195px clear zone
+- scrollFastAttr: null (scroll-velocity blur gone)
+- finePointerMatches: false in headless (expected — effect activates on real mouse devices only, like the viewfinder)
+
+Stage Summary:
+- Landing page now uses the user's actual portrait, positioned with subject on the right + text on the left (matching the image's composition).
+- Portrait kept natural (slight desaturation, not full grayscale) — respects the photo while integrating with the white/black palette.
+- Blur fixed: the conflicting random scroll-velocity blur is gone; replaced by a cursor-following depth-of-field with a clear zone — content where you look is sharp, content elsewhere is subtly soft. Constant + predictable, never conflicts with reading.
+- Nothing else broke — all 17 prior effects still render and function; only the one conflicting blur was swapped.

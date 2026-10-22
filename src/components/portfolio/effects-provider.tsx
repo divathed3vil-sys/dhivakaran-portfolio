@@ -1,28 +1,27 @@
 'use client';
 
-import { useEffect, type ReactNode } from 'react';
-import { useScrollVelocity } from './lib/use-scroll-velocity';
+import { type ReactNode } from 'react';
 import { useMagneticCursor } from './lib/use-magnetic-cursor';
 import { LightLeak } from './light-leak';
+import { CursorDOF } from './cursor-dof';
 
 /**
  * EffectsProvider — orchestrates the global, cross-cutting effects:
- *  - #14 scroll-velocity motion blur (body attribute)
  *  - #18 magnetic cursor trailing glow (fixed element)
  *  - #7 light-leak sweep at section boundaries
+ *  - CursorDOF — cursor-following depth-of-field with a clear zone
+ *    (replaces the old scroll-velocity blur, which randomly conflicted with content)
  *
- * Section-specific effects (#1 tilt-shift, #16 dolly-zoom, #4 bokeh, #21 viewfinder,
- * #23 bloom, #2/#24 heading rack, #5/#10/#28/#30 Selected Work effects) are applied
- * inline in their respective components, not here.
+ * Section-specific effects are applied inline in their components.
  */
 export function EffectsProvider({ children }: { children: ReactNode }) {
-  useScrollVelocity();
   const glowRef = useMagneticCursor();
 
   return (
     <>
       {children}
       <LightLeak />
+      <CursorDOF />
       <div className="magnetic-glow" ref={glowRef} aria-hidden="true" />
     </>
   );

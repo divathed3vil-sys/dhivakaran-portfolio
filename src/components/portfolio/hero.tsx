@@ -46,7 +46,7 @@ export function Hero() {
         const blur = p * 8;
         const scale = 1 + p * 0.08;
         const ty = p * 80; // portrait drifts down slightly
-        portrait.style.filter = `grayscale(1) blur(${blur}px) brightness(${1 - p * 0.25}) contrast(${1.08 - p * 0.1})`;
+        portrait.style.filter = `saturate(0.82) blur(${blur}px) brightness(${0.94 - p * 0.25}) contrast(${1.05 - p * 0.1})`;
         portrait.style.transform = `translate3d(0, ${ty * 0.4}px, 0) scale(${scale})`;
       }
 
@@ -118,7 +118,7 @@ export function Hero() {
       }}
       aria-label="Dhivakaran — opening"
     >
-      {/* portrait layer — full-bleed, grayscale film treatment */}
+      {/* portrait layer — full-bleed. Subject on the right, text overlays the left negative space. */}
       <div
         ref={portraitRef}
         data-hero-portrait=""
@@ -127,8 +127,8 @@ export function Hero() {
           inset: 0,
           backgroundImage: 'url(/images/portrait.png)',
           backgroundSize: 'cover',
-          backgroundPosition: '50% 30%',
-          filter: 'grayscale(1) contrast(1.08) brightness(0.92)',
+          backgroundPosition: '75% 25%',
+          filter: 'saturate(0.82) contrast(1.05) brightness(0.94)',
           transformOrigin: '60% 60%',
           transition: 'transform 0.95s var(--ease-reveal), filter 0.95s var(--ease-reveal)',
           willChange: 'transform, filter',

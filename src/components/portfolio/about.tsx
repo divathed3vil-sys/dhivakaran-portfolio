@@ -80,7 +80,7 @@ export function About() {
             <div style={{ position: 'relative', maxWidth: 'calc(1129 * var(--px))' }}>
               {/* floating portrait insert — inside text flow */}
               <div
-                className="halftone var-focus"
+                className="halftone"
                 style={{
                   float: 'left',
                   width: '19%',
@@ -90,10 +90,10 @@ export function About() {
                   margin: '0.35rem 1.5rem 0.5rem 0',
                   backgroundImage: 'url(/images/portrait.png)',
                   backgroundSize: 'cover',
-                  backgroundPosition: '50% 30%',
+                  backgroundPosition: '70% 30%',
                   transform: 'rotate(-6deg)',
                   boxShadow: '0 18px 40px -12px rgba(10, 10, 10, 0.28)',
-                  filter: 'grayscale(1) contrast(1.08) brightness(0.92)',
+                  filter: 'saturate(0.7) contrast(1.08) brightness(0.92)',
                   shapeOutside: 'circle(50%)',
                   borderRadius: '2px',
                 }}
