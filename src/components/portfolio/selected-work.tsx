@@ -91,7 +91,6 @@ export function SelectedWork() {
   const [layout, setLayout] = useState<'accordion' | 'grid'>('accordion');
   const prevActiveRef = useRef<number | null>(null);
   const rowRefs = useRef<(HTMLLIElement | null)[]>([]);
-  const sectionRef = useRef<HTMLElement>(null);
   const bloomRef = useBloom<HTMLDivElement>();
   const titleRef = useHeadingRack<HTMLHeadingElement>();
 
@@ -153,40 +152,6 @@ export function SelectedWork() {
     };
   }, [activeIdx]);
 
-  // tilt-shift on scroll (#1)
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-    const section = sectionRef.current;
-    if (!section) return;
-
-    let rafId = 0;
-    const update = () => {
-      rafId = 0;
-      const rect = section.getBoundingClientRect();
-      const innerH = window.innerHeight;
-      // distance of section center from viewport center, normalized
-      const center = rect.top + rect.height / 2;
-      const dist = Math.abs(center - innerH / 2);
-      const maxDist = innerH * 0.5;
-      const edge = Math.min(1, dist / maxDist);
-      if (edge > 0.7) {
-        section.setAttribute('data-tilt', 'edge');
-      } else {
-        section.setAttribute('data-tilt', 'active');
-      }
-    };
-    const onScroll = () => {
-      if (!rafId) rafId = requestAnimationFrame(update);
-    };
-    update();
-    window.addEventListener('scroll', onScroll, { passive: true });
-    return () => {
-      window.removeEventListener('scroll', onScroll);
-      if (rafId) cancelAnimationFrame(rafId);
-    };
-  }, []);
-
   // touch / no-hover: pick row nearest viewport center
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -209,9 +174,7 @@ export function SelectedWork() {
   return (
     <section
       id="work"
-      ref={sectionRef}
       data-canvas="home"
-      className="tilt-shift"
       aria-label="Selected work"
       style={{
         background: 'var(--canvas)',
@@ -220,7 +183,7 @@ export function SelectedWork() {
         overflow: 'hidden',
       }}
     >
-      <div className="canvas-max tilt-shift-inner" style={{ position: 'relative' }}>
+      <div className="canvas-max" style={{ position: 'relative' }}>
         <div ref={bloomRef}>
           {/* title + layout toggle */}
           <div
@@ -608,7 +571,6 @@ export function SelectedWork() {
         }
         @media (prefers-reduced-motion: reduce) {
           .work-reveal-block { transition: none !important; }
-          .tilt-shift-inner { filter: none !important; }
         }
       `}</style>
     </section>

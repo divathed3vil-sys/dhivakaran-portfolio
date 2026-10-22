@@ -337,3 +337,30 @@ Stage Summary:
 - Side scrollbar removed.
 - About section uses the user's real self-introduction ("Hi, I'm Diva...") and "A little / about me" title; all room/door/wander metaphors cleared from the rendered page.
 - Real contact details wired in (WhatsApp +94 77 089 5006, email dhivakaranmohanraj@gmail.com) in both the Contact section and footer.
+
+---
+Task ID: 38-40
+Agent: main-orchestrator
+Task: Remove blur from Selected Work section fully (user saw it blurred even when on the section).
+
+Work Log:
+- Root cause 1: TILT-SHIFT (#1) on the Selected Work section. The effect applied filter:blur(3px) to the whole .tilt-shift-inner whenever the section's center was far from the viewport center. For a TALL section (Selected Work has 5 accordion rows + reveals = very tall), the center is almost always far from the viewport center → the section was blurred ~always, even when the user was on it.
+  - Removed: the tilt-shift useEffect, the className="tilt-shift" on the section, the className="canvas-max tilt-shift-inner" → "canvas-max", the dead sectionRef, the tilt-shift CSS block in globals.css, the reduced-motion .tilt-shift-inner rule.
+- Root cause 2: HEADING RACK BLUR (#2). The useHeadingRack hook set data-rack="out" on h2 titles when they were at viewport edges, and the CSS [data-rack="out"] { filter: blur(4px) } blurred them. For the Selected Work h2 ("Selected frames"), when the section was scrolled to the top, the title was at the viewport top (far from center) → data-rack="out" → blur(4px) on the title.
+  - Removed: the [data-rack="out"] and [data-rack="in"] CSS blur rules. The [data-rack] base rule now only transitions font-weight (no filter).
+  - Defended: useHeadingRack hook now explicitly sets el.style.filter = 'none' inline (on init + every scroll update) to override ANY cached CSS that might still have the blur rule. Inline styles beat all CSS.
+  - Preserved: the variable font-weight effect (#24) — the hook still sets el.style.fontWeight on a bell curve (300→700→300) as the title crosses the viewport. This is the part the user liked; only the blur part is gone.
+
+Verification (agent-browser):
+- Lint: 0 errors, 2 font-link warnings (unchanged)
+- workH2 filter: "none" (sharp) ✓
+- aboutH2 filter: "none" (sharp) ✓
+- skillsetH2 filter: "none" (sharp) ✓
+- contactH2 filter: "none" (sharp) ✓
+- workInner (section content) filter: "none" ✓
+- allTitlesSharp: true ✓
+- No blur(4px) rules remain in globals.css (grep confirmed)
+
+Stage Summary:
+- The Selected Work ("Selected frames") section is now fully sharp when in view — no tilt-shift blur, no heading-rack blur. All other section titles are also sharp (the heading-rack blur removal applies globally, but only the variable-weight is kept).
+- The only blur that remains anywhere: the global scroll-activated 0.4px blur (only while page is moving, clears on stop), the permanent 0.6px edge vignette blur (only at extreme edges), and random 0.4px flickers (very brief, very subtle). None of these blur content the user is reading while stationary on a section.

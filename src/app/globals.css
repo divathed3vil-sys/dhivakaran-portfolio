@@ -616,16 +616,9 @@ html {
   }
 }
 
-/* ---- #2 focus rack on section headings (synced with #24 weight) ---- */
+/* ---- #24 variable font weight on scroll (Fraunces 300→700). Blur rack (#2) REMOVED per user request — titles must stay sharp. ---- */
 [data-rack] {
-  transition: filter 0.5s var(--ease-out-soft), font-weight 0.5s var(--ease-out-soft);
-  will-change: filter;
-}
-[data-rack="out"] {
-  filter: blur(4px);
-}
-[data-rack="in"] {
-  filter: blur(0px);
+  transition: font-weight 0.5s var(--ease-out-soft);
 }
 
 /* ---- #24 variable font weight on scroll (Fraunces 300→700) ---- */
@@ -661,22 +654,7 @@ html {
   .light-leak { display: none !important; }
 }
 
-/* ---- #1 tilt-shift miniature (Selected Work only) ---- */
-.tilt-shift .tilt-shift-inner {
-  transition: filter 0.4s var(--ease-out-soft);
-}
-.tilt-shift[data-tilt="active"] .tilt-shift-inner {
-  filter: blur(0px);
-}
-.tilt-shift[data-tilt="idle"] .tilt-shift-inner {
-  filter: blur(0px);
-}
-.tilt-shift[data-tilt="edge"] .tilt-shift-inner {
-  filter: blur(3px);
-}
-@media (prefers-reduced-motion: reduce) {
-  .tilt-shift .tilt-shift-inner { filter: none !important; }
-}
+/* ---- #1 tilt-shift — REMOVED (was blurring the whole Selected Work section even when in view) ---- */
 
 /* ---- #10 scratched-emulsion hover (Selected Work covers) ---- */
 .scratch-overlay {

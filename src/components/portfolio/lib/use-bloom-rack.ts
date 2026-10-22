@@ -53,11 +53,10 @@ export function useBloom<T extends HTMLElement = HTMLDivElement>(
 }
 
 /**
- * #2 + #24 Heading focus rack + variable font weight.
- * Tracks the heading's scroll progress through the viewport:
- *   - When entering: rack from blur(4px)→sharp, weight 300→700
- *   - When leaving (scrolled past): rack to blur(4px) again, weight back toward 500
- * Drives the [data-rack] attribute and inline font-weight.
+ * #24 Variable font weight on scroll (Fraunces 300→700).
+ * The blur rack (#2) was REMOVED per user request — titles must stay sharp.
+ * This hook now ONLY drives the variable font-weight; it explicitly sets
+ * filter: none inline to guarantee no blur (defends against any cached CSS).
  */
 export function useHeadingRack<T extends HTMLElement = HTMLHeadingElement>() {
   const ref = useRef<T>(null);
@@ -66,10 +65,10 @@ export function useHeadingRack<T extends HTMLElement = HTMLHeadingElement>() {
     const el = ref.current;
     if (!el) return;
 
-    el.setAttribute('data-rack', 'in');
+    // explicitly kill any filter (defends against cached [data-rack] blur CSS)
+    el.style.filter = 'none';
 
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      el.setAttribute('data-rack', 'in');
       el.style.fontWeight = '500';
       return;
     }
@@ -88,14 +87,8 @@ export function useHeadingRack<T extends HTMLElement = HTMLHeadingElement>() {
       const bell = Math.sin(clamped * Math.PI);
       const weight = Math.round(300 + bell * 400); // 300..700
       el.style.fontWeight = String(weight);
-
-      // rack: blur when heading is far from center (entering/leaving)
-      const distFromCenter = Math.abs(clamped - 0.5) * 2; // 0 at center, 1 at edges
-      if (distFromCenter > 0.7) {
-        el.setAttribute('data-rack', 'out');
-      } else {
-        el.setAttribute('data-rack', 'in');
-      }
+      // keep filter explicitly none on every update (no blur, ever)
+      el.style.filter = 'none';
     };
 
     const onScroll = () => {
