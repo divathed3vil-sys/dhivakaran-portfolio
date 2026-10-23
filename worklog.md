@@ -571,3 +571,33 @@ Stage Summary:
 - The UX matches the user's spec: username field ready → type + Enter → password field → type + Enter → auto-enter Studio (no visible buttons).
 - The Studio overlay shows "Control Room" with 4 tab placeholders (Phase 3 will build the real CRUD: Selected Frames / Lab / Videos / Site Settings management).
 - Next: Phase 3 (the CRUD tabs — category + image + video management with upload, priority, delete) OR Phase 0b (Vercel deployment). User's choice.
+
+---
+Task ID: Phase 0b (Vercel deployment)
+Agent: main-orchestrator
+Task: Deploy the portfolio to Vercel + set Supabase env vars + verify the Studio auth works on the live URL.
+
+Work Log:
+- Installed Vercel CLI (v65.2.0) via `bun add -g vercel`
+- Authenticated via GitHub device flow (user authorized at vercel.com/oauth/device)
+  - User account: divathed3vil-sys
+- Created Vercel project: `dhivakaran-portfolio` (scope: diva-61da)
+- Set 2 env vars via Vercel REST API (the CLI's interactive prompt was mangling values):
+  - NEXT_PUBLIC_SUPABASE_URL = https://jnlkafehvmqcquqqxvib.supabase.co (encrypted, production)
+  - NEXT_PUBLIC_SUPABASE_ANON_KEY = eyJ... (encrypted, production)
+- First deploy returned 404 — root cause: `output: "standalone"` in next.config.ts (meant for self-hosting, breaks Vercel's Next.js runtime) + the build script's `cp` commands failed without the standalone dir
+- Fix: removed `output: "standalone"` from next.config.ts + added vercel.json with `"buildCommand": "next build"` (overrides the package.json build script's cp commands)
+- Redeployed → HTTP 200, content renders ✓
+- Verified the Supabase URL is inlined in the deployed JS bundle (jnlkafehvmqcquqqxvib.supabase.co found in chunk 50e2058679d627cb.js) — env vars were available at build time ✓
+- Tested the Studio auth on the LIVE site:
+  - "divahere" trigger → auth card appeared ✓
+  - Type "diva" + Enter → password field focused ✓
+  - Type "divad3vil" + Enter → Studio opened ✓ (studio: true, no console errors)
+- Production URL: https://dhivakaran-portfolio.vercel.app
+
+Stage Summary:
+- The portfolio is LIVE at https://dhivakaran-portfolio.vercel.app
+- The public site renders (hero, about, selected work, visual lab card, experiences, contact, footer)
+- The secret Studio auth works on the live site (typing "divahere" → username "diva" + Enter → password "divad3vil" + Enter → Studio opens)
+- The Supabase backend is connected (env vars inlined in the build, auth validated server-side)
+- Future redeploys: just run `vercel --prod --yes` from the project directory (the project is linked)
