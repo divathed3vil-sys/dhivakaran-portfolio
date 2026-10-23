@@ -480,3 +480,46 @@ Stage Summary:
 - Visual Lab CLOSE + EXIT buttons now work (pointer-capture no longer hijacks clicks).
 - Visual Lab tiles now fill the entire viewport with no blank corners (responsive grid + correct toroidal wrap formula eliminates the dead zone on every screen size).
 - All prior pending items resolved. Ready for next content upload.
+
+---
+Task ID: 56-61
+Agent: main-orchestrator
+Task: Fix skills not showing (ref closure bug), remove lab X button + Exit scrolls to top, set up shared image system with ratio respect (no crop).
+
+Work Log:
+- CRITICAL skills fix (root cause found):
+  - The `let globalIdx = 0` at component body level was mutated during the .map() iterations. The ref callback `ref={(el) => { cardRefs.current[globalIdx - 1] = el; }}` is a CLOSURE over the VARIABLE `globalIdx` (not its value). By the time ref callbacks run (during commit, after render), `globalIdx` has its final value (28). So ALL 28 ref callbacks wrote to `cardRefs.current[27]` — only the last card's element was stored. The IntersectionObserver only observed 1 card. The other 27 stayed at opacity:0 (invisible).
+  - Fix: precomputed a module-level ALL_SKILLS array with a STABLE `flatIndex` per skill (computed once via an IIFE, not mutated during render). The ref callback now uses `skill.flatIndex` (a stable number from the precomputed array, captured correctly by the closure). All 28 cards are now observed.
+  - Also added a safety timeout: after 1.5s, `setForceAll(true)` force-exposes all cards so they're never stuck invisible even if the IO fails.
+  - Verified: 28/28 cards visible (visibleCards: 28), first skill "Adobe Photoshop".
+- Visual Lab buttons:
+  - Removed the CLOSE (X) button entirely (top-right).
+  - Renamed the EXIT pill to "Exit The Lab ↑".
+  - Made it scroll to #top of home page on click: `onClick={() => { onClose(); requestAnimationFrame(() => window.scrollTo({ top: 0, behavior: 'smooth' })); }}`.
+  - Kept the onPointerDown/onPointerUp stopPropagation (so drag-capture doesn't hijack the click).
+  - Verified: X button gone, exit text "Exit The Lab ↑", clicking it closes lab + scrollY=0 (at top).
+- Shared image system (so uploads flow to BOTH Selected Work + Visual Lab):
+  - Created src/components/portfolio/lib/portfolio-images.ts with:
+    - PORTFOLIO_IMAGES: PortfolioImage[] (src, category, label) — the single source of truth
+    - CATEGORY_LABELS: book→'Book Covers', poster→'Posters', thumbnail→'Thumbnails', other→'Other'
+    - LAB_IMAGE_SRCS: all srcs for the Visual Lab
+    - Comment explaining: add an image here → appears in both sections automatically
+  - Visual Lab now imports LAB_IMAGE_SRCS (instead of hardcoded SOURCES).
+  - Selected Work now imports PORTFOLIO_IMAGES + filters by category (book/poster/thumbnail). Empty categories show placeholder cells (using 'other' images) with a 'placeholder' label. When real images are added to portfolio-images.ts with the right category, they replace the placeholders.
+- No-crop images (user requirement: "follow their own ratio, don't crop"):
+  - Visual Lab tiles: background-size: cover → contain + backgroundColor: var(--night-soft) (dark matting). Images now show FULL (no crop) with dark matting around non-square ratios. Verified tileBgSize=contain.
+  - Selected Work cells: same — background-size: contain (no crop). Verified firstCellBgSize=contain.
+
+Verification (agent-browser):
+- Lint: 0 errors, 2 font-link warnings (unchanged)
+- Skills: 28 cards, ALL 28 visible, firstSkillTitle "Adobe Photoshop"
+- Visual Lab: X button gone (xButtonGone: true), "Exit The Lab ↑" present, 24 tiles with backgroundSize "contain" (no crop)
+- Exit button: clicking closes lab (labClosed: true) + scrolls to top (scrollY: 0, atTop: true)
+- Selected Work: 3 categories (Book Covers, Posters, Thumbnails), 9 cells, backgroundSize "contain" (no crop), shared list wired
+
+Stage Summary:
+- Skills now visible (the critical ref-closure bug is fixed — all 28 cards observed + safety timeout).
+- Visual Lab X button removed; "Exit The Lab ↑" closes the overlay AND returns to the top of the home page.
+- Shared image system set up: add an image to lib/portfolio-images.ts and it flows to BOTH Selected Work (grouped by category) AND the Visual Lab (infinite drag field) automatically.
+- Images now follow their own ratio (no crop) in both the Lab and Selected Work — background-size: contain with dark matting.
+- Ready for the user to upload real book covers / posters / thumbnails — just add entries to PORTFOLIO_IMAGES and both sections update.

@@ -71,9 +71,37 @@ const GROUPS: Group[] = [
   },
 ];
 
+// Precompute a flat list with STABLE flatIndex. This fixes the ref-closure bug
+// where a mutated `globalIdx` caused all 28 refs to write to the same index.
+type SkillCard = {
+  groupIndex: string;
+  groupName: string;
+  title: string;
+  flatIndex: number;
+  key: string;
+};
+
+const ALL_SKILLS: SkillCard[] = (() => {
+  const arr: SkillCard[] = [];
+  let idx = 0;
+  for (const g of GROUPS) {
+    for (const s of g.skills) {
+      arr.push({
+        groupIndex: g.index,
+        groupName: g.name,
+        title: s,
+        flatIndex: idx++,
+        key: `${g.index}-${s}`,
+      });
+    }
+  }
+  return arr;
+})();
+
 /**
  * Experiences — five groups of skills across craft and code.
- * Slim specimen cards (index + title + group + exposure meter). 28 skills total.
+ * 28 slim specimen cards. Cards reveal on entry (blur→sharp) with a
+ * safety timeout so they're never stuck invisible.
  */
 export function Skillset() {
   const sectionRef = useRef<HTMLElement>(null);
@@ -81,6 +109,7 @@ export function Skillset() {
   const bloomRef = useBloom<HTMLDivElement>();
   const titleRef = useHeadingRack<HTMLHeadingElement>();
   const [exposedCards, setExposedCards] = useState<Set<string>>(new Set());
+  const [forceAll, setForceAll] = useState(false);
 
   // dolly-zoom on section entry
   useEffect(() => {
@@ -106,7 +135,7 @@ export function Skillset() {
     return () => io.disconnect();
   }, []);
 
-  // expose cards on entry
+  // expose cards on entry (individual) + safety timeout (force all after 1.5s)
   useEffect(() => {
     const io = new IntersectionObserver(
       (entries) => {
@@ -123,13 +152,16 @@ export function Skillset() {
           }
         });
       },
-      { threshold: 0.3 }
+      { threshold: 0.2 }
     );
     cardRefs.current.forEach((el) => el && io.observe(el));
-    return () => io.disconnect();
+    // safety: force-expose all cards after 1.5s so they're never stuck invisible
+    const safety = setTimeout(() => setForceAll(true), 1500);
+    return () => {
+      io.disconnect();
+      clearTimeout(safety);
+    };
   }, []);
-
-  let globalIdx = 0;
 
   return (
     <section
@@ -167,151 +199,154 @@ export function Skillset() {
 
         <hr className="hairline-night" style={{ margin: '0 0 calc(48 * var(--px))' }} />
 
-        {GROUPS.map((group) => (
-          <div key={group.index} style={{ marginBottom: 'calc(40 * var(--px))' }}>
-            {/* group label */}
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'baseline',
-                gap: '0.75rem',
-                marginBottom: 'calc(18 * var(--px))',
-              }}
-            >
-              <span className="text-mono text-label" style={{ color: 'var(--accent)' }}>
-                {group.index}
-              </span>
-              <h3
+        {GROUPS.map((group) => {
+          const groupSkills = ALL_SKILLS.filter((s) => s.groupIndex === group.index);
+          return (
+            <div key={group.index} style={{ marginBottom: 'calc(40 * var(--px))' }}>
+              {/* group label */}
+              <div
                 style={{
-                  fontFamily: 'var(--font-fraunces), serif',
-                  fontWeight: 500,
-                  fontSize: 'clamp(1.25rem, 2.5vw, 1.75rem)',
-                  letterSpacing: '-0.02em',
-                  color: 'var(--canvas)',
-                  margin: 0,
-                  lineHeight: 1.1,
+                  display: 'flex',
+                  alignItems: 'baseline',
+                  gap: '0.75rem',
+                  marginBottom: 'calc(18 * var(--px))',
                 }}
               >
-                {group.name}
-              </h3>
-            </div>
+                <span className="text-mono text-label" style={{ color: 'var(--accent)' }}>
+                  {group.index}
+                </span>
+                <h3
+                  style={{
+                    fontFamily: 'var(--font-fraunces), serif',
+                    fontWeight: 500,
+                    fontSize: 'clamp(1.25rem, 2.5vw, 1.75rem)',
+                    letterSpacing: '-0.02em',
+                    color: 'var(--canvas)',
+                    margin: 0,
+                    lineHeight: 1.1,
+                  }}
+                >
+                  {group.name}
+                </h3>
+              </div>
 
-            {/* slim cards grid */}
-            <div
-              style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 220px), 1fr))',
-                gap: 'calc(12 * var(--px))',
-              }}
-            >
-              {group.skills.map((skill) => {
-                const idx = String(++globalIdx).padStart(2, '0');
-                const key = `${group.index}-${skill}`;
-                const exposed = exposedCards.has(key);
-                const rotation = ((globalIdx * 17) % 100) / 100 * 2.5 - 1.25;
-                return (
-                  <article
-                    key={key}
-                    ref={(el) => {
-                      cardRefs.current[globalIdx - 1] = el;
-                    }}
-                    data-key={key}
-                    className="specimen-card"
-                    style={{
-                      position: 'relative',
-                      background: 'var(--bone-soft)',
-                      color: 'var(--ink)',
-                      padding: 'calc(18 * var(--px))',
-                      transform: `rotate(${rotation}deg)`,
-                      transition:
-                        'transform 0.7s var(--ease-reveal), opacity 0.7s var(--ease-opacity), filter 0.7s var(--ease-reveal)',
-                      opacity: exposed ? 1 : 0,
-                      filter: exposed ? 'blur(0px)' : 'blur(8px)',
-                      boxShadow: exposed
-                        ? '0 12px 28px -10px rgba(0,0,0,0.5), 0 2px 0 rgba(214,41,41,0.15)'
-                        : '0 4px 12px -8px rgba(0,0,0,0.4)',
-                      cursor: 'default',
-                      overflow: 'hidden',
-                      minHeight: '120px',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      justifyContent: 'space-between',
-                    }}
-                    onMouseEnter={(e) => {
-                      const card = e.currentTarget;
-                      const flare = card.querySelector('[data-flare]') as HTMLElement | null;
-                      if (flare) {
-                        flare.style.animation = 'none';
-                        void flare.offsetWidth;
-                        flare.style.animation = 'flare-sweep 0.9s var(--ease-out-soft)';
-                      }
-                    }}
-                  >
-                    <div
-                      className="text-mono text-label"
-                      style={{ color: 'var(--accent)', opacity: 0.85 }}
-                    >
-                      N° {idx}
-                    </div>
-
-                    <h4
-                      style={{
-                        fontFamily: 'var(--font-fraunces), serif',
-                        fontWeight: 500,
-                        fontSize: 'clamp(1.05rem, 1.8vw, 1.35rem)',
-                        lineHeight: 1.15,
-                        letterSpacing: '-0.015em',
-                        color: 'var(--ink)',
-                        margin: 'calc(8 * var(--px)) 0',
+              {/* slim cards grid */}
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 220px), 1fr))',
+                  gap: 'calc(12 * var(--px))',
+                }}
+              >
+                {groupSkills.map((skill) => {
+                  const exposed = forceAll || exposedCards.has(skill.key);
+                  const rotation = ((skill.flatIndex * 17) % 100) / 100 * 2.5 - 1.25;
+                  const cardIdx = String(skill.flatIndex + 1).padStart(2, '0');
+                  return (
+                    <article
+                      key={skill.key}
+                      ref={(el) => {
+                        // stable flatIndex — not a mutated closure variable
+                        cardRefs.current[skill.flatIndex] = el;
                       }}
-                    >
-                      {skill}
-                    </h4>
-
-                    {/* exposure meter — thin */}
-                    <div
+                      data-key={skill.key}
+                      className="specimen-card"
                       style={{
-                        height: '2px',
-                        background: 'var(--rule)',
                         position: 'relative',
+                        background: 'var(--bone-soft)',
+                        color: 'var(--ink)',
+                        padding: 'calc(18 * var(--px))',
+                        transform: `rotate(${rotation}deg)`,
+                        transition:
+                          'transform 0.7s var(--ease-reveal), opacity 0.7s var(--ease-opacity), filter 0.7s var(--ease-reveal)',
+                        opacity: exposed ? 1 : 0,
+                        filter: exposed ? 'blur(0px)' : 'blur(8px)',
+                        boxShadow: exposed
+                          ? '0 12px 28px -10px rgba(0,0,0,0.5), 0 2px 0 rgba(214,41,41,0.15)'
+                          : '0 4px 12px -8px rgba(0,0,0,0.4)',
+                        cursor: 'default',
                         overflow: 'hidden',
+                        minHeight: '120px',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        justifyContent: 'space-between',
+                      }}
+                      onMouseEnter={(e) => {
+                        const card = e.currentTarget;
+                        const flare = card.querySelector('[data-flare]') as HTMLElement | null;
+                        if (flare) {
+                          flare.style.animation = 'none';
+                          void flare.offsetWidth;
+                          flare.style.animation = 'flare-sweep 0.9s var(--ease-out-soft)';
+                        }
                       }}
                     >
                       <div
+                        className="text-mono text-label"
+                        style={{ color: 'var(--accent)', opacity: 0.85 }}
+                      >
+                        N° {cardIdx}
+                      </div>
+
+                      <h4
+                        style={{
+                          fontFamily: 'var(--font-fraunces), serif',
+                          fontWeight: 500,
+                          fontSize: 'clamp(1.05rem, 1.8vw, 1.35rem)',
+                          lineHeight: 1.15,
+                          letterSpacing: '-0.015em',
+                          color: 'var(--ink)',
+                          margin: 'calc(8 * var(--px)) 0',
+                        }}
+                      >
+                        {skill.title}
+                      </h4>
+
+                      {/* exposure meter — thin */}
+                      <div
+                        style={{
+                          height: '2px',
+                          background: 'var(--rule)',
+                          position: 'relative',
+                          overflow: 'hidden',
+                        }}
+                      >
+                        <div
+                          style={{
+                            position: 'absolute',
+                            inset: 0,
+                            width: exposed ? '100%' : '0%',
+                            background:
+                              'linear-gradient(90deg, var(--accent-soft), var(--accent), var(--accent-deep))',
+                            transition: 'width 1s var(--ease-reveal)',
+                          }}
+                        />
+                      </div>
+
+                      {/* anamorphic flare on hover */}
+                      <div
+                        data-flare=""
+                        aria-hidden="true"
                         style={{
                           position: 'absolute',
-                          inset: 0,
-                          width: exposed ? '100%' : '0%',
+                          top: 0,
+                          bottom: 0,
+                          left: 0,
+                          width: '40%',
                           background:
-                            'linear-gradient(90deg, var(--accent-soft), var(--accent), var(--accent-deep))',
-                          transition: 'width 1s var(--ease-reveal)',
+                            'linear-gradient(90deg, transparent, rgba(214, 41, 41, 0.25), transparent)',
+                          transform: 'translateX(-120%) skewX(-15deg)',
+                          opacity: 0,
+                          pointerEvents: 'none',
                         }}
                       />
-                    </div>
-
-                    {/* anamorphic flare on hover */}
-                    <div
-                      data-flare=""
-                      aria-hidden="true"
-                      style={{
-                        position: 'absolute',
-                        top: 0,
-                        bottom: 0,
-                        left: 0,
-                        width: '40%',
-                        background:
-                          'linear-gradient(90deg, transparent, rgba(214, 41, 41, 0.25), transparent)',
-                        transform: 'translateX(-120%) skewX(-15deg)',
-                        opacity: 0,
-                        pointerEvents: 'none',
-                      }}
-                    />
-                  </article>
-                );
-              })}
+                    </article>
+                  );
+                })}
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </section>
   );

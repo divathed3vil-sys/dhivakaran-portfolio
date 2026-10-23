@@ -3,12 +3,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { BokehField } from './bokeh-field';
 import { ViewfinderCursor } from './viewfinder-cursor';
+import { LAB_IMAGE_SRCS } from './lib/portfolio-images';
 
-const SOURCES = [
-  '/images/portrait.png',
-  '/images/atmosphere.png',
-  '/images/object-lens.png',
-];
+const SOURCES = LAB_IMAGE_SRCS.length > 0 ? LAB_IMAGE_SRCS : ['/images/portrait.png'];
 
 const FILTERS = [
   'grayscale(1) contrast(1.08) brightness(0.95)',
@@ -367,8 +364,10 @@ export function VisualLab({ onClose }: { onClose: () => void }) {
               width: `${t.w}px`,
               height: `${t.h}px`,
               backgroundImage: `url(${t.src})`,
-              backgroundSize: 'cover',
-              backgroundPosition: t.bgPos,
+              backgroundSize: 'contain',
+              backgroundPosition: 'center',
+              backgroundRepeat: 'no-repeat',
+              backgroundColor: 'var(--night-soft)',
               willChange: 'transform, filter, opacity',
               boxShadow: '0 12px 32px -8px rgba(0, 0, 0, 0.6)',
               border: '1px solid rgba(255, 255, 255, 0.08)',
@@ -461,45 +460,6 @@ export function VisualLab({ onClose }: { onClose: () => void }) {
         </div>
       </div>
 
-      {/* CLOSE button — top-right, red border accent. stopPropagation so the
-          section's pointer-capture (drag) doesn't hijack the button's click. */}
-      <button
-        type="button"
-        onClick={onClose}
-        onPointerDown={(e) => e.stopPropagation()}
-        onPointerUp={(e) => e.stopPropagation()}
-        aria-label="Close the Visual Lab"
-        style={{
-          position: 'absolute',
-          top: '1.5rem',
-          right: '1.5rem',
-          zIndex: 7,
-          width: '44px',
-          height: '44px',
-          display: 'inline-flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          border: '1.5px solid var(--accent)',
-          color: 'var(--canvas)',
-          background: 'rgba(10, 10, 10, 0.6)',
-          backdropFilter: 'blur(6px)',
-          cursor: 'pointer',
-          transition: 'background 0.3s var(--ease-out-soft), color 0.3s var(--ease-out-soft)',
-        }}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.background = 'var(--accent)';
-          e.currentTarget.style.color = 'var(--canvas)';
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.background = 'rgba(10, 10, 10, 0.6)';
-          e.currentTarget.style.color = 'var(--canvas)';
-        }}
-      >
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-          <path d="M2 2L14 14M14 2L2 14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-        </svg>
-      </button>
-
       {/* hint — only visible until first input */}
       <div
         ref={hintRef}
@@ -524,13 +484,19 @@ export function VisualLab({ onClose }: { onClose: () => void }) {
         </div>
       </div>
 
-      {/* EXIT pill — closes the overlay. stopPropagation so drag-capture doesn't hijack click. */}
+      {/* Exit The Lab — closes the overlay + returns to top of home page.
+          stopPropagation so drag-capture doesn't hijack click. */}
       <button
         type="button"
-        onClick={onClose}
+        onClick={() => {
+          onClose();
+          requestAnimationFrame(() =>
+            window.scrollTo({ top: 0, behavior: 'smooth' })
+          );
+        }}
         onPointerDown={(e) => e.stopPropagation()}
         onPointerUp={(e) => e.stopPropagation()}
-        aria-label="Exit the Visual Lab"
+        aria-label="Exit the Visual Lab and return to top"
         style={{
           position: 'absolute',
           bottom: '1.5rem',
@@ -558,7 +524,7 @@ export function VisualLab({ onClose }: { onClose: () => void }) {
           e.currentTarget.style.background = 'rgba(10, 10, 10, 0.6)';
         }}
       >
-        ✕ EXIT LAB
+        Exit The Lab ↑
       </button>
     </section>
   );

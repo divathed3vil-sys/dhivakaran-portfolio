@@ -1,51 +1,41 @@
 'use client';
 
 import { useBloom, useHeadingRack } from './lib/use-bloom-rack';
+import {
+  PORTFOLIO_IMAGES,
+  CATEGORY_LABELS,
+  type ImageCategory,
+  type PortfolioImage,
+} from './lib/portfolio-images';
 
-type Category = {
-  name: string;
-  blurb: string;
-  cells: { src: string; bgPos: string; label: string }[];
+const CATEGORY_ORDER: ImageCategory[] = ['book', 'poster', 'thumbnail'];
+
+const CATEGORY_BLURBS: Record<string, string> = {
+  book: 'Cover designs and key art for printed and digital books.',
+  poster: 'Poster designs - print, key art, and promotional.',
+  thumbnail: 'Youtube thumbnails - click-through composition.',
 };
 
-const IMAGES = ['/images/portrait.png', '/images/atmosphere.png', '/images/object-lens.png'];
+// Placeholder cells for categories that don't have real uploads yet.
+// Uses 'other' images as teasers. When real images are added to
+// PORTFOLIO_IMAGES with the right category, they replace these.
+const PLACEHOLDER_SRCS = PORTFOLIO_IMAGES.filter((i) => i.category === 'other');
 
-const CATEGORIES: Category[] = [
-  {
-    name: 'Book Covers',
-    blurb: 'Cover designs and key art for printed and digital books.',
-    cells: [
-      { src: IMAGES[1], bgPos: '20% 40%', label: 'Cover 01' },
-      { src: IMAGES[2], bgPos: '50% 50%', label: 'Cover 02' },
-      { src: IMAGES[0], bgPos: '50% 30%', label: 'Cover 03' },
-      { src: IMAGES[1], bgPos: '70% 60%', label: 'Cover 04' },
-    ],
-  },
-  {
-    name: 'Posters',
-    blurb: 'Poster designs - print, key art, and promotional.',
-    cells: [
-      { src: IMAGES[2], bgPos: '30% 70%', label: 'Poster 01' },
-      { src: IMAGES[1], bgPos: '60% 30%', label: 'Poster 02' },
-      { src: IMAGES[0], bgPos: '40% 50%', label: 'Poster 03' },
-      { src: IMAGES[2], bgPos: '70% 40%', label: 'Poster 04' },
-    ],
-  },
-  {
-    name: 'Thumbnails',
-    blurb: 'Youtube thumbnails - click-through composition.',
-    cells: [
-      { src: IMAGES[0], bgPos: '50% 25%', label: 'Thumbnail 01' },
-      { src: IMAGES[1], bgPos: '30% 50%', label: 'Thumbnail 02' },
-      { src: IMAGES[2], bgPos: '60% 60%', label: 'Thumbnail 03' },
-    ],
-  },
-];
+function getCellsForCategory(cat: ImageCategory, catLabel: string): PortfolioImage[] {
+  const real = PORTFOLIO_IMAGES.filter((i) => i.category === cat);
+  if (real.length > 0) return real;
+  // placeholders — 3 teaser cells using 'other' images
+  return PLACEHOLDER_SRCS.slice(0, 3).map((img, i) => ({
+    ...img,
+    label: `${catLabel.replace(/s$/, '')} 0${i + 1}`,
+  }));
+}
 
 /**
  * SelectedWork — three category grids (Book Covers, Posters, Thumbnails).
- * Grid-only (accordion removed per user request). Placeholder covers; real
- * projects to be uploaded later.
+ * Pulls from the shared PORTFOLIO_IMAGES list. Images shown at their own
+ * ratio (no crop — background-size: contain). When real work is added to
+ * portfolio-images.ts, it appears here AND in the Visual Lab automatically.
  */
 export function SelectedWork() {
   const bloomRef = useBloom<HTMLDivElement>();
@@ -82,71 +72,91 @@ export function SelectedWork() {
 
           <hr className="hairline" style={{ margin: '0 0 calc(48 * var(--px))' }} />
 
-          {CATEGORIES.map((cat) => (
-            <div key={cat.name} style={{ marginBottom: 'calc(56 * var(--px))' }}>
-              {/* category label + blurb */}
-              <div style={{ marginBottom: 'calc(24 * var(--px))' }}>
-                <h3
-                  style={{
-                    fontFamily: 'var(--font-fraunces), serif',
-                    fontWeight: 500,
-                    fontSize: 'clamp(1.5rem, 3vw, 2.25rem)',
-                    letterSpacing: '-0.02em',
-                    color: 'var(--ink)',
-                    margin: 0,
-                    lineHeight: 1.1,
-                  }}
-                >
-                  {cat.name}
-                </h3>
-                <p
-                  className="text-body"
-                  style={{ color: 'var(--muted)', margin: '0.5rem 0 0', maxWidth: '46ch' }}
-                >
-                  {cat.blurb}
-                </p>
-              </div>
-
-              {/* grid of cells */}
-              <div className="contact-sheet-grid">
-                {cat.cells.map((cell, i) => (
-                  <article
-                    key={i}
-                    className="contact-sheet-cell halftone scratch-host"
-                    tabIndex={0}
-                    style={{ background: 'var(--bone-soft)' }}
+          {CATEGORY_ORDER.map((cat) => {
+            const cells = getCellsForCategory(cat, CATEGORY_LABELS[cat]);
+            const isPlaceholder = PORTFOLIO_IMAGES.filter((i) => i.category === cat).length === 0;
+            return (
+              <div key={cat} style={{ marginBottom: 'calc(56 * var(--px))' }}>
+                <div style={{ marginBottom: 'calc(24 * var(--px))' }}>
+                  <h3
+                    style={{
+                      fontFamily: 'var(--font-fraunces), serif',
+                      fontWeight: 500,
+                      fontSize: 'clamp(1.5rem, 3vw, 2.25rem)',
+                      letterSpacing: '-0.02em',
+                      color: 'var(--ink)',
+                      margin: 0,
+                      lineHeight: 1.1,
+                    }}
                   >
-                    <div
-                      style={{
-                        position: 'absolute',
-                        inset: 0,
-                        backgroundImage: `url(${cell.src})`,
-                        backgroundSize: 'cover',
-                        backgroundPosition: cell.bgPos,
-                        filter: 'grayscale(1) contrast(1.1) brightness(0.88)',
-                        transition: 'filter 0.4s var(--ease-out-soft), transform 0.4s var(--ease-out-soft)',
-                      }}
-                    />
-                    <div className="scratch-overlay" />
-                    <div
-                      className="text-mono text-label"
-                      style={{
-                        position: 'absolute',
-                        top: '8px',
-                        left: '8px',
-                        color: 'var(--canvas)',
-                        background: 'rgba(10, 10, 10, 0.6)',
-                        padding: '2px 6px',
-                        zIndex: 2,
-                      }}
+                    {CATEGORY_LABELS[cat]}
+                  </h3>
+                  <p
+                    className="text-body"
+                    style={{ color: 'var(--muted)', margin: '0.5rem 0 0', maxWidth: '46ch' }}
+                  >
+                    {CATEGORY_BLURBS[cat]}
+                  </p>
+                </div>
+
+                <div className="contact-sheet-grid">
+                  {cells.map((cell, i) => (
+                    <article
+                      key={`${cat}-${i}`}
+                      className="contact-sheet-cell halftone scratch-host"
+                      tabIndex={0}
+                      style={{ background: 'var(--night-soft)' }}
                     >
-                      {cell.label}
-                    </div>
-                  </article>
-                ))}
+                      <div
+                        style={{
+                          position: 'absolute',
+                          inset: 0,
+                          backgroundImage: `url(${cell.src})`,
+                          backgroundSize: 'contain',
+                          backgroundPosition: 'center',
+                          backgroundRepeat: 'no-repeat',
+                          filter: 'grayscale(1) contrast(1.1) brightness(0.88)',
+                          transition: 'filter 0.4s var(--ease-out-soft)',
+                        }}
+                      />
+                      <div className="scratch-overlay" />
+                      <div
+                        className="text-mono text-label"
+                        style={{
+                          position: 'absolute',
+                          top: '8px',
+                          left: '8px',
+                          color: 'var(--canvas)',
+                          background: 'rgba(10, 10, 10, 0.6)',
+                          padding: '2px 6px',
+                          zIndex: 2,
+                        }}
+                      >
+                        {cell.label}
+                      </div>
+                      {isPlaceholder && (
+                        <div
+                          className="text-mono text-label"
+                          style={{
+                            position: 'absolute',
+                            bottom: '8px',
+                            right: '8px',
+                            color: 'var(--canvas)',
+                            background: 'rgba(10, 10, 10, 0.6)',
+                            padding: '2px 6px',
+                            opacity: 0.7,
+                            zIndex: 2,
+                          }}
+                        >
+                          placeholder
+                        </div>
+                      )}
+                    </article>
+                  ))}
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
     </section>
