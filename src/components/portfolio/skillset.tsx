@@ -4,10 +4,12 @@ import { useEffect, useRef, useState } from 'react';
 import { BokehField } from './bokeh-field';
 import { useBloom, useHeadingRack } from './lib/use-bloom-rack';
 
+type Skill = string | { title: string; dim?: boolean };
+
 type Group = {
   index: string;
   name: string;
-  skills: string[];
+  skills: Skill[];
 };
 
 const GROUPS: Group[] = [
@@ -19,9 +21,8 @@ const GROUPS: Group[] = [
       'Adobe Premiere Pro',
       'Adobe After Effects',
       'Adobe Illustrator',
-      'DaVinci Resolve',
-      'Blender',
-      'Flutter & Supabase',
+      { title: 'DaVinci Resolve', dim: true },
+      { title: 'Blender', dim: true },
     ],
   },
   {
@@ -44,7 +45,7 @@ const GROUPS: Group[] = [
       'Visual Effects (VFX)',
       'Sound Design',
       'Color Grading',
-      'Audio Editing & Synchronization',
+      'Foley Art',
     ],
   },
   {
@@ -77,6 +78,7 @@ type SkillCard = {
   groupIndex: string;
   groupName: string;
   title: string;
+  dim: boolean;
   flatIndex: number;
   key: string;
 };
@@ -86,12 +88,15 @@ const ALL_SKILLS: SkillCard[] = (() => {
   let idx = 0;
   for (const g of GROUPS) {
     for (const s of g.skills) {
+      const title = typeof s === 'string' ? s : s.title;
+      const dim = typeof s === 'string' ? false : !!s.dim;
       arr.push({
         groupIndex: g.index,
         groupName: g.name,
-        title: s,
+        title,
+        dim,
         flatIndex: idx++,
-        key: `${g.index}-${s}`,
+        key: `${g.index}-${title}`,
       });
     }
   }
@@ -259,7 +264,7 @@ export function Skillset() {
                         transform: `rotate(${rotation}deg)`,
                         transition:
                           'transform 0.7s var(--ease-reveal), opacity 0.7s var(--ease-opacity), filter 0.7s var(--ease-reveal)',
-                        opacity: exposed ? 1 : 0,
+                        opacity: exposed ? (skill.dim ? 0.5 : 1) : 0,
                         filter: exposed ? 'blur(0px)' : 'blur(8px)',
                         boxShadow: exposed
                           ? '0 12px 28px -10px rgba(0,0,0,0.5), 0 2px 0 rgba(214,41,41,0.15)'

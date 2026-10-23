@@ -2,7 +2,7 @@
 
 import { useRef, useState } from 'react';
 
-const IMAGES = ['/images/portrait.png', '/images/atmosphere.png', '/images/object-lens.png'];
+const IMAGES = ['/images/portrait-low.webp', '/images/atmosphere-low.webp', '/images/object-lens-low.webp'];
 
 /**
  * VisualLabCard — a blurry glimpse of the real Visual Lab.

@@ -20,9 +20,11 @@ export const PORTFOLIO_IMAGES: PortfolioImage[] = [
   // Placeholders — replace/add real work below.
   // Book covers, posters, and thumbnails added here will flow into both
   // the Selected Work grids AND the Visual Lab automatically.
-  { src: '/images/portrait.png', category: 'other', label: 'Portrait' },
-  { src: '/images/atmosphere.png', category: 'other', label: 'Atmosphere' },
-  { src: '/images/object-lens.png', category: 'other', label: 'Aperture' },
+  // -med.webp = enough quality for Selected Work display
+  // -low.webp = low-res for the Visual Lab (fast)
+  { src: '/images/portrait-med.webp', category: 'other', label: 'Portrait' },
+  { src: '/images/atmosphere-med.webp', category: 'other', label: 'Atmosphere' },
+  { src: '/images/object-lens-med.webp', category: 'other', label: 'Aperture' },
 ];
 
 export const CATEGORY_LABELS: Record<ImageCategory, string> = {
@@ -40,5 +42,9 @@ export const CATEGORY_BLURBS: Record<ImageCategory, string> = {
   other: '',
 };
 
-/** All image srcs for the Visual Lab (every image, regardless of category). */
-export const LAB_IMAGE_SRCS: string[] = PORTFOLIO_IMAGES.map((img) => img.src);
+/** All image srcs for the Visual Lab (low-res for fast rendering). */
+export const LAB_IMAGE_SRCS: string[] = [
+  '/images/portrait-low.webp',
+  '/images/atmosphere-low.webp',
+  '/images/object-lens-low.webp',
+];

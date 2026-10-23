@@ -117,7 +117,7 @@ export function Hero() {
         style={{
           position: 'absolute',
           inset: 0,
-          backgroundImage: 'url(/images/portrait.png)',
+          backgroundImage: 'url(/images/portrait-full.webp)',
           backgroundSize: 'cover',
           backgroundPosition: '75% 25%',
           filter: 'saturate(0.82) contrast(1.05) brightness(0.94)',
