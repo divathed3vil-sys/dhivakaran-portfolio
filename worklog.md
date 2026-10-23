@@ -641,3 +641,45 @@ Stage Summary:
 - The code is on GitHub (divathed3vil-sys/dhivakaran-portfolio) + live on Vercel (dhivakaran-portfolio.vercel.app).
 - Optional: connect GitHub to Vercel (vercel git connect) for auto-deploy on every push.
 - Ready for Phase 3 (Studio CRUD tabs) + Phase 4 (public site reads from Supabase).
+
+---
+Task ID: 74-81 (Complete remaining + fixes)
+Agent: main-orchestrator
+Task: Fix color/lab exit/reveal size + complete Videos tab, Site Settings tab, public video section.
+
+Work Log:
+- Selected Work images: removed grayscale filter → now in color (saturate(0.95) contrast(1.05) brightness(0.96)). Verified on live: cellFilter has no grayscale ✓
+- Visual Lab exit button: window.scrollTo(0,0) → window.location.reload() (full page refresh — the most reliable way to return to the landing page)
+- Visual Lab cursor reveal: mask radius 160px → 480px (3x bigger)
+- Videos tab (studio/videos-tab.tsx): full CRUD
+  - Add video: URL input (auto-detects YouTube/Vimeo platform), label, priority, published
+  - List videos with thumbnails (YouTube maxresdefault.jpg auto-extracted from URL)
+  - Delete videos
+  - Click a video → lightbox with embedded iframe (YouTube/Vimeo autoplay)
+  - Uses getAllVideos() (authed, reads all) + addVideo() + deleteVideo()
+  - Verified: ADD VIDEO form + URL input on live ✓
+- Site Settings tab (studio/site-settings-tab.tsx): full edit
+  - Edit: name, tagline, about, whatsapp, email
+  - Save → updateSiteSettings() (updates the singleton in Supabase)
+  - Verified: SITE SETTINGS form + name field on live ✓
+- Public video section (video-section.tsx):
+  - Fetches published videos from Supabase (getVideos())
+  - Shows video thumbnails (YouTube maxresdefault) → click → full-screen lightbox with embedded iframe
+  - Returns null if no videos (hides the section — only shows when content exists)
+  - Added to page.tsx between Selected Work + Visual Lab Card
+  - "Videos" link added to nav menu
+- Studio overlay updated: Videos + Site Settings tabs now render the real components (not placeholders)
+- Data layer: added getAllImages() + getAllVideos() (admin reads, no published filter)
+- All pushed to GitHub + deployed to Vercel
+
+Stage Summary:
+- The Studio now has 4 fully functional tabs:
+  1. Selected Frames — add/delete categories + upload images + priority + toggle Lab
+  2. Visual Lab — info (manage via Selected Frames, toggle "Also in Lab")
+  3. Videos — add/delete YouTube/Vimeo URLs + lightbox preview + thumbnails
+  4. Site Settings — edit name/tagline/about/whatsapp/email + save
+- The public site has a new Video section (shows published videos with thumbnails → lightbox)
+- Selected Work images are now in color (not grayscale)
+- The Visual Lab exit button reloads the page (reliable return to landing)
+- The Visual Lab cursor reveal is 3x bigger
+- All on GitHub (divathed3vil-sys/dhivakaran-portfolio) + live (dhivakaran-portfolio.vercel.app)
