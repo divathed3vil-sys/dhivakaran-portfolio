@@ -1,6 +1,7 @@
 'use client';
 
 import { useBloom, useHeadingRack } from './lib/use-bloom-rack';
+import { usePortfolioData, getImagesForCategory, lowResUrl } from './lib/use-portfolio-data';
 import {
   PORTFOLIO_IMAGES,
   CATEGORY_LABELS,
@@ -40,6 +41,16 @@ function getCellsForCategory(cat: ImageCategory, catLabel: string): PortfolioIma
 export function SelectedWork() {
   const bloomRef = useBloom<HTMLDivElement>();
   const titleRef = useHeadingRack<HTMLHeadingElement>();
+  const { categories: dbCats, images: dbImgs } = usePortfolioData();
+
+  // Use Supabase data if available; fall back to hardcoded placeholders
+  const useDb = dbCats && dbCats.length > 0;
+  const displayCats = useDb
+    ? dbCats!.map((c) => ({ key: c.id, name: c.name, blurb: c.blurb || '', cells: getImagesForCategory(dbImgs || [], c.id).map((img) => ({ src: lowResUrl(img.public_url), label: img.label || '' })) }))
+    : CATEGORY_ORDER.map((cat) => {
+        const cells = getCellsForCategory(cat, CATEGORY_LABELS[cat]);
+        return { key: cat, name: CATEGORY_LABELS[cat], blurb: CATEGORY_BLURBS[cat], cells: cells.map((c) => ({ src: c.src, label: c.label })) };
+      });
 
   return (
     <section
@@ -72,11 +83,10 @@ export function SelectedWork() {
 
           <hr className="hairline" style={{ margin: '0 0 calc(48 * var(--px))' }} />
 
-          {CATEGORY_ORDER.map((cat) => {
-            const cells = getCellsForCategory(cat, CATEGORY_LABELS[cat]);
-            const isPlaceholder = PORTFOLIO_IMAGES.filter((i) => i.category === cat).length === 0;
+          {displayCats.map((cat) => {
+            const isPlaceholder = !useDb;
             return (
-              <div key={cat} style={{ marginBottom: 'calc(56 * var(--px))' }}>
+              <div key={cat.key} style={{ marginBottom: 'calc(56 * var(--px))' }}>
                 <div style={{ marginBottom: 'calc(24 * var(--px))' }}>
                   <h3
                     style={{
@@ -89,20 +99,20 @@ export function SelectedWork() {
                       lineHeight: 1.1,
                     }}
                   >
-                    {CATEGORY_LABELS[cat]}
+                    {cat.name}
                   </h3>
                   <p
                     className="text-body"
                     style={{ color: 'var(--muted)', margin: '0.5rem 0 0', maxWidth: '46ch' }}
                   >
-                    {CATEGORY_BLURBS[cat]}
+                    {cat.blurb}
                   </p>
                 </div>
 
                 <div className="contact-sheet-grid">
-                  {cells.map((cell, i) => (
+                  {cat.cells.map((cell, i) => (
                     <article
-                      key={`${cat}-${i}`}
+                      key={`${cat.key}-${i}`}
                       className="contact-sheet-cell halftone scratch-host"
                       tabIndex={0}
                       style={{ background: 'var(--night-soft)' }}

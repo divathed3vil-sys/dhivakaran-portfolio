@@ -2,6 +2,8 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { LAB_IMAGE_SRCS } from './lib/portfolio-images';
+import { getLabImageUrls } from '@/lib/supabase-data';
+import { lowResUrl } from './lib/use-portfolio-data';
 
 // Low-res WebP previews for the lab (2-15KB each, vs 100KB+ PNGs).
 const SOURCES = LAB_IMAGE_SRCS.length > 0 ? LAB_IMAGE_SRCS : ['/images/portrait-low.webp'];
@@ -31,6 +33,17 @@ export function VisualLab({ onClose }: { onClose: () => void }) {
   const pan = useRef({ x: 0, y: 0, vx: 0, vy: 0, dragging: false, lastX: 0, lastY: 0 });
   const [hintGone, setHintGone] = useState(false);
   const [viewport, setViewport] = useState({ w: 1440, h: 900 });
+  const [dbLabUrls, setDbLabUrls] = useState<string[] | null>(null);
+
+  // fetch lab image URLs from Supabase (falls back to hardcoded if empty)
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const urls = await getLabImageUrls();
+      if (!cancelled) setDbLabUrls(urls);
+    })();
+    return () => { cancelled = true; };
+  }, []);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -50,12 +63,13 @@ export function VisualLab({ onClose }: { onClose: () => void }) {
     for (let r = 0; r < rows; r++) {
       for (let c = 0; c < cols; c++) {
         const idx = r * cols + c;
+        const sources = (dbLabUrls && dbLabUrls.length > 0) ? dbLabUrls.map(u => lowResUrl(u, 400)) : SOURCES;
         arr.push({
           lx: c * cellW,
           ly: r * cellH,
           w: 280,
           h: 280,
-          src: SOURCES[idx % SOURCES.length],
+          src: sources[idx % sources.length],
           bgPos: BG_POSITIONS[idx % BG_POSITIONS.length],
           rot: ((idx * 17) % 100) / 100 * 2 - 1,
           key: idx,
@@ -63,7 +77,7 @@ export function VisualLab({ onClose }: { onClose: () => void }) {
       }
     }
     return { tiles: arr, fieldW: cols * cellW, fieldH: rows * cellH };
-  }, [viewport.w, viewport.h]);
+  }, [viewport.w, viewport.h, dbLabUrls]);
 
   // initial pan — center the field
   useEffect(() => {
