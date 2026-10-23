@@ -807,11 +807,10 @@ body[data-vf-active="true"] { cursor: none; }
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr));
   gap: calc(20 * var(--px));
+  align-items: start;
 }
 .contact-sheet-cell {
   position: relative;
-  aspect-ratio: 3 / 2;
-  overflow: hidden;
   border: 0;
   box-shadow: 0 12px 32px -8px rgba(10, 10, 10, 0.35);
   cursor: pointer;
@@ -823,6 +822,11 @@ body[data-vf-active="true"] { cursor: none; }
 }
 .contact-sheet-cell:hover .desc-overlay {
   opacity: 1 !important;
+}
+.contact-sheet-cell img {
+  width: 100%;
+  height: auto;
+  display: block;
 }
 
 /* ============================================================================

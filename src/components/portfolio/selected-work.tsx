@@ -135,14 +135,10 @@ export function SelectedWork() {
                       data-desc={cell.desc || ''}
                       style={{ background: 'var(--night-soft)' }}
                     >
-                      <div
+                      <img
+                        src={cell.src}
+                        alt={cell.label || ''}
                         style={{
-                          position: 'absolute',
-                          inset: 0,
-                          backgroundImage: `url(${cell.src})`,
-                          backgroundSize: 'contain',
-                          backgroundPosition: 'center',
-                          backgroundRepeat: 'no-repeat',
                           filter: 'saturate(0.95) contrast(1.05) brightness(0.96)',
                           transition: 'filter 0.4s var(--ease-out-soft)',
                         }}

@@ -75,18 +75,20 @@ export function VisualLabCard({ onEnter }: { onEnter: () => void }) {
           transition: 'filter 0.9s var(--ease-out-soft), transform 0.9s var(--ease-out-soft)',
         }}
       >
-        {Array.from({ length: 12 }, (_, i) => (
-          <div
-            key={i}
-            style={{
-              backgroundImage: images.length > 0 ? `url(${images[i % images.length]})` : 'none',
-              background: images.length === 0 ? 'var(--night-soft)' : undefined,
-              backgroundSize: 'cover',
-              backgroundPosition: `${(i * 23) % 100}% ${(i * 37) % 100}%`,
-              filter: 'grayscale(1) contrast(1.1) brightness(0.7)',
-            }}
-          />
-        ))}
+        {Array.from({ length: 12 }, (_, i) => {
+          const imgs = images.length > 0 ? images : ['/images/landing-low.webp'];
+          return (
+            <div
+              key={i}
+              style={{
+                backgroundImage: `url(${imgs[i % imgs.length]})`,
+                backgroundSize: 'cover',
+                backgroundPosition: `${(i * 23) % 100}% ${(i * 37) % 100}%`,
+                filter: 'grayscale(1) contrast(1.1) brightness(0.7)',
+              }}
+            />
+          );
+        })}
       </div>
 
       {/* darkening overlay for text legibility */}

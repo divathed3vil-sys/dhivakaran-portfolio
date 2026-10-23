@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { LAB_IMAGE_SRCS } from './lib/portfolio-images';
+import { getLabImageUrls } from '@/lib/supabase-data';
+import { lowResUrl } from './lib/use-portfolio-data';
 
 /**
  * IntroLoader — "film leader" countdown.
@@ -15,6 +16,19 @@ export function IntroLoader() {
   const [phase, setPhase] = useState<'in' | 'out' | 'done'>('in');
   const [frame, setFrame] = useState(241);
   const [chipImg, setChipImg] = useState(0);
+  const [chipImages, setChipImages] = useState<string[]>([]);
+
+  // fetch lab image URLs from Supabase for the chip (film reel)
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const urls = await getLabImageUrls();
+      if (!cancelled && urls.length > 0) {
+        setChipImages(urls.map(u => lowResUrl(u, 400)));
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -153,8 +167,8 @@ export function IntroLoader() {
         ))}
       </div>
 
-      {/* image chip — cycling film reel (only if images exist) */}
-      {LAB_IMAGE_SRCS.length > 0 && (
+      {/* image chip — cycling film reel (fetches from Supabase) */}
+      {chipImages.length > 0 && (
         <div
           style={{
             width: '120px',
@@ -169,7 +183,7 @@ export function IntroLoader() {
             style={{
               width: '100%',
               height: '100%',
-              backgroundImage: `url(${LAB_IMAGE_SRCS[chipImg % LAB_IMAGE_SRCS.length]})`,
+              backgroundImage: `url(${chipImages[chipImg % chipImages.length]})`,
               backgroundSize: 'cover',
               backgroundPosition: 'center',
               filter: 'grayscale(1) contrast(1.1) brightness(0.85)',
