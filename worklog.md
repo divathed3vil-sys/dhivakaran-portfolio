@@ -438,3 +438,45 @@ Stage Summary:
 - Major refactor complete: hero (bolder, face-level, minimal), about (standout line, about.png, no collaborators), selected work (3 category grids, no accordion), visual lab card (blurry glimpse + hover reveal), skillset→experiences (3 groups, 11 real skills), contact (no socials/PRINT/COLOMBO), footer (Thanks to ZLM and ARENA, tagline fixed), visual lab overlay (denser + buttons fixed).
 - All colors use universal CSS vars (continuity preserved). No LLM names in rendered text. All filler small text removed per user request.
 - Ready for next content upload (real project images for the 3 category grids, real skill details, etc.).
+
+---
+Task ID: 51-55
+Agent: main-orchestrator
+Task: Fix mobile hero position, restructure skillset to 5 groups/28 skills, fix visual lab buttons (pointer-capture hijacking) + tiles (blank left corner / toroidal dead zone).
+
+Work Log:
+- Mobile hero position (JS-driven, not CSS — CSS media query had a cache issue):
+  - Added isMobile state to hero.tsx (useState + resize listener, breakpoint 768px)
+  - paddingTop: isMobile ? '52vh' : '22vh' (inline, always applies)
+  - Mobile: text at 52% from top (below center). Desktop: 22% (face level).
+  - Verified: mobile h1TopVhPercent 52% (below center), desktop 25% (face level)
+- Skillset restructured to user's exact 5 groups / 28 skills:
+  01. Software & Tools (7): Adobe Photoshop, Premiere Pro, After Effects, Illustrator, DaVinci Resolve, Blender, Flutter & Supabase
+  02. Graphic Design (5): Poster Design, YouTube Thumbnail Design, Visual Composition, Image Manipulation, Digital Artwork & Creative Design
+  03. Video & Post-Production (6): Video Editing, Motion Graphics, Visual Effects (VFX), Sound Design, Color Grading, Audio Editing & Synchronization
+  04. Programming & Development (5): Basic Python, Basic Application Development, Flutter App Development, Backend Integration with Supabase, AI-Assisted Coding
+  05. Systems & Hardware (5): Linux OS, Computer Hardware Troubleshooting, Laptop Repair & Maintenance, OS Configuration, Mobile Device Troubleshooting
+  - Slim cards (index + title + exposure meter, no description) — 28 compact specimen cards with group sub-headers (01..05)
+  - Verified: groupCount 5, cardCount 28, groupNames correct
+- Visual Lab buttons fix (the real cause — pointer-capture hijacking):
+  - The section's onPointerDown calls setPointerCapture(pointerId), which redirects ALL subsequent pointer events (including pointerup) to the section. So when clicking a button, pointerdown fires on the button but pointerup is captured by the section → the button never receives a click event.
+  - Fix: added onPointerDown={(e) => e.stopPropagation()} + onPointerUp={(e) => e.stopPropagation()} to BOTH the CLOSE button and the EXIT pill. This stops the event from bubbling to the section, so the section's drag-capture never fires when clicking a button, and the button's onClick works normally.
+  - Verified: clicking CLOSE now closes the overlay (labClosed: true)
+- Visual Lab tiles fix (blank left corner / toroidal dead zone):
+  - Root cause: the field (fieldW=2320) was much larger than the viewport (1440), creating a "dead zone" where tiles mapped to off-screen positions (neither visible right nor wrapped to visible left). The old wrap `if (sx > vw+400) sx -= fieldW` only wrapped tiles that were far off-screen right, and the wrapped position landed off-screen left.
+  - Fix 1 (responsive grid): added viewport state (w, h) updated on resize. Tile generation now computes cols = ceil(vw/cellW), rows = ceil(vh/cellH) with cellW = tileW = 280 (touching). This guarantees fieldW ≤ vw + tileW, which is the mathematical condition for zero dead zone.
+  - Fix 2 (correct wrap formula): replaced the old conditional wrap with `k = ceil((-tileW - sx) / fieldW); sx = sx + k*fieldW`. This is the unique shift that brings each tile into the visible range [-tileW, vw] when fieldW ≤ vw + tileW. Same for Y.
+  - Uniform 280×280 tiles (removed size jitter that broke dense packing). Visual variety from 3 source images × 6 grayscale filters × 8 background-positions.
+  - Verified: 24 tiles (6 cols × 4 rows on 1440×900), ALL 24 visible, 4 tiles in the left corner (leftCornerHasTiles: true) — no blank space.
+
+Verification (agent-browser):
+- Lint: 0 errors, 2 font-link warnings (unchanged)
+- Desktop (1440×900): hero h1 at 25% (face level), skillset 5 groups/28 cards, lab 24 tiles all visible (4 in left corner), CLOSE button works
+- Mobile (390×844): hero copy paddingTop 438.88px = 52vh, h1 at 52% (below center)
+
+Stage Summary:
+- Mobile hero text now sits just below center (52vh) — readable below the portrait's face on phone screens.
+- Skillset restructured to the user's exact 5 categories / 28 skills with slim compact cards.
+- Visual Lab CLOSE + EXIT buttons now work (pointer-capture no longer hijacks clicks).
+- Visual Lab tiles now fill the entire viewport with no blank corners (responsive grid + correct toroidal wrap formula eliminates the dead zone on every screen size).
+- All prior pending items resolved. Ready for next content upload.

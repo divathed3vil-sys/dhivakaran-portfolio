@@ -4,54 +4,76 @@ import { useEffect, useRef, useState } from 'react';
 import { BokehField } from './bokeh-field';
 import { useBloom, useHeadingRack } from './lib/use-bloom-rack';
 
-type Skill = {
-  title: string;
-  desc: string;
-};
-
 type Group = {
+  index: string;
   name: string;
-  skills: Skill[];
+  skills: string[];
 };
 
 const GROUPS: Group[] = [
   {
-    name: 'Software',
+    index: '01',
+    name: 'Software & Tools',
     skills: [
-      { title: 'Photoshop', desc: 'Image manipulation, compositing, and graphic design.' },
-      { title: 'Premiere Pro', desc: 'Video editing - cuts, pacing, color, story.' },
-      { title: 'After Effects', desc: 'Motion graphics, VFX, and title sequences.' },
+      'Adobe Photoshop',
+      'Adobe Premiere Pro',
+      'Adobe After Effects',
+      'Adobe Illustrator',
+      'DaVinci Resolve',
+      'Blender',
+      'Flutter & Supabase',
     ],
   },
   {
-    name: 'Creative',
+    index: '02',
+    name: 'Graphic Design',
     skills: [
-      { title: 'Poster Design', desc: 'Print and key art - layout, type, visual identity.' },
-      { title: 'Thumbnail Design', desc: 'Youtube thumbnails - click-through composition.' },
-      { title: 'Video Editing', desc: 'Cuts, rhythm, and story structure across formats.' },
-      { title: 'Motion Graphics', desc: 'Animated type, lower-thirds, and scene transitions.' },
-      { title: 'VFX', desc: 'Compositing, clean-up, and visual simulation.' },
-      { title: 'Sound Design', desc: 'Score, foley, and audio identity.' },
+      'Poster Design',
+      'YouTube Thumbnail Design',
+      'Visual Composition',
+      'Image Manipulation',
+      'Digital Artwork & Creative Design',
     ],
   },
   {
-    name: 'IT',
+    index: '03',
+    name: 'Video & Post-Production',
     skills: [
-      {
-        title: 'Programming & AI',
-        desc: 'Python fundamentals, AI-assisted prototyping, Flutter/Dart exploration, and local AI (Ollama) setup.',
-      },
-      {
-        title: 'Linux',
-        desc: 'EndeavourOS, terminal configuration, desktop customization, and system troubleshooting.',
-      },
+      'Video Editing',
+      'Motion Graphics',
+      'Visual Effects (VFX)',
+      'Sound Design',
+      'Color Grading',
+      'Audio Editing & Synchronization',
+    ],
+  },
+  {
+    index: '04',
+    name: 'Programming & Development',
+    skills: [
+      'Basic Python Programming',
+      'Basic Application Development',
+      'Flutter App Development',
+      'Backend Integration with Supabase',
+      'AI-Assisted Coding',
+    ],
+  },
+  {
+    index: '05',
+    name: 'Systems & Hardware',
+    skills: [
+      'Linux Operating Systems',
+      'Computer Hardware Troubleshooting',
+      'Laptop Repair & Maintenance',
+      'Operating System Configuration',
+      'Mobile Device Troubleshooting',
     ],
   },
 ];
 
 /**
- * Skillset — "Experiences". Three groups: Software, Creative, IT.
- * Specimen-card grid with exposure meters + anamorphic flare on hover.
+ * Experiences — five groups of skills across craft and code.
+ * Slim specimen cards (index + title + group + exposure meter). 28 skills total.
  */
 export function Skillset() {
   const sectionRef = useRef<HTMLElement>(null);
@@ -101,7 +123,7 @@ export function Skillset() {
           }
         });
       },
-      { threshold: 0.35 }
+      { threshold: 0.3 }
     );
     cardRefs.current.forEach((el) => el && io.observe(el));
     return () => io.disconnect();
@@ -143,34 +165,50 @@ export function Skillset() {
           </em>
         </h2>
 
-        <hr
-          className="hairline-night"
-          style={{ margin: '0 0 calc(48 * var(--px))' }}
-        />
+        <hr className="hairline-night" style={{ margin: '0 0 calc(48 * var(--px))' }} />
 
         {GROUPS.map((group) => (
-          <div key={group.name} style={{ marginBottom: 'calc(48 * var(--px))' }}>
+          <div key={group.index} style={{ marginBottom: 'calc(40 * var(--px))' }}>
             {/* group label */}
             <div
-              className="text-mono text-label"
-              style={{ color: 'var(--accent)', marginBottom: 'calc(20 * var(--px))' }}
+              style={{
+                display: 'flex',
+                alignItems: 'baseline',
+                gap: '0.75rem',
+                marginBottom: 'calc(18 * var(--px))',
+              }}
             >
-              {group.name}
+              <span className="text-mono text-label" style={{ color: 'var(--accent)' }}>
+                {group.index}
+              </span>
+              <h3
+                style={{
+                  fontFamily: 'var(--font-fraunces), serif',
+                  fontWeight: 500,
+                  fontSize: 'clamp(1.25rem, 2.5vw, 1.75rem)',
+                  letterSpacing: '-0.02em',
+                  color: 'var(--canvas)',
+                  margin: 0,
+                  lineHeight: 1.1,
+                }}
+              >
+                {group.name}
+              </h3>
             </div>
 
-            {/* cards grid */}
+            {/* slim cards grid */}
             <div
               style={{
                 display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 300px), 1fr))',
-                gap: 'calc(20 * var(--px))',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 220px), 1fr))',
+                gap: 'calc(12 * var(--px))',
               }}
             >
               {group.skills.map((skill) => {
                 const idx = String(++globalIdx).padStart(2, '0');
-                const key = `${group.name}-${skill.title}`;
+                const key = `${group.index}-${skill}`;
                 const exposed = exposedCards.has(key);
-                const rotation = ((globalIdx * 17) % 100) / 100 * 3 - 1.5;
+                const rotation = ((globalIdx * 17) % 100) / 100 * 2.5 - 1.25;
                 return (
                   <article
                     key={key}
@@ -178,24 +216,23 @@ export function Skillset() {
                       cardRefs.current[globalIdx - 1] = el;
                     }}
                     data-key={key}
-                    data-idx={globalIdx - 1}
                     className="specimen-card"
                     style={{
                       position: 'relative',
                       background: 'var(--bone-soft)',
                       color: 'var(--ink)',
-                      padding: 'calc(24 * var(--px))',
+                      padding: 'calc(18 * var(--px))',
                       transform: `rotate(${rotation}deg)`,
                       transition:
                         'transform 0.7s var(--ease-reveal), opacity 0.7s var(--ease-opacity), filter 0.7s var(--ease-reveal)',
                       opacity: exposed ? 1 : 0,
-                      filter: exposed ? 'blur(0px)' : 'blur(10px)',
+                      filter: exposed ? 'blur(0px)' : 'blur(8px)',
                       boxShadow: exposed
-                        ? '0 18px 40px -12px rgba(0,0,0,0.6), 0 2px 0 rgba(214,41,41,0.18)'
+                        ? '0 12px 28px -10px rgba(0,0,0,0.5), 0 2px 0 rgba(214,41,41,0.15)'
                         : '0 4px 12px -8px rgba(0,0,0,0.4)',
                       cursor: 'default',
                       overflow: 'hidden',
-                      minHeight: '220px',
+                      minHeight: '120px',
                       display: 'flex',
                       flexDirection: 'column',
                       justifyContent: 'space-between',
@@ -212,73 +249,44 @@ export function Skillset() {
                   >
                     <div
                       className="text-mono text-label"
-                      style={{
-                        color: 'var(--accent)',
-                        opacity: 0.85,
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                      }}
+                      style={{ color: 'var(--accent)', opacity: 0.85 }}
                     >
-                      <span>N° {idx}</span>
-                      <span style={{ opacity: 0.5 }}>{group.name.toUpperCase()}</span>
+                      N° {idx}
                     </div>
 
-                    <h3
+                    <h4
                       style={{
                         fontFamily: 'var(--font-fraunces), serif',
                         fontWeight: 500,
-                        fontSize: 'clamp(1.4rem, 2.8vw, 2rem)',
-                        lineHeight: 1.05,
-                        letterSpacing: '-0.02em',
+                        fontSize: 'clamp(1.05rem, 1.8vw, 1.35rem)',
+                        lineHeight: 1.15,
+                        letterSpacing: '-0.015em',
                         color: 'var(--ink)',
-                        margin: 'calc(16 * var(--px)) 0 calc(8 * var(--px))',
+                        margin: 'calc(8 * var(--px)) 0',
                       }}
                     >
-                      {skill.title}
-                    </h3>
+                      {skill}
+                    </h4>
 
-                    <p
-                      className="text-body"
-                      style={{ color: 'var(--muted)', maxWidth: '40ch', margin: 0 }}
-                    >
-                      {skill.desc}
-                    </p>
-
-                    {/* exposure meter */}
+                    {/* exposure meter — thin */}
                     <div
                       style={{
-                        marginTop: 'calc(20 * var(--px))',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '0.75rem',
+                        height: '2px',
+                        background: 'var(--rule)',
+                        position: 'relative',
+                        overflow: 'hidden',
                       }}
                     >
-                      <span className="text-mono text-label" style={{ color: 'var(--muted)', opacity: 0.7 }}>
-                        EXP
-                      </span>
                       <div
                         style={{
-                          flex: 1,
-                          height: '3px',
-                          background: 'var(--rule)',
-                          position: 'relative',
-                          overflow: 'hidden',
+                          position: 'absolute',
+                          inset: 0,
+                          width: exposed ? '100%' : '0%',
+                          background:
+                            'linear-gradient(90deg, var(--accent-soft), var(--accent), var(--accent-deep))',
+                          transition: 'width 1s var(--ease-reveal)',
                         }}
-                      >
-                        <div
-                          style={{
-                            position: 'absolute',
-                            inset: 0,
-                            width: exposed ? '100%' : '0%',
-                            background:
-                              'linear-gradient(90deg, var(--accent-soft), var(--accent), var(--accent-deep))',
-                            transition: 'width 1.2s var(--ease-reveal)',
-                          }}
-                        />
-                      </div>
-                      <span className="text-mono text-label" style={{ color: 'var(--accent)', opacity: 0.85 }}>
-                        {exposed ? '◉' : '○'}
-                      </span>
+                      />
                     </div>
 
                     {/* anamorphic flare on hover */}
@@ -292,7 +300,7 @@ export function Skillset() {
                         left: 0,
                         width: '40%',
                         background:
-                          'linear-gradient(90deg, transparent, rgba(214, 41, 41, 0.3), transparent)',
+                          'linear-gradient(90deg, transparent, rgba(214, 41, 41, 0.25), transparent)',
                         transform: 'translateX(-120%) skewX(-15deg)',
                         opacity: 0,
                         pointerEvents: 'none',

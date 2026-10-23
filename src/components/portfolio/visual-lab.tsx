@@ -66,33 +66,44 @@ export function VisualLab({ onClose }: { onClose: () => void }) {
   });
 
   const [hintGone, setHintGone] = useState(false);
+  const [viewport, setViewport] = useState({ w: 1440, h: 900 });
 
-  // generate tile set — dense enough that toroidal wrap fills the viewport
+  // track viewport for responsive tile grid (eliminates the toroidal-wrap dead zone)
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const update = () => setViewport({ w: window.innerWidth, h: window.innerHeight });
+    update();
+    window.addEventListener('resize', update);
+    return () => window.removeEventListener('resize', update);
+  }, []);
+
+  // generate tile set — responsive grid. cellW = tileW (touching) so
+  // fieldW ≤ vw + tileW ALWAYS holds → toroidal wrap has zero dead zone.
+  // The 6px inset frame borders on each tile provide visual separation.
   const { tiles, fieldW, fieldH } = useMemo(() => {
-    const cols = 8;
-    const rows = 7;
-    const cellW = 290;
-    const cellH = 290;
+    const cellW = 280;
+    const cellH = 280;
+    const cols = Math.max(3, Math.ceil(viewport.w / cellW));
+    const rows = Math.max(3, Math.ceil(viewport.h / cellH));
     const arr: Tile[] = [];
     for (let r = 0; r < rows; r++) {
       for (let c = 0; c < cols; c++) {
         const idx = r * cols + c;
-        const sizeJitter = 0.92 + ((idx * 13) % 16) / 100;
         arr.push({
-          lx: c * cellW + (((idx * 37) % 20) - 10),
-          ly: r * cellH + (((idx * 53) % 20) - 10),
-          w: 280 * sizeJitter,
-          h: 280 * sizeJitter * (0.92 + ((idx * 7) % 12) / 100),
+          lx: c * cellW,
+          ly: r * cellH,
+          w: 280,
+          h: 280,
           src: SOURCES[idx % SOURCES.length],
           bgPos: BG_POSITIONS[idx % BG_POSITIONS.length],
           filter: FILTERS[idx % FILTERS.length],
-          rot: ((idx * 17) % 100) / 100 * 4 - 2,
+          rot: ((idx * 17) % 100) / 100 * 3 - 1.5,
           key: idx,
         });
       }
     }
     return { tiles: arr, fieldW: cols * cellW, fieldH: rows * cellH };
-  }, []);
+  }, [viewport.w, viewport.h]);
 
   // initial pan — center the field in the viewport so the depth-of-field
   // has sharp tiles in the middle on first paint
@@ -164,10 +175,15 @@ export function VisualLab({ onClose }: { onClose: () => void }) {
         const th = parseFloat(tile.dataset.h || '0');
         const trot = parseFloat(tile.dataset.rot || '0');
 
+        // toroidal wrap — bring each tile into the visible range [-tileW, vw].
+        // k = ceil((-tileW - sx) / fieldW) is the unique shift that puts sx in
+        // [-tileW, vw] when fieldW ≤ vw + tileW (guaranteed by the responsive grid).
         let sx = (((lx + pan.current.x) % fieldW) + fieldW) % fieldW;
         let sy = (((ly + pan.current.y) % fieldH) + fieldH) % fieldH;
-        if (sx > vw + 400) sx -= fieldW;
-        if (sy > vh + 400) sy -= fieldH;
+        const kx = Math.ceil((-tw - sx) / fieldW);
+        const ky = Math.ceil((-th - sy) / fieldH);
+        sx = sx + kx * fieldW;
+        sy = sy + ky * fieldH;
 
         // depth of field — distance from viewport center
         const tcx = sx + tw / 2;
@@ -445,10 +461,13 @@ export function VisualLab({ onClose }: { onClose: () => void }) {
         </div>
       </div>
 
-      {/* CLOSE button — top-right, red border accent */}
+      {/* CLOSE button — top-right, red border accent. stopPropagation so the
+          section's pointer-capture (drag) doesn't hijack the button's click. */}
       <button
         type="button"
         onClick={onClose}
+        onPointerDown={(e) => e.stopPropagation()}
+        onPointerUp={(e) => e.stopPropagation()}
         aria-label="Close the Visual Lab"
         style={{
           position: 'absolute',
@@ -505,10 +524,12 @@ export function VisualLab({ onClose }: { onClose: () => void }) {
         </div>
       </div>
 
-      {/* EXIT pill — closes the overlay */}
+      {/* EXIT pill — closes the overlay. stopPropagation so drag-capture doesn't hijack click. */}
       <button
         type="button"
         onClick={onClose}
+        onPointerDown={(e) => e.stopPropagation()}
+        onPointerUp={(e) => e.stopPropagation()}
         aria-label="Exit the Visual Lab"
         style={{
           position: 'absolute',

@@ -534,6 +534,8 @@ html {
   }
 }
 
+/* (hero responsive position is JS-driven — see hero.tsx isMobile state) */
+
 /* ============================================================================
    8. EFFECTS LAYER — non-destructive, layered on top of existing sections.
    Each effect has a reduced-motion + touch fallback. Intensity capped.

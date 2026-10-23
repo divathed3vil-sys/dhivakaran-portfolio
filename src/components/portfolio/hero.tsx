@@ -1,16 +1,26 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 /**
- * Hero — full-bleed portrait. Subject on the right, name at face-level on the left.
- * Bold, minimal: just the name + a humble subline. No filler chrome.
+ * Hero — full-bleed portrait. Subject on the right, name at face-level on desktop
+ * (22vh from top), below center on mobile (52vh). Bold, minimal.
  */
 export function Hero() {
   const sectionRef = useRef<HTMLElement>(null);
   const portraitRef = useRef<HTMLDivElement>(null);
   const nameRef = useRef<HTMLDivElement>(null);
   const keyLightRef = useRef<HTMLDivElement>(null);
+  const [isMobile, setIsMobile] = useState(false);
+
+  // track mobile breakpoint for responsive text position
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const check = () => setIsMobile(window.innerWidth <= 768);
+    check();
+    window.addEventListener('resize', check);
+    return () => window.removeEventListener('resize', check);
+  }, []);
 
   // scroll-driven: focus pull + name parallax
   useEffect(() => {
@@ -144,7 +154,7 @@ export function Hero() {
         }}
       />
 
-      {/* copy block — at face level on the left */}
+      {/* copy block — at face level on desktop (22vh), below center on mobile (52vh) */}
       <div
         ref={nameRef}
         className="canvas-max"
@@ -155,7 +165,7 @@ export function Hero() {
           display: 'flex',
           flexDirection: 'column',
           justifyContent: 'flex-start',
-          paddingTop: '22vh',
+          paddingTop: isMobile ? '52vh' : '22vh',
         }}
       >
         {/* name — bold */}
