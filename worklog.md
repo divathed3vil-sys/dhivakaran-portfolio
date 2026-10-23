@@ -706,3 +706,31 @@ Stage Summary:
 - All 10 final-touch items complete + verified on the live site (https://dhivakaran-portfolio.vercel.app)
 - The portfolio now has: color images in Selected Frames (no border, drop shadow, hover descriptions), a full Visual Lab management tab in the Studio (upload/toggle/delete/priority), the intro loader with a film-reel image slideshow + wider wordmark gap, the Visual Lab exit with a reverse iris-close animation, mobile no-blur on the lab card, smoother Lenis scroll, and the contact headline revealing in one scroll pass.
 - Code pushed to GitHub (divathed3vil-sys/dhivakaran-portfolio) + deployed to Vercel.
+
+---
+Task ID: 93-102 (Image cleanup + final UX)
+Agent: main-orchestrator
+Task: Remove all AI placeholder images, use LandingPage_BnW, center hero text, double-click lab exit, floating description card, faster contact reveal, lab card Supabase fetch.
+
+Work Log:
+- Deleted ALL AI-generated images: portrait*.png/.webp, atmosphere*.png/.webp, object-lens*.png/.webp, about*.png/.webp (16 files removed from /public/images/)
+- Copied LandingPage_BnW.jpg → /public/images/landing.jpg + generated landing-full.webp (312KB, 1920px, q85), landing-med.webp (6KB, 800px, q72), landing-low.webp (2KB, 400px, q55) via sharp
+- portfolio-images.ts: emptied PORTFOLIO_IMAGES + LAB_IMAGE_SRCS (only Supabase uploads now — no hardcoded images)
+- Hero: uses landing-full.webp; on desktop: justifyContent=center, alignItems=center, textAlign=center, fontSize=clamp(3.5rem, 12vw, 12rem) (153.6px on desktop). On mobile: left-aligned, below center (52vh). Verified: isCentered=true, h1Size=153.6px
+- About: float uses landing-med.webp (AI about.png deleted)
+- Visual Lab: removed "Exit The Lab" button entirely. Added onDoubleClick handler on the section → triggers iris-close animation + window.location.reload() after 700ms. Instruction text in center bottom: "double-click anywhere to exit". Verified: exitBtnGone=true, hasInstruction=true
+- Visual Lab: handles empty sources gracefully (if no images uploaded, returns empty tiles array, shows dark background only)
+- Visual Lab card: fetches real lab image URLs from Supabase (getLabImageUrls) instead of hardcoded LAB_IMAGE_SRCS. If no images, shows dark gradient. Mobile: no blur (isTouch detection)
+- WaveText: added speedMultiplier prop (default 1). Contact headline uses speedMultiplier=4 (reveals 4x faster — "very very faster" per user request)
+- SelectedWork: removed fixed .desc-overlay from cells. Added floating description card: semi-transparent (rgba(10,10,10,0.85) + backdrop-blur), follows cursor via onMouseMove, shows on hover over cells with data-desc. Positioned at cursor + 16px offset.
+- Intro loader: image chip frame conditional — only shows if LAB_IMAGE_SRCS.length > 0 (currently empty → no chip shown)
+- Footer: "Thanks to ZLM and ARENA" → "Thanks to Z.ai". Verified: hasZai=true, hasZLM=false
+
+Stage Summary:
+- No AI-generated placeholder images remain in the site. Only the user's uploaded LandingPage_BnW + Supabase-uploaded images appear.
+- The hero uses the B&W landing image with centered, big text on desktop.
+- The Visual Lab exits via double-click (iris-close animation + page reload) — no exit button.
+- The Visual Lab card shows a real snapshot of the current lab (fetched from Supabase).
+- The contact headline "Let's make something that holds together." reveals 4x faster.
+- Descriptions appear as a floating semi-transparent card that follows the cursor.
+- All on GitHub (divathed3vil-sys/dhivakaran-portfolio) + live (dhivakaran-portfolio.vercel.app).
