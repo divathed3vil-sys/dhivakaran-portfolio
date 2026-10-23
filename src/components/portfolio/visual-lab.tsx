@@ -332,9 +332,9 @@ export function VisualLab({ onClose }: { onClose: () => void }) {
           backdropFilter: 'blur(4px)',
           WebkitBackdropFilter: 'blur(4px)',
           maskImage:
-            'radial-gradient(circle 160px at var(--rx, 50%) var(--ry, 50%), transparent 0%, transparent 55%, black 100%)',
+            'radial-gradient(circle 480px at var(--rx, 50%) var(--ry, 50%), transparent 0%, transparent 55%, black 100%)',
           WebkitMaskImage:
-            'radial-gradient(circle 160px at var(--rx, 50%) var(--ry, 50%), transparent 0%, transparent 55%, black 100%)',
+            'radial-gradient(circle 480px at var(--rx, 50%) var(--ry, 50%), transparent 0%, transparent 55%, black 100%)',
         }}
       />
 
@@ -398,8 +398,8 @@ export function VisualLab({ onClose }: { onClose: () => void }) {
         type="button"
         onClick={() => {
           onClose();
-          // instant scroll to top (smooth doesn't work reliably with Lenis on overlay close)
-          window.scrollTo(0, 0);
+          // full page reload — the most reliable way to return to the landing page
+          setTimeout(() => window.location.reload(), 50);
         }}
         onPointerDown={(e) => e.stopPropagation()}
         onPointerUp={(e) => e.stopPropagation()}

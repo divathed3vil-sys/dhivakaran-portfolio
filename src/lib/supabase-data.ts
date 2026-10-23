@@ -53,6 +53,26 @@ export async function getSiteSettings() {
   return data;
 }
 
+// ---------- ADMIN READS (authed — sees all, including unpublished) ----------
+
+export async function getAllImages() {
+  if (!supabase) return [];
+  const { data } = await supabase
+    .from('images')
+    .select('*')
+    .order('priority', { ascending: false });
+  return data || [];
+}
+
+export async function getAllVideos() {
+  if (!supabase) return [];
+  const { data } = await supabase
+    .from('videos')
+    .select('*')
+    .order('priority', { ascending: false });
+  return data || [];
+}
+
 // ---------- ADMIN MUTATIONS (authed) ----------
 
 export async function addCategory(input: {

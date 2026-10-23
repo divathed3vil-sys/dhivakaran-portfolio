@@ -125,7 +125,7 @@ export function SelectedWork() {
                           backgroundSize: 'contain',
                           backgroundPosition: 'center',
                           backgroundRepeat: 'no-repeat',
-                          filter: 'grayscale(1) contrast(1.1) brightness(0.88)',
+                          filter: 'saturate(0.95) contrast(1.05) brightness(0.96)',
                           transition: 'filter 0.4s var(--ease-out-soft)',
                         }}
                       />

@@ -3,6 +3,8 @@
 import { useEffect, useState } from 'react';
 import { useStudio } from './studio-provider';
 import { SelectedFramesTab } from './selected-frames-tab';
+import { VideosTab } from './videos-tab';
+import { SiteSettingsTab } from './site-settings-tab';
 
 type Tab = 'frames' | 'lab' | 'videos' | 'settings';
 
@@ -62,9 +64,9 @@ export function StudioOverlay() {
 
         {/* tab content */}
         {tab === 'frames' && <SelectedFramesTab />}
-        {tab === 'lab' && <div style={{ color: 'var(--night-muted)', padding: '2rem' }}>Lab image management — manage images via the Selected Frames tab (toggle "Also in Lab"). This tab will show lab-only images in a future update.</div>}
-        {tab === 'videos' && <div style={{ color: 'var(--night-muted)', padding: '2rem' }}>Video management — coming next. You'll add YouTube/Vimeo URLs + details + priority here.</div>}
-        {tab === 'settings' && <div style={{ color: 'var(--night-muted)', padding: '2rem' }}>Site settings — coming next. You'll edit your name, tagline, about, + contacts here.</div>}
+        {tab === 'lab' && <div style={{ color: 'var(--night-muted)', padding: '2rem' }}>Manage lab images via the Selected Frames tab — toggle \u201CAlso in Lab\u201D on any image to include it in the Visual Lab. High-priority images appear first.</div>}
+        {tab === 'videos' && <VideosTab />}
+        {tab === 'settings' && <SiteSettingsTab />}
       </div>
     </div>
   );
