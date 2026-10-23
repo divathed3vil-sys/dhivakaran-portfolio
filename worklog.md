@@ -601,3 +601,43 @@ Stage Summary:
 - The secret Studio auth works on the live site (typing "divahere" → username "diva" + Enter → password "divad3vil" + Enter → Studio opens)
 - The Supabase backend is connected (env vars inlined in the build, auth validated server-side)
 - Future redeploys: just run `vercel --prod --yes` from the project directory (the project is linked)
+
+---
+Task ID: 68-73 (Optimization + GitHub)
+Agent: main-orchestrator
+Task: Optimize the Visual Lab (lag + black gaps), update skillset, set up image optimization pipeline, push to GitHub, redeploy.
+
+Work Log:
+- Image optimization pipeline (scripts/optimize-images.ts):
+  - Uses sharp to generate 3 tiers per image: -full (1600px q82), -med (800px q72), -low (400px q55)
+  - Lab tiles use -low (2-15KB, was 100KB+ PNGs), about uses -med, hero uses -full
+- Visual Lab rewritten (performance + fixes):
+  - Low-res WebP tiles (SOURCES = LAB_IMAGE_SRCS from shared portfolio-images.ts)
+  - REMOVED: per-tile filter:blur (was 24 software blur filters — #1 perf cost), per-tile dust overlay, global grain overlay, bokeh motes, ViewfinderCursor (the big frame + its rAF)
+  - ADDED: single backdrop-filter "reveal" overlay — blur(4px) with a radial mask transparent at cursor (sharp) + opaque elsewhere (blurred). The "flashlight" de-blur effect. ONE element, GPU-accelerated.
+  - Fixed toroidal wrap: ceil((-tw-sx)/fieldW) → round((center-sx)/fieldW) (center-based). The ceil formula wrapped boundary tiles off-screen → black gaps at right/bottom. round keeps them visible.
+  - rAF only runs during drag/inertia (not continuous)
+  - Fixed "Exit The Lab" button: window.scrollTo(0,0) instant (was smooth which Lenis interfered with)
+  - Verified on live: 8 visible tiles (no black gaps), reveal overlay present, viewfinder gone, exit closes + scrollY=0
+- Skillset updates:
+  - Removed "Flutter & Supabase" from Software & Tools (7→6)
+  - Removed "Audio Editing & Synchronization" from Video & Post-Production
+  - Added "Foley Art" (user edited 2 short films + made foley from scratch + free sound libraries)
+  - Dimmed DaVinci Resolve + Blender cards (0.5 opacity — "dimmer and grayer")
+  - Verified: 27 cards, no Flutter, has Foley Art, no Audio Editing, 2 dimmed
+- GitHub:
+  - Installed gh CLI (v2.49.0, downloaded binary)
+  - Device-flow auth → logged in as divathed3vil-sys (repo scope)
+  - Created repo: https://github.com/divathed3vil-sys/dhivakaran-portfolio
+  - Pushed all code (main branch)
+- Vercel:
+  - Redeployed (vercel --prod --yes) → HTTP 200
+  - Verified all changes on live URL
+
+Stage Summary:
+- The Visual Lab is now optimized: low-res WebP tiles (2-15KB), no per-tile blur/dust/grain/bokeh/viewfinder, a single backdrop-filter reveal overlay (flashlight de-blur), fixed toroidal wrap (no black gaps), fixed exit button (instant scroll to top). The lag is resolved.
+- The skillset reflects the user's real skills (no Flutter & Supabase, Foley Art instead of Audio Editing, DaVinci + Blender dimmed).
+- Images are tiered (full/med/low) for performance — hero best quality, about medium, lab low-res.
+- The code is on GitHub (divathed3vil-sys/dhivakaran-portfolio) + live on Vercel (dhivakaran-portfolio.vercel.app).
+- Optional: connect GitHub to Vercel (vercel git connect) for auto-deploy on every push.
+- Ready for Phase 3 (Studio CRUD tabs) + Phase 4 (public site reads from Supabase).
