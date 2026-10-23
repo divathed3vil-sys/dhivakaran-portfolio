@@ -29,7 +29,7 @@ export function WaveText({
   const containerRef = useRef<HTMLElement>(null);
   const charsRef = useRef<HTMLElement[]>([]);
 
-  const words = useMemo(() => text.split(' '), [text]);
+  const lines = useMemo(() => text.split('\n'), [text]);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -108,25 +108,35 @@ export function WaveText({
       className={className}
       data-wave=""
     >
-      {words.map((word, wi) => (
+      {lines.map((line, li) => (
         <span
-          key={wi}
-          data-word=""
-          style={{ display: 'inline-block', whiteSpace: 'nowrap' }}
+          key={li}
+          style={{ display: 'block' }}
         >
-          {word.split('').map((c) => {
-            const idx = charIdx++;
+          {line.split(' ').map((word, wi) => {
+            const words = line.split(' ');
             return (
-              <span key={idx} data-char="" style={{ display: 'inline-block' }}>
-                {c}
+              <span
+                key={`${li}-${wi}`}
+                data-word=""
+                style={{ display: 'inline-block', whiteSpace: 'nowrap' }}
+              >
+                {word.split('').map((c) => {
+                  const idx = charIdx++;
+                  return (
+                    <span key={idx} data-char="" style={{ display: 'inline-block' }}>
+                      {c}
+                    </span>
+                  );
+                })}
+                {!(li === lines.length - 1 && wi === words.length - 1) ? (
+                  <span data-char="" style={{ display: 'inline-block' }}>
+                    {'\u00A0'}
+                  </span>
+                ) : null}
               </span>
             );
           })}
-          {wi < words.length - 1 ? (
-            <span data-char="" style={{ display: 'inline-block' }}>
-              {'\u00A0'}
-            </span>
-          ) : null}
         </span>
       ))}
     </Tag>

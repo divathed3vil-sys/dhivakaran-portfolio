@@ -5,7 +5,7 @@ import { WaveText } from './wave-text';
 import { useBloom, useHeadingRack } from './lib/use-bloom-rack';
 
 const ABOUT_PARAGRAPH =
-  'Hi, I\u2019m Diva - a graphic designer and video editor who enjoys turning ideas into visuals with a little personality. From graphic design and visual identities to video edits, motion, VFX and 3D, I like exploring different ways to tell a story and make an idea come to life. I enjoy experimenting, getting a little carried away with the details, and making things that feel just right.';
+  'Hi, I\u2019m Diva.\nFresh out of my A/Ls, with a curious mind and a few big dreams, slowly making my way towards a future in engineering.\nI\u2019m a graphic designer and video editor who enjoys turning ideas into visuals with a little personality. From graphic design and visual identities to video edits, motion, VFX and 3D, I like exploring different ways to tell a story and make an idea come to life. I enjoy experimenting, getting a little carried away with the details, and making things that feel just right.';
 
 const STANDOUT_LINE = 'Your vision, my creativity - let\u2019s make it real.';
 
