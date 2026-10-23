@@ -734,3 +734,28 @@ Stage Summary:
 - The contact headline "Let's make something that holds together." reveals 4x faster.
 - Descriptions appear as a floating semi-transparent card that follows the cursor.
 - All on GitHub (divathed3vil-sys/dhivakaran-portfolio) + live (dhivakaran-portfolio.vercel.app).
+
+---
+Task ID: 109-113 (5 final items)
+Agent: main-orchestrator
+Task: About para line breaks, auto-upload+loading bar+full edit, bulk lab upload, image lightbox, loader image cycling.
+
+Work Log:
+1. About paragraph: inserted line break after "Hi, I'm Diva." → "Fresh out of my A/Ls..." → line break → "I'm a graphic designer...". WaveText component updated to handle \n as block-level line breaks (split by \n first, render each line as a block). Verified: aboutHasALs=true, aboutHasEngineering=true.
+2. Selected Frames tab: complete rewrite with:
+   - Auto-upload on file select (drag-drop or click) with loading bar (0→90% simulated, 100% on completion)
+   - After upload: show details form (label, description, priority, in_lab) with Save/Cancel
+   - Full edit on existing images: click ✎ button → inline edit form (label, desc, priority, in_lab) → Save
+   - Better UI: rounded panels, proper field labels, drag-drop zone with hover highlight, preview thumbnail
+3. Visual Lab tab: bulk upload with drag-drop (multiple files), progress indicator (current/total), sequential upload
+4. Selected Work: image lightbox — click any image → full-screen overlay with blur+dim bg → scroll to zoom (1×→5×) → double-click or click outside to close. Instruction text "scroll to zoom · double-click to close"
+5. Intro loader: dynamic import for Supabase lab image fetch (no SSR issue). Cycles through lab images every 200ms with chip-fade animation. Falls back to landing-low.webp if no lab images. Verified on live (no errors, page renders).
+
+All verified on https://dhivakaran-portfolio.vercel.app:
+- About paragraph has A/Ls + engineering ✓
+- Studio opens (divahere → diva → divad3vil) ✓
+- 4 tabs: Selected Frames, Visual Lab, Videos, Site Settings ✓
+- Visual Lab tab: "BULK UPLOAD" + "LAB IMAGES" present ✓
+- Selected Frames tab: "UPLOAD IMAGE" + drag-drop zone present ✓
+- Footer: "Thanks to Z.ai" ✓
+- Page renders (no errors) ✓
