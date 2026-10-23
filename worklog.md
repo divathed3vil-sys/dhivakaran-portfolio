@@ -683,3 +683,26 @@ Stage Summary:
 - The Visual Lab exit button reloads the page (reliable return to landing)
 - The Visual Lab cursor reveal is 3x bigger
 - All on GitHub (divathed3vil-sys/dhivakaran-portfolio) + live (dhivakaran-portfolio.vercel.app)
+
+---
+Task ID: 82-92 (Final touches)
+Agent: main-orchestrator
+Task: 10 final-touch items: footer credit, color images, lab tab CRUD, loader slideshow, exit iris-close, mobile no-blur, smoother scroll, hover descriptions, contact reveal.
+
+Work Log:
+- Footer: "Thanks to ZLM and ARENA" → "Thanks to Z.ai" ✓ verified
+- Selected Frames: removed 6px border → 0px, added drop shadow (0.35 opacity, 12px blur), images in color (saturate 0.95, no grayscale) ✓ verified
+- Selected Frames: added description field to upload form + edit button (✎) on existing images (calls updateImage with description) + hover description overlay on public site (.desc-overlay with opacity transition)
+- Visual Lab tab: full CRUD (lab-tab.tsx) — upload images directly to Lab (in_lab=true, no category), toggle in_lab visibility, delete, priority. Replaced the info text in the Studio. ✓ verified (UPLOAD TO LAB + LAB IMAGES present)
+- Visual Lab tiles: removed border (0), +1 cols/rows for extra render area (tiles extend beyond viewport), more random arrangement (±3° rotation + ±15px position jitter applied in rAF transform)
+- Visual Lab exit: reverse iris-close animation (circle 150% → 0%) + page reload after 700ms. Added iris-close keyframe to globals.css
+- Visual Lab card: mobile no-blur (isTouch state via matchMedia('(hover: none)') → clear preview on mobile) + uses LAB_IMAGE_SRCS (actual lab images, not hardcoded)
+- Intro loader: gap between DHIVAKARAN and M (3 non-breaking spaces) + image slideshow frame below the wordmark (cycling through LAB_IMAGE_SRCS every 150ms, film reel effect)
+- Page motion: Lenis lerp 0.1→0.06 (smoother scroll inertia) + duration 1.2 (longer easing)
+- Contact: WaveText rootRef={sectionRef} added (headline reveals synced to the section's scroll travel — one pass)
+- CSS: .contact-sheet-cell border=0 + improved shadow + hover lift; .contact-sheet-cell:hover .desc-overlay opacity=1
+
+Stage Summary:
+- All 10 final-touch items complete + verified on the live site (https://dhivakaran-portfolio.vercel.app)
+- The portfolio now has: color images in Selected Frames (no border, drop shadow, hover descriptions), a full Visual Lab management tab in the Studio (upload/toggle/delete/priority), the intro loader with a film-reel image slideshow + wider wordmark gap, the Visual Lab exit with a reverse iris-close animation, mobile no-blur on the lab card, smoother Lenis scroll, and the contact headline revealing in one scroll pass.
+- Code pushed to GitHub (divathed3vil-sys/dhivakaran-portfolio) + deployed to Vercel.
