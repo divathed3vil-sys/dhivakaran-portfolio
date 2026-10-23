@@ -46,7 +46,7 @@ export function SelectedWork() {
   // Use Supabase data if available; fall back to hardcoded placeholders
   const useDb = dbCats && dbCats.length > 0;
   const displayCats = useDb
-    ? dbCats!.map((c) => ({ key: c.id, name: c.name, blurb: c.blurb || '', cells: getImagesForCategory(dbImgs || [], c.id).map((img) => ({ src: lowResUrl(img.public_url), label: img.label || '' })) }))
+    ? dbCats!.map((c) => ({ key: c.id, name: c.name, blurb: c.blurb || '', cells: getImagesForCategory(dbImgs || [], c.id).map((img) => ({ src: lowResUrl(img.public_url), label: img.label || '', desc: img.description || '' })) }))
     : CATEGORY_ORDER.map((cat) => {
         const cells = getCellsForCategory(cat, CATEGORY_LABELS[cat]);
         return { key: cat, name: CATEGORY_LABELS[cat], blurb: CATEGORY_BLURBS[cat], cells: cells.map((c) => ({ src: c.src, label: c.label })) };
@@ -144,6 +144,28 @@ export function SelectedWork() {
                       >
                         {cell.label}
                       </div>
+                      {/* hover description overlay */}
+                      {cell.desc && (
+                        <div
+                          style={{
+                            position: 'absolute',
+                            inset: 0,
+                            display: 'flex',
+                            alignItems: 'flex-end',
+                            padding: '0.75rem',
+                            background: 'linear-gradient(180deg, transparent 40%, rgba(10,10,10,0.85) 100%)',
+                            opacity: 0,
+                            transition: 'opacity 0.4s var(--ease-out-soft)',
+                            pointerEvents: 'none',
+                            zIndex: 3,
+                          }}
+                          className="desc-overlay"
+                        >
+                          <span style={{ fontSize: '0.85rem', color: 'var(--canvas)', fontFamily: 'var(--font-fraunces), serif' }}>
+                            {cell.desc}
+                          </span>
+                        </div>
+                      )}
                       {isPlaceholder && (
                         <div
                           className="text-mono text-label"

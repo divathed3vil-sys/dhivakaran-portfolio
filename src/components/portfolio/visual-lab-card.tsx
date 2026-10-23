@@ -1,8 +1,9 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { LAB_IMAGE_SRCS } from './lib/portfolio-images';
 
-const IMAGES = ['/images/portrait-low.webp', '/images/atmosphere-low.webp', '/images/object-lens-low.webp'];
+const IMAGES = LAB_IMAGE_SRCS.length > 0 ? LAB_IMAGE_SRCS : ['/images/portrait-low.webp'];
 
 /**
  * VisualLabCard — a blurry glimpse of the real Visual Lab.
@@ -15,7 +16,13 @@ const IMAGES = ['/images/portrait-low.webp', '/images/atmosphere-low.webp', '/im
  */
 export function VisualLabCard({ onEnter }: { onEnter: () => void }) {
   const [hovered, setHovered] = useState(false);
+  const [isTouch, setIsTouch] = useState(false);
   const cardRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    const t = setTimeout(() => setIsTouch(window.matchMedia('(hover: none)').matches), 0);
+    return () => clearTimeout(t);
+  }, []);
 
   return (
     <section
@@ -53,8 +60,8 @@ export function VisualLabCard({ onEnter }: { onEnter: () => void }) {
           gridTemplateColumns: 'repeat(4, 1fr)',
           gridTemplateRows: 'repeat(3, 1fr)',
           gap: '4px',
-          filter: hovered ? 'blur(6px)' : 'blur(22px)',
-          transform: hovered ? 'scale(1.02)' : 'scale(1.08)',
+          filter: isTouch ? 'blur(0px)' : (hovered ? 'blur(6px)' : 'blur(22px)'),
+          transform: isTouch ? 'scale(1)' : (hovered ? 'scale(1.02)' : 'scale(1.08)'),
           transition: 'filter 0.9s var(--ease-out-soft), transform 0.9s var(--ease-out-soft)',
         }}
       >
@@ -77,9 +84,11 @@ export function VisualLabCard({ onEnter }: { onEnter: () => void }) {
         style={{
           position: 'absolute',
           inset: 0,
-          background: hovered
-            ? 'linear-gradient(180deg, rgba(10,10,10,0.3) 0%, rgba(10,10,10,0.55) 100%)'
-            : 'linear-gradient(180deg, rgba(10,10,10,0.55) 0%, rgba(10,10,10,0.75) 100%)',
+          background: isTouch
+            ? 'linear-gradient(180deg, rgba(10,10,10,0.2) 0%, rgba(10,10,10,0.4) 100%)'
+            : (hovered
+              ? 'linear-gradient(180deg, rgba(10,10,10,0.3) 0%, rgba(10,10,10,0.55) 100%)'
+              : 'linear-gradient(180deg, rgba(10,10,10,0.55) 0%, rgba(10,10,10,0.75) 100%)'),
           transition: 'background 0.9s var(--ease-out-soft)',
           pointerEvents: 'none',
         }}
@@ -106,9 +115,9 @@ export function VisualLabCard({ onEnter }: { onEnter: () => void }) {
             letterSpacing: '-0.02em',
             color: 'var(--canvas)',
             textAlign: 'center',
-            filter: hovered ? 'blur(0px)' : 'blur(8px)',
-            transform: hovered ? 'translateY(0)' : 'translateY(10px)',
-            opacity: hovered ? 1 : 0.55,
+            opacity: isTouch ? 1 : (hovered ? 1 : 0.55),
+            filter: isTouch ? 'blur(0px)' : (hovered ? 'blur(0px)' : 'blur(8px)'),
+            transform: isTouch ? 'translateY(0)' : (hovered ? 'translateY(0)' : 'translateY(10px)'),
             transition:
               'filter 0.9s var(--ease-out-soft), transform 0.9s var(--ease-out-soft), opacity 0.9s var(--ease-out-soft)',
             textShadow: '0 2px 30px rgba(10, 10, 10, 0.5)',

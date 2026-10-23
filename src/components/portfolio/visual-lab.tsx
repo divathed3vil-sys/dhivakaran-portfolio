@@ -34,6 +34,7 @@ export function VisualLab({ onClose }: { onClose: () => void }) {
   const [hintGone, setHintGone] = useState(false);
   const [viewport, setViewport] = useState({ w: 1440, h: 900 });
   const [dbLabUrls, setDbLabUrls] = useState<string[] | null>(null);
+  const [closing, setClosing] = useState(false);
 
   // fetch lab image URLs from Supabase (falls back to hardcoded if empty)
   useEffect(() => {
@@ -57,8 +58,8 @@ export function VisualLab({ onClose }: { onClose: () => void }) {
   const { tiles, fieldW, fieldH } = useMemo(() => {
     const cellW = 280;
     const cellH = 280;
-    const cols = Math.max(3, Math.ceil(viewport.w / cellW));
-    const rows = Math.max(3, Math.ceil(viewport.h / cellH));
+    const cols = Math.max(3, Math.ceil(viewport.w / cellW) + 1);
+    const rows = Math.max(3, Math.ceil(viewport.h / cellH) + 1);
     const arr = [];
     for (let r = 0; r < rows; r++) {
       for (let c = 0; c < cols; c++) {
@@ -71,7 +72,9 @@ export function VisualLab({ onClose }: { onClose: () => void }) {
           h: 280,
           src: sources[idx % sources.length],
           bgPos: BG_POSITIONS[idx % BG_POSITIONS.length],
-          rot: ((idx * 17) % 100) / 100 * 2 - 1,
+          rot: ((idx * 37) % 100) / 100 * 6 - 3,
+          jitterX: ((idx * 53) % 30) - 15,
+          jitterY: ((idx * 71) % 30) - 15,
           key: idx,
         });
       }
@@ -135,6 +138,7 @@ export function VisualLab({ onClose }: { onClose: () => void }) {
         const ly = parseFloat(tile.dataset.ly || '0');
         const tw = parseFloat(tile.dataset.w || '0');
         const th = parseFloat(tile.dataset.h || '0');
+        const trot = parseFloat(tile.dataset.rot || '0');
 
         // toroidal wrap — center-based (round, not ceil) fixes black gaps at edges
         let sx = (((lx + pan.current.x) % fieldW) + fieldW) % fieldW;
@@ -148,7 +152,7 @@ export function VisualLab({ onClose }: { onClose: () => void }) {
         const scale = 1 - 0.06 * r;
         const opacity = 0.6 + 0.4 * (1 - r);
 
-        tile.style.transform = `translate3d(${sx}px, ${sy}px, 0) scale(${scale})`;
+        tile.style.transform = `translate3d(${sx}px, ${sy}px, 0) rotate(${trot}deg) scale(${scale})`;
         tile.style.opacity = String(opacity);
       }
 
@@ -288,7 +292,7 @@ export function VisualLab({ onClose }: { onClose: () => void }) {
         background: 'var(--night)',
         cursor: 'grab',
         touchAction: 'none',
-        animation: 'iris-open 0.7s var(--ease-curtain) both',
+        animation: closing ? 'iris-close 0.7s var(--ease-curtain) both' : 'iris-open 0.7s var(--ease-curtain) both',
       }}
     >
       {/* tiles — low-res WebP, NO per-tile filters (just transforms + opacity) */}
@@ -297,10 +301,11 @@ export function VisualLab({ onClose }: { onClose: () => void }) {
           <div
             key={t.key}
             data-tile=""
-            data-lx={t.lx}
-            data-ly={t.ly}
+            data-lx={t.lx + (t.jitterX || 0)}
+            data-ly={t.ly + (t.jitterY || 0)}
             data-w={t.w}
             data-h={t.h}
+            data-rot={t.rot}
             style={{
               position: 'absolute',
               top: 0,
@@ -313,7 +318,8 @@ export function VisualLab({ onClose }: { onClose: () => void }) {
               backgroundRepeat: 'no-repeat',
               backgroundColor: 'var(--night)',
               willChange: 'transform, opacity',
-              border: '1px solid rgba(255, 255, 255, 0.05)',
+              border: '0',
+              boxShadow: '0 8px 20px -6px rgba(0,0,0,0.5)',
             }}
           />
         ))}
@@ -397,9 +403,11 @@ export function VisualLab({ onClose }: { onClose: () => void }) {
       <button
         type="button"
         onClick={() => {
-          onClose();
-          // full page reload — the most reliable way to return to the landing page
-          setTimeout(() => window.location.reload(), 50);
+          setClosing(true);
+          setTimeout(() => {
+            onClose();
+            window.location.reload();
+          }, 700);
         }}
         onPointerDown={(e) => e.stopPropagation()}
         onPointerUp={(e) => e.stopPropagation()}

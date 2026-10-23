@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { LAB_IMAGE_SRCS } from './lib/portfolio-images';
 
 /**
  * IntroLoader — "film leader" countdown.
@@ -13,6 +14,7 @@ import { useEffect, useState } from 'react';
 export function IntroLoader() {
   const [phase, setPhase] = useState<'in' | 'out' | 'done'>('in');
   const [frame, setFrame] = useState(241);
+  const [chipImg, setChipImg] = useState(0);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -35,6 +37,11 @@ export function IntroLoader() {
       });
     }, 130);
 
+    // image chip cycling — film reel effect (every 150ms)
+    const chipInterval = setInterval(() => {
+      setChipImg((i) => (i + 1) % Math.max(1, LAB_IMAGE_SRCS.length));
+    }, 150);
+
     // schedule exit
     const exitTimer = setTimeout(() => setPhase('out'), 1880);
     const doneTimer = setTimeout(() => {
@@ -44,6 +51,7 @@ export function IntroLoader() {
 
     return () => {
       clearInterval(frameInterval);
+      clearInterval(chipInterval);
       clearTimeout(exitTimer);
       clearTimeout(doneTimer);
     };
@@ -51,7 +59,7 @@ export function IntroLoader() {
 
   if (phase === 'done') return null;
 
-  const letters = 'DHIVAKARAN M'.split('');
+  const letters = 'DHIVAKARAN\u00A0\u00A0\u00A0M'.split('');
   const word = phase === 'in';
 
   return (
@@ -143,6 +151,31 @@ export function IntroLoader() {
             {c}
           </span>
         ))}
+      </div>
+
+      {/* image chip — cycling film reel of uploaded images */}
+      <div
+        style={{
+          width: '120px',
+          height: '80px',
+          overflow: 'hidden',
+          border: '1.5px solid var(--brass)',
+          marginTop: '0.5rem',
+          opacity: 0.8,
+        }}
+      >
+        {LAB_IMAGE_SRCS.length > 0 && (
+          <div
+            style={{
+              width: '100%',
+              height: '100%',
+              backgroundImage: `url(${LAB_IMAGE_SRCS[chipImg % LAB_IMAGE_SRCS.length]})`,
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+              filter: 'grayscale(1) contrast(1.1) brightness(0.85)',
+            }}
+          />
+        )}
       </div>
 
       <style>{`

@@ -17,10 +17,11 @@ export function useLenis() {
     }
 
     const lenis = new Lenis({
-      lerp: 0.1,
+      lerp: 0.06,
       smoothWheel: true,
       wheelMultiplier: 1,
       touchMultiplier: 1.5,
+      duration: 1.2,
       prevent: (node) => {
         // do not smooth-scroll inside the visual lab field (it has its own pan)
         return (

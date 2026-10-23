@@ -166,7 +166,7 @@ export function Footer() {
           >
             <span>© 0250 DHIVAKARAN M®</span>
             <span>ALL FRAMES RESERVED</span>
-            <span style={{ opacity: 0.6 }}>Thanks to ZLM and ARENA</span>
+            <span style={{ opacity: 0.6 }}>Thanks to Z.ai</span>
           </div>
           <a
             href="#top"

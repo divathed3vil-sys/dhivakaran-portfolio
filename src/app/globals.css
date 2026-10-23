@@ -462,10 +462,14 @@
     transition: clip-path 0.1s linear;
   }
 
-  /* aperture iris open — loader exit */
+  /* aperture iris open/close — loader exit + lab exit (reverse) */
   @keyframes iris-open {
     from { clip-path: circle(0% at 50% 50%); }
     to   { clip-path: circle(150% at 50% 50%); }
+  }
+  @keyframes iris-close {
+    from { clip-path: circle(150% at 50% 50%); }
+    to   { clip-path: circle(0% at 50% 50%); }
   }
 
   /* anamorphic flare sweep — skill card hover */
@@ -808,9 +812,17 @@ body[data-vf-active="true"] { cursor: none; }
   position: relative;
   aspect-ratio: 3 / 2;
   overflow: hidden;
-  border: 6px solid var(--canvas);
-  box-shadow: 0 8px 24px -8px rgba(10, 10, 10, 0.3);
+  border: 0;
+  box-shadow: 0 12px 32px -8px rgba(10, 10, 10, 0.35);
   cursor: pointer;
+  transition: box-shadow 0.4s var(--ease-out-soft), transform 0.4s var(--ease-out-soft);
+}
+.contact-sheet-cell:hover {
+  box-shadow: 0 16px 40px -8px rgba(10, 10, 10, 0.45);
+  transform: translateY(-2px);
+}
+.contact-sheet-cell:hover .desc-overlay {
+  opacity: 1 !important;
 }
 
 /* ============================================================================

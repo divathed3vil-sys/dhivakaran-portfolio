@@ -142,11 +142,12 @@ export function Contact() {
           The final print
         </div>
 
-        {/* oversized developing headline */}
+        {/* oversized developing headline — reveals in one scroll pass via rootRef */}
         <WaveText
           text="Let's make something that holds together."
           as="h2"
           className="text-section"
+          rootRef={sectionRef}
         />
 
         {/* subline */}

@@ -51,6 +51,7 @@ export function SelectedFramesTab() {
 
   // new image form (per active category)
   const [imgLabel, setImgLabel] = useState('');
+  const [imgDesc, setImgDesc] = useState('');
   const [imgPriority, setImgPriority] = useState(0);
   const [imgInLab, setImgInLab] = useState(true);
   const [imgFile, setImgFile] = useState<File | null>(null);
@@ -108,12 +109,13 @@ export function SelectedFramesTab() {
       category_id: activeCat,
       public_url: publicUrl,
       label: imgLabel || null,
+      description: imgDesc || null,
       priority: imgPriority,
       published: true,
       in_lab: imgInLab,
     });
     if (error) { setMsg(`DB error: ${error.message}`); setUploading(false); return; }
-    setImgFile(null); setImgLabel(''); setImgPriority(0);
+    setImgFile(null); setImgLabel(''); setImgDesc(''); setImgPriority(0);
     setMsg('Image added + published.');
     setUploading(false);
     load();
@@ -127,6 +129,14 @@ export function SelectedFramesTab() {
 
   const handleToggleLab = async (img: Image) => {
     await updateImage(img.id, { in_lab: !img.in_lab });
+    load();
+  };
+
+  const handleEditDesc = async (img: Image) => {
+    const newDesc = prompt('Edit description (shows on hover):', img.description || '');
+    if (newDesc === null) return;
+    await updateImage(img.id, { description: newDesc || null });
+    setMsg('Description updated.');
     load();
   };
 
@@ -192,6 +202,10 @@ export function SelectedFramesTab() {
               <label className="text-mono text-label" style={{ color: 'var(--night-muted)', display: 'block', marginBottom: '0.25rem' }}>Label</label>
               <input value={imgLabel} onChange={(e) => setImgLabel(e.target.value)} placeholder="Cover 01" style={inputStyle} />
             </div>
+            <div style={{ flex: 1, minWidth: '180px' }}>
+              <label className="text-mono text-label" style={{ color: 'var(--night-muted)', display: 'block', marginBottom: '0.25rem' }}>Description</label>
+              <input value={imgDesc} onChange={(e) => setImgDesc(e.target.value)} placeholder="Shows on hover (optional)" style={inputStyle} />
+            </div>
             <div>
               <label className="text-mono text-label" style={{ color: 'var(--night-muted)', display: 'block', marginBottom: '0.25rem' }}>Priority</label>
               <input type="number" value={imgPriority} onChange={(e) => setImgPriority(parseInt(e.target.value) || 0)} style={{ ...inputStyle, width: '80px' }} />
@@ -220,6 +234,7 @@ export function SelectedFramesTab() {
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <span className="text-mono text-label" style={{ color: 'var(--accent)', fontSize: '0.65rem' }}>P{img.priority}</span>
                   <div style={{ display: 'flex', gap: '0.4rem' }}>
+                    <button onClick={() => handleEditDesc(img)} style={miniBtn} title="Edit description">✎</button>
                     <button onClick={() => handleToggleLab(img)} style={{ ...miniBtn, opacity: img.in_lab ? 1 : 0.4 }} title="Toggle Lab">
                       {img.in_lab ? '◉' : '○'}
                     </button>

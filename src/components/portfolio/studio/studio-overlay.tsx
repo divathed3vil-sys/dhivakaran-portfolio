@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useStudio } from './studio-provider';
 import { SelectedFramesTab } from './selected-frames-tab';
+import { LabTab } from './lab-tab';
 import { VideosTab } from './videos-tab';
 import { SiteSettingsTab } from './site-settings-tab';
 
@@ -64,7 +65,7 @@ export function StudioOverlay() {
 
         {/* tab content */}
         {tab === 'frames' && <SelectedFramesTab />}
-        {tab === 'lab' && <div style={{ color: 'var(--night-muted)', padding: '2rem' }}>Manage lab images via the Selected Frames tab — toggle \u201CAlso in Lab\u201D on any image to include it in the Visual Lab. High-priority images appear first.</div>}
+        {tab === 'lab' && <LabTab />}
         {tab === 'videos' && <VideosTab />}
         {tab === 'settings' && <SiteSettingsTab />}
       </div>
