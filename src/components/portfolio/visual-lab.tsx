@@ -5,8 +5,8 @@ import { LAB_IMAGE_SRCS } from './lib/portfolio-images';
 import { getLabImageUrls } from '@/lib/supabase-data';
 import { lowResUrl } from './lib/use-portfolio-data';
 
-// Low-res WebP previews for the lab (2-15KB each, vs 100KB+ PNGs).
-const SOURCES = LAB_IMAGE_SRCS.length > 0 ? LAB_IMAGE_SRCS : ['/images/portrait-low.webp'];
+// Sources: empty by default — the Visual Lab fetches lab image URLs from Supabase on open
+const SOURCES = LAB_IMAGE_SRCS;
 
 const BG_POSITIONS = ['50% 30%', '20% 50%', '80% 50%', '50% 80%', '30% 20%', '70% 70%', '50% 50%', '10% 90%'];
 
@@ -61,20 +61,19 @@ export function VisualLab({ onClose }: { onClose: () => void }) {
     const cols = Math.max(3, Math.ceil(viewport.w / cellW) + 1);
     const rows = Math.max(3, Math.ceil(viewport.h / cellH) + 1);
     const arr = [];
+    const sources = (dbLabUrls && dbLabUrls.length > 0) ? dbLabUrls.map(u => lowResUrl(u, 400)) : SOURCES;
+    if (sources.length === 0) return { tiles: arr, fieldW: 1, fieldH: 1 };
     for (let r = 0; r < rows; r++) {
       for (let c = 0; c < cols; c++) {
         const idx = r * cols + c;
-        const sources = (dbLabUrls && dbLabUrls.length > 0) ? dbLabUrls.map(u => lowResUrl(u, 400)) : SOURCES;
         arr.push({
-          lx: c * cellW,
-          ly: r * cellH,
+          lx: c * cellW + (((idx * 53) % 30) - 15),
+          ly: r * cellH + (((idx * 71) % 30) - 15),
           w: 280,
           h: 280,
           src: sources[idx % sources.length],
           bgPos: BG_POSITIONS[idx % BG_POSITIONS.length],
           rot: ((idx * 37) % 100) / 100 * 6 - 3,
-          jitterX: ((idx * 53) % 30) - 15,
-          jitterY: ((idx * 71) % 30) - 15,
           key: idx,
         });
       }
@@ -284,6 +283,14 @@ export function VisualLab({ onClose }: { onClose: () => void }) {
       role="dialog"
       aria-modal="true"
       aria-label="Visual Lab"
+      onDoubleClick={() => {
+        if (closing) return;
+        setClosing(true);
+        setTimeout(() => {
+          onClose();
+          window.location.reload();
+        }, 700);
+      }}
       style={{
         position: 'fixed',
         inset: 0,
@@ -301,8 +308,8 @@ export function VisualLab({ onClose }: { onClose: () => void }) {
           <div
             key={t.key}
             data-tile=""
-            data-lx={t.lx + (t.jitterX || 0)}
-            data-ly={t.ly + (t.jitterY || 0)}
+            data-lx={t.lx}
+            data-ly={t.ly}
             data-w={t.w}
             data-h={t.h}
             data-rot={t.rot}
@@ -399,44 +406,22 @@ export function VisualLab({ onClose }: { onClose: () => void }) {
         </div>
       </div>
 
-      {/* Exit The Lab — closes + scrolls to top (instant) */}
-      <button
-        type="button"
-        onClick={() => {
-          setClosing(true);
-          setTimeout(() => {
-            onClose();
-            window.location.reload();
-          }, 700);
-        }}
-        onPointerDown={(e) => e.stopPropagation()}
-        onPointerUp={(e) => e.stopPropagation()}
-        aria-label="Exit the Visual Lab and return to top"
+      {/* double-click to exit instruction — center bottom */}
+      <div
         style={{
           position: 'absolute',
-          bottom: '1.5rem',
-          right: '1.5rem',
+          bottom: '2rem',
+          left: '50%',
+          transform: 'translateX(-50%)',
           zIndex: 7,
-          display: 'inline-flex',
-          alignItems: 'center',
-          gap: '0.6rem',
-          padding: '0.65rem 1.1rem',
-          border: '1.5px solid var(--accent)',
-          color: 'var(--canvas)',
-          fontFamily: 'var(--font-mono), monospace',
-          fontSize: '0.75rem',
-          letterSpacing: '0.12em',
-          textTransform: 'uppercase',
-          background: 'rgba(10, 10, 10, 0.6)',
-          backdropFilter: 'blur(6px)',
-          cursor: 'pointer',
-          transition: 'background 0.3s var(--ease-out-soft)',
+          textAlign: 'center',
+          pointerEvents: 'none',
         }}
-        onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--accent)'; }}
-        onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(10, 10, 10, 0.6)'; }}
       >
-        Exit The Lab ↑
-      </button>
+        <div className="text-label" style={{ color: 'var(--canvas)', opacity: 0.5, letterSpacing: '0.15em' }}>
+          double-click anywhere to exit
+        </div>
+      </div>
     </section>
   );
 }

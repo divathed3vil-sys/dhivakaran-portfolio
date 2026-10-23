@@ -153,18 +153,18 @@ export function IntroLoader() {
         ))}
       </div>
 
-      {/* image chip — cycling film reel of uploaded images */}
-      <div
-        style={{
-          width: '120px',
-          height: '80px',
-          overflow: 'hidden',
-          border: '1.5px solid var(--brass)',
-          marginTop: '0.5rem',
-          opacity: 0.8,
-        }}
-      >
-        {LAB_IMAGE_SRCS.length > 0 && (
+      {/* image chip — cycling film reel (only if images exist) */}
+      {LAB_IMAGE_SRCS.length > 0 && (
+        <div
+          style={{
+            width: '120px',
+            height: '80px',
+            overflow: 'hidden',
+            border: '1.5px solid var(--brass)',
+            marginTop: '0.5rem',
+            opacity: 0.8,
+          }}
+        >
           <div
             style={{
               width: '100%',
@@ -175,8 +175,8 @@ export function IntroLoader() {
               filter: 'grayscale(1) contrast(1.1) brightness(0.85)',
             }}
           />
-        )}
-      </div>
+        </div>
+      )}
 
       <style>{`
         @keyframes iris-pulse {

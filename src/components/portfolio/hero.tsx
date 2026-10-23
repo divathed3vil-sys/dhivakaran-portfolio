@@ -117,7 +117,7 @@ export function Hero() {
         style={{
           position: 'absolute',
           inset: 0,
-          backgroundImage: 'url(/images/portrait-full.webp)',
+          backgroundImage: 'url(/images/landing-full.webp)',
           backgroundSize: 'cover',
           backgroundPosition: '75% 25%',
           filter: 'saturate(0.82) contrast(1.05) brightness(0.94)',
@@ -165,7 +165,9 @@ export function Hero() {
           display: 'flex',
           flexDirection: 'column',
           justifyContent: 'flex-start',
-          paddingTop: isMobile ? '52vh' : '22vh',
+          paddingTop: isMobile ? '52vh' : '0',
+          justifyContent: isMobile ? 'flex-start' : 'center',
+          alignItems: isMobile ? 'flex-start' : 'center',
         }}
       >
         {/* name — bold */}
@@ -178,10 +180,11 @@ export function Hero() {
             maxWidth: '14ch',
             fontFamily: 'var(--font-fraunces), serif',
             fontWeight: 700,
-            fontSize: 'clamp(3rem, 9vw, 9rem)',
+            fontSize: 'clamp(3.5rem, 12vw, 12rem)',
             letterSpacing: '-0.03em',
             transition: 'transform 0.95s var(--ease-reveal) 0.14s, opacity 0.7s var(--ease-opacity) 0.14s',
             textShadow: '0 2px 40px rgba(10, 10, 10, 0.6)',
+            textAlign: isMobile ? 'left' : 'center',
           }}
         >
           Dhivakaran{' '}
@@ -196,8 +199,8 @@ export function Hero() {
             color: 'var(--canvas)',
             opacity: 0.8,
             marginBlock: '1.5rem 0 0',
-            maxWidth: '40ch',
-            transition: 'transform 0.95s var(--ease-reveal) 0.52s, opacity 0.7s var(--ease-opacity) 0.52s',
+            textAlign: isMobile ? 'left' : 'center',
+            marginInline: isMobile ? '0' : 'auto',
           }}
         >
           Brands, products &amp; the art in between.

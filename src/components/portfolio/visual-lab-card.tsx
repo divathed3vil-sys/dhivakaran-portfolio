@@ -1,9 +1,8 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { LAB_IMAGE_SRCS } from './lib/portfolio-images';
-
-const IMAGES = LAB_IMAGE_SRCS.length > 0 ? LAB_IMAGE_SRCS : ['/images/portrait-low.webp'];
+import { getLabImageUrls } from '@/lib/supabase-data';
+import { lowResUrl } from './lib/use-portfolio-data';
 
 /**
  * VisualLabCard — a blurry glimpse of the real Visual Lab.
@@ -17,7 +16,18 @@ const IMAGES = LAB_IMAGE_SRCS.length > 0 ? LAB_IMAGE_SRCS : ['/images/portrait-l
 export function VisualLabCard({ onEnter }: { onEnter: () => void }) {
   const [hovered, setHovered] = useState(false);
   const [isTouch, setIsTouch] = useState(false);
+  const [images, setImages] = useState<string[]>([]);
   const cardRef = useRef<HTMLElement>(null);
+
+  // fetch real lab image URLs from Supabase
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const urls = await getLabImageUrls();
+      if (!cancelled) setImages(urls.map(u => lowResUrl(u, 400)));
+    })();
+    return () => { cancelled = true; };
+  }, []);
 
   useEffect(() => {
     const t = setTimeout(() => setIsTouch(window.matchMedia('(hover: none)').matches), 0);
@@ -69,7 +79,8 @@ export function VisualLabCard({ onEnter }: { onEnter: () => void }) {
           <div
             key={i}
             style={{
-              backgroundImage: `url(${IMAGES[i % IMAGES.length]})`,
+              backgroundImage: images.length > 0 ? `url(${images[i % images.length]})` : 'none',
+              background: images.length === 0 ? 'var(--night-soft)' : undefined,
               backgroundSize: 'cover',
               backgroundPosition: `${(i * 23) % 100}% ${(i * 37) % 100}%`,
               filter: 'grayscale(1) contrast(1.1) brightness(0.7)',

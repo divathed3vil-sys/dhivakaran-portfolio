@@ -148,6 +148,7 @@ export function Contact() {
           as="h2"
           className="text-section"
           rootRef={sectionRef}
+          speedMultiplier={4}
         />
 
         {/* subline */}

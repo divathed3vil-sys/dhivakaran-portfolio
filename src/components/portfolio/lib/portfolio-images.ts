@@ -1,13 +1,13 @@
 /**
  * Shared portfolio image list.
  *
- * BOTH the Selected Work section and the Visual Lab read from this list.
- * To add a new image: drop the file in /public/images/ and add an entry here.
- * It will automatically appear in both Selected Work (grouped by category)
- * and the Visual Lab (in the infinite drag field).
+ * ONLY images uploaded via the Studio (Supabase Storage) appear here.
+ * No hardcoded/AI-generated placeholder images.
  *
- * Images are shown at their OWN aspect ratio — never cropped.
+ * The public site fetches from Supabase at runtime (see use-portfolio-data.ts).
+ * LAB_IMAGE_SRCS is empty — the Visual Lab fetches from Supabase on open.
  */
+
 export type ImageCategory = 'book' | 'poster' | 'thumbnail' | 'other';
 
 export type PortfolioImage = {
@@ -16,16 +16,8 @@ export type PortfolioImage = {
   label: string;
 };
 
-export const PORTFOLIO_IMAGES: PortfolioImage[] = [
-  // Placeholders — replace/add real work below.
-  // Book covers, posters, and thumbnails added here will flow into both
-  // the Selected Work grids AND the Visual Lab automatically.
-  // -med.webp = enough quality for Selected Work display
-  // -low.webp = low-res for the Visual Lab (fast)
-  { src: '/images/portrait-med.webp', category: 'other', label: 'Portrait' },
-  { src: '/images/atmosphere-med.webp', category: 'other', label: 'Atmosphere' },
-  { src: '/images/object-lens-med.webp', category: 'other', label: 'Aperture' },
-];
+// Empty — all images come from Supabase (uploaded via the Studio)
+export const PORTFOLIO_IMAGES: PortfolioImage[] = [];
 
 export const CATEGORY_LABELS: Record<ImageCategory, string> = {
   book: 'Book Covers',
@@ -34,17 +26,12 @@ export const CATEGORY_LABELS: Record<ImageCategory, string> = {
   other: 'Other',
 };
 
-export const CATEGORY_BLURBS: Record<ImageCategory, string> = {
+export const CATEGORY_BLURBS: Record<string, string> = {
   book: 'Cover designs and key art for printed and digital books.',
   poster: 'Poster designs - print, key art, and promotional.',
-  poster_alt: 'Poster designs - print, key art, and promotional.',
   thumbnail: 'Youtube thumbnails - click-through composition.',
   other: '',
 };
 
-/** All image srcs for the Visual Lab (low-res for fast rendering). */
-export const LAB_IMAGE_SRCS: string[] = [
-  '/images/portrait-low.webp',
-  '/images/atmosphere-low.webp',
-  '/images/object-lens-low.webp',
-];
+// Empty — the Visual Lab fetches lab image URLs from Supabase on open
+export const LAB_IMAGE_SRCS: string[] = [];

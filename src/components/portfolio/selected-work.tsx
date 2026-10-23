@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { useBloom, useHeadingRack } from './lib/use-bloom-rack';
 import { usePortfolioData, getImagesForCategory, lowResUrl } from './lib/use-portfolio-data';
 import {
@@ -42,6 +43,20 @@ export function SelectedWork() {
   const bloomRef = useBloom<HTMLDivElement>();
   const titleRef = useHeadingRack<HTMLHeadingElement>();
   const { categories: dbCats, images: dbImgs } = usePortfolioData();
+  const [descText, setDescText] = useState<string | null>(null);
+  const [descPos, setDescPos] = useState({ x: 0, y: 0 });
+
+  // floating description card — follows cursor, shows on hover over cells with data-desc
+  const handleMouseMove = (e: React.MouseEvent) => {
+    const el = (e.target as HTMLElement)?.closest('[data-desc]') as HTMLElement | null;
+    const desc = el?.dataset.desc;
+    if (desc) {
+      setDescText(desc);
+      setDescPos({ x: e.clientX, y: e.clientY });
+    } else if (descText !== null) {
+      setDescText(null);
+    }
+  };
 
   // Use Supabase data if available; fall back to hardcoded placeholders
   const useDb = dbCats && dbCats.length > 0;
@@ -56,6 +71,8 @@ export function SelectedWork() {
     <section
       id="work"
       data-canvas="home"
+      onMouseMove={handleMouseMove}
+      onMouseLeave={() => setDescText(null)}
       aria-label="Selected work"
       style={{
         background: 'var(--canvas)',
@@ -115,6 +132,7 @@ export function SelectedWork() {
                       key={`${cat.key}-${i}`}
                       className="contact-sheet-cell halftone scratch-host"
                       tabIndex={0}
+                      data-desc={cell.desc || ''}
                       style={{ background: 'var(--night-soft)' }}
                     >
                       <div
@@ -144,28 +162,6 @@ export function SelectedWork() {
                       >
                         {cell.label}
                       </div>
-                      {/* hover description overlay */}
-                      {cell.desc && (
-                        <div
-                          style={{
-                            position: 'absolute',
-                            inset: 0,
-                            display: 'flex',
-                            alignItems: 'flex-end',
-                            padding: '0.75rem',
-                            background: 'linear-gradient(180deg, transparent 40%, rgba(10,10,10,0.85) 100%)',
-                            opacity: 0,
-                            transition: 'opacity 0.4s var(--ease-out-soft)',
-                            pointerEvents: 'none',
-                            zIndex: 3,
-                          }}
-                          className="desc-overlay"
-                        >
-                          <span style={{ fontSize: '0.85rem', color: 'var(--canvas)', fontFamily: 'var(--font-fraunces), serif' }}>
-                            {cell.desc}
-                          </span>
-                        </div>
-                      )}
                       {isPlaceholder && (
                         <div
                           className="text-mono text-label"
@@ -191,6 +187,32 @@ export function SelectedWork() {
           })}
         </div>
       </div>
+
+      {/* floating description card — follows cursor, semi-transparent */}
+      {descText && (
+        <div
+          style={{
+            position: 'fixed',
+            left: `${descPos.x + 16}px`,
+            top: `${descPos.y + 16}px`,
+            maxWidth: '260px',
+            padding: '0.75rem 1rem',
+            background: 'rgba(10, 10, 10, 0.85)',
+            backdropFilter: 'blur(8px)',
+            WebkitBackdropFilter: 'blur(8px)',
+            border: '1px solid rgba(214, 41, 41, 0.3)',
+            color: 'var(--canvas)',
+            fontFamily: 'var(--font-fraunces), serif',
+            fontSize: '0.9rem',
+            lineHeight: 1.4,
+            zIndex: 9999,
+            pointerEvents: 'none',
+            boxShadow: '0 8px 24px -6px rgba(0,0,0,0.5)',
+          }}
+        >
+          {descText}
+        </div>
+      )}
     </section>
   );
 }

@@ -18,11 +18,13 @@ export function WaveText({
   className = '',
   as: Tag = 'p',
   rootRef,
+  speedMultiplier = 1,
 }: {
   text: string;
   className?: string;
   as?: React.ElementType;
   rootRef?: RefObject<HTMLElement>;
+  speedMultiplier?: number;
 }) {
   const containerRef = useRef<HTMLElement>(null);
   const charsRef = useRef<HTMLElement[]>([]);
@@ -63,7 +65,7 @@ export function WaveText({
         // shorter root: reveal as it crosses the center band
         p = (0.7 * innerH - rect.top) / (0.5 * innerH + rect.height);
       }
-      p = Math.max(0, Math.min(1, p));
+      p = Math.max(0, Math.min(1, p * speedMultiplier));
 
       const total = chars.length;
       // light chars 0..litCount with a slight lead so the last char

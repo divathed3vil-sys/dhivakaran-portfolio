@@ -68,7 +68,7 @@ export function About() {
                   maxWidth: '220px',
                   aspectRatio: '1 / 1',
                   margin: '0.35rem 1.5rem 0.5rem 0',
-                  backgroundImage: 'url(/images/about-med.webp)',
+                  backgroundImage: 'url(/images/landing-med.webp)',
                   backgroundSize: 'cover',
                   backgroundPosition: '50% 35%',
                   transform: 'rotate(-6deg)',
