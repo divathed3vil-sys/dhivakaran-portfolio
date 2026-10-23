@@ -523,3 +523,51 @@ Stage Summary:
 - Shared image system set up: add an image to lib/portfolio-images.ts and it flows to BOTH Selected Work (grouped by category) AND the Visual Lab (infinite drag field) automatically.
 - Images now follow their own ratio (no crop) in both the Lab and Selected Work — background-size: contain with dark matting.
 - Ready for the user to upload real book covers / posters / thumbnails — just add entries to PORTFOLIO_IMAGES and both sections update.
+
+---
+Task ID: Phase 0-2 (Supabase + Studio Auth)
+Agent: main-orchestrator
+Task: Set up Supabase backend (schema + RLS + storage) + build the secure Studio auth flow ("divahere" trigger + auth card + Studio overlay).
+
+Work Log:
+Phase 0 (Supabase project setup — user did):
+- User created Supabase project (ref: jnlkafehvmqcquqqxvib)
+- API URL: https://jnlkafehvmqcquqqxvib.supabase.co
+- anon key obtained (public, safe for client)
+- Auth user created: diva@studio.local / divad3vil (auto-confirmed)
+
+Phase 1 (Schema + RLS — user ran the SQL I wrote in supabase/schema.sql):
+- 4 tables: categories, images, videos, site_settings (singleton)
+- storage bucket: portfolio (public read, authed write)
+- RLS enabled on all tables:
+  - public can SELECT published content only
+  - authenticated admin can full CRUD
+  - storage: public read, authed write
+- Seeded 3 default categories (Book Covers, Posters, Thumbnails)
+- Verified via REST API (curl): categories returned 3 rows, site_settings 1 row, images [] (RLS hiding unpublished) ✓
+
+Phase 2 (Auth flow — built by me):
+- src/lib/supabase.ts: Supabase browser client (null-safe if env missing) + usernameToEmail mapping ("diva" → "diva@studio.local")
+- src/components/portfolio/studio/studio-provider.tsx: React context with auth state (showAuth, authed, authError) + "divahere" global keydown trigger (tracks last 8 chars, fires openAuth, ignores when auth/studio open or typing in inputs) + signIn (calls supabase.auth.signInWithPassword) + closeStudio (signOut) + Esc handler
+- src/components/portfolio/studio/auth-card.tsx: floating card with backdrop blur, username field auto-focused, type+Enter advances to password, type+Enter submits, shake+red-flash on fail, password clears on fail
+- src/components/portfolio/studio/studio-overlay.tsx: full-screen overlay "Control Room" with 4 tab placeholders (Selected Frames / Visual Lab / Videos / Site Settings) + sign out button + Esc to close
+- page.tsx: wrapped in <StudioProvider>, AuthCard + StudioOverlay rendered as siblings (not blurred)
+- globals.css: added auth-card-in, auth-shake, studio-in animations
+- .env.local: NEXT_PUBLIC_SUPABASE_URL + NEXT_PUBLIC_SUPABASE_ANON_KEY (gitignored)
+- @supabase/supabase-js installed
+
+Verification (agent-browser, dev server restarted with .env.local loaded):
+- "divahere" trigger: typed via real key presses → auth card appeared with username field auto-focused ✓
+- Login: type "diva" + Enter → password field focused ✓; type "divad3vil" + Enter → Studio overlay appeared ("Control Room") ✓
+- Sign Out → Studio closed ✓; "divahere" again → auth card reappeared (re-auth required) ✓
+- Wrong password → auth card stays open, password clears, Studio doesn't open ✓
+- Esc → auth card closes ✓
+- SECURITY: grep for "divad3vil" across src/ → not found (password is only in Supabase Auth, server-side — never in the client bundle, never inspectable) ✓
+
+Stage Summary:
+- The secret Studio is now accessible by typing "divahere" anywhere on the site.
+- The auth is server-side (Supabase Auth) — the password cannot be found by inspecting the page.
+- Each "divahere" requires re-typing the username + password (session cleared on sign out).
+- The UX matches the user's spec: username field ready → type + Enter → password field → type + Enter → auto-enter Studio (no visible buttons).
+- The Studio overlay shows "Control Room" with 4 tab placeholders (Phase 3 will build the real CRUD: Selected Frames / Lab / Videos / Site Settings management).
+- Next: Phase 3 (the CRUD tabs — category + image + video management with upload, priority, delete) OR Phase 0b (Vercel deployment). User's choice.
