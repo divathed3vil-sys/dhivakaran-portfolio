@@ -1,8 +1,6 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { getLabImageUrls } from '@/lib/supabase-data';
-import { lowResUrl } from './lib/use-portfolio-data';
 
 /**
  * VisualLabCard — a blurry glimpse of the real Visual Lab.
@@ -16,15 +14,23 @@ import { lowResUrl } from './lib/use-portfolio-data';
 export function VisualLabCard({ onEnter }: { onEnter: () => void }) {
   const [hovered, setHovered] = useState(false);
   const [isTouch, setIsTouch] = useState(false);
-  const [images, setImages] = useState<string[]>([]);
+  const [images, setImages] = useState<string[]>(['/images/landing-low.webp']);
   const cardRef = useRef<HTMLElement>(null);
 
-  // fetch real lab image URLs from Supabase
+  // fetch real lab image URLs from Supabase (graceful — falls back to landing image)
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const urls = await getLabImageUrls();
-      if (!cancelled) setImages(urls.map(u => lowResUrl(u, 400)));
+      try {
+        const { getLabImageUrls } = await import('@/lib/supabase-data');
+        const { lowResUrl } = await import('./lib/use-portfolio-data');
+        const urls = await getLabImageUrls();
+        if (!cancelled && urls.length > 0) {
+          setImages(urls.map(u => lowResUrl(u, 400)));
+        }
+      } catch (e) {
+        // keep the landing image fallback
+      }
     })();
     return () => { cancelled = true; };
   }, []);
