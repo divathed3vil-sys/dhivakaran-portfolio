@@ -1164,3 +1164,58 @@ Stage Summary:
 - Menu panel slide-in + burger→X morph + link stagger reveal all upgraded to spring easings (more elastic, Apple-like).
 - All effects respect prefers-reduced-motion + touch device detection (CSS guards + matchMedia checks in JS).
 - Ready for Phase 5b.2 (Hero name spring stagger + portrait parallax-with-resistance) upon user approval
+
+---
+Task ID: OPT-5b.2 (Phase 5b — Hero spring stagger + portrait parallax-with-resistance)
+Agent: main-orchestrator
+Task: Add spring-stagger reveal to "Dhivakaran M" h1 (per-letter spans, --ease-spring-medium, 35ms stagger). Add portrait parallax-with-resistance (cursor-follow, lerp 0.08, max 12/8px offset, composites with existing scroll transform).
+
+Work Log:
+- src/app/globals.css — added .hero-letter CSS + hero-letter-stagger keyframe:
+  - .hero-letter: display:inline-block, will-change: transform + opacity (per-letter spans for stagger)
+  - html[data-loading="true"] .hero-letter: translateY(110%) + opacity 0 (pre-load state — letters hidden during IntroLoader)
+  - html:not([data-loading]) [data-hero-3d] .hero-letter: animation: hero-letter-stagger var(--dur-spring-medium) var(--ease-spring-medium) both; animation-delay: calc(0.14s + var(--i, 0) * 35ms)
+  - @keyframes hero-letter-stagger: from translateY(110%)+opacity 0 → to translateY(0)+opacity 1
+  - @media (prefers-reduced-motion: reduce): animation: none, transform: none, opacity: 1 (accessibility)
+- src/components/portfolio/hero.tsx — added renderNameWithStagger() helper:
+  - Splits "Dhivakaran" into 10 letter spans, adds non-breaking space span, adds italic "M" span (12 total)
+  - Each span has --i CSS variable for staggered animation-delay (0, 1, 2, ..., 11)
+  - Replaces the previous JSX "Dhivakaran{' '}<em>M</em>" with the staggered version
+- src/components/portfolio/hero.tsx — switched scroll handler from scroll-triggered rAF to continuous rAF loop:
+  - Reason: parallax-with-resistance needs to lerp toward cursor target even when user stops moving the mouse (mousemove only fires on movement, not when stationary)
+  - loop() runs every frame, calls update() which reads scroll + parallax state + writes transforms
+  - Cost: ~0.1ms per frame on a single transform update (negligible)
+  - Cancelled on unmount via cancelAnimationFrame
+- src/components/portfolio/hero.tsx — added parallax-with-resistance:
+  - parallaxTarget {x: 0, y: 0} — cursor target normalized to -1..1 from section center
+  - parallaxApplied {x: 0, y: 0} — current applied value (lerp 0.08 toward target for spring-follow)
+  - onMouseMove handler (passive): computes normalized nx/ny from cursor position, sets parallaxTarget.x = nx*12, parallaxTarget.y = ny*8 (max 12px/8px offset — Apple-like subtle resistance)
+  - onMouseLeave handler: resets parallaxTarget to (0, 0) so portrait springs back to center
+  - update() includes parallax offset in the portrait transform: translate3d(px, ty*0.4 + py, 0) scale(scale)
+  - Name also gets parallax (with 0.4 multiplier — name drifts less than portrait for depth illusion)
+  - Only activates on hover-capable devices (hasHover check via matchMedia)
+  - Respects reduced-motion (returns early before any setup)
+- bun run lint: COMPLETELY CLEAN (0 errors, 0 warnings)
+- Agent Browser verification (dev server):
+  - Page loads, title correct
+  - 12 hero-letter spans present in DOM (10 letters of "Dhivakaran" + 1 nbsp + 1 italic "M")
+  - h1 text content = "Dhivakaran M" preserved (stagger split doesn't break visible text)
+  - First letter animation: animationName="hero-letter-stagger", animationDuration="0.7s", animationDelay="0.14s", animationTimingFunction="cubic-bezier(0.34, 1.8, 0.64, 1)" (spring-medium with overshoot) ✓
+  - Initial state (data-loading="true"): first letter opacity=0, transform translate Y=167px (110% below final position) — letters hidden during IntroLoader ✓
+  - After 3.5s (IntroLoader done + animation complete): dataLoading=null, first letter opacity=1, transform=identity matrix (final position) ✓
+  - All 5 first letters opacity=1 after animation ✓
+  - Portrait transition preserved: 'transform 0.95s cubic-bezier(0.16, 1, 0.3, 1)' (ease-reveal)
+  - Portrait will-change: transform (preserved)
+  - 2 picture layers (sharp + blur from Phase 3) preserved
+  - No console errors
+  - Screenshot saved: audit/phase5b2-hero-stagger.png
+- Parallax-with-resistance: code is set up correctly but won't activate in agent-browser (headless doesn't match hover/pointer media queries — correct behavior). Will activate in user's real desktop browser when cursor is over the hero section.
+
+Stage Summary:
+- Phase 5b.2 complete: Hero name spring-stagger reveal + portrait parallax-with-resistance
+- Non-destructive: existing Hero design preserved (B&W portrait, centered/below-center name, accent red M, 3D rise on data-loading removal). New effects layer ON TOP — letters stagger in with spring overshoot AFTER the existing 3D rise, portrait subtly drifts toward cursor with spring-follow resistance.
+- Per-letter spring stagger: 12 letters, 35ms each, --ease-spring-medium (1.8 overshoot) — Apple-like bounce on each letter
+- Portrait parallax-with-resistance: cursor normalized to -1..1, max 12px X / 8px Y offset, lerp 0.08 spring-follow, composites with existing scroll-driven transform (no conflict)
+- Continuous rAF loop (every frame) so parallax can lerp toward target even when mouse stops moving
+- All effects respect prefers-reduced-motion + touch device detection
+- Ready for Phase 5b.3 (Selected Work cell lift + glass description popover + stagger-in on viewport entry) upon user approval

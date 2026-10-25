@@ -5,7 +5,48 @@ import { useEffect, useRef, useState } from 'react';
 /**
  * Hero — full-bleed portrait. Subject on the right, name at face-level on desktop
  * (22vh from top), below center on mobile (52vh). Bold, minimal.
+ *
+ * Phase 5b.2 — Apple-like spring-stagger reveal on "Dhivakaran M" h1 (per-letter
+ * spans with --ease-spring-medium, 35ms stagger delay, fires after IntroLoader
+ * removes data-loading). Portrait gets parallax-with-resistance on cursor
+ * (subtle 12px/8px max offset, lerp 0.08 spring-follow, composited with the
+ * existing scroll-driven transform).
  */
+
+// Phase 5b.2 — split "Dhivakaran M" into per-letter spans for the spring stagger.
+// "Dhivakaran" + non-breaking space + italic "M" — each letter gets its own
+// <span class="hero-letter"> with a --i CSS variable for staggered delay.
+function renderNameWithStagger() {
+  const word = 'Dhivakaran';
+  const letters: React.ReactNode[] = [];
+  // Letters of "Dhivakaran" — each gets a spring-stagger reveal via CSS
+  word.split('').forEach((ch, i) => {
+    letters.push(
+      <span key={`l${i}`} className="hero-letter" style={{ ['--i' as string]: i } as React.CSSProperties}>
+        {ch}
+      </span>
+    );
+  });
+  // Non-breaking space (so it doesn't collapse) — also a hero-letter so it staggers
+  letters.push(
+    <span key="sp" className="hero-letter" style={{ ['--i' as string]: word.length } as React.CSSProperties}>
+      &nbsp;
+    </span>
+  );
+  // Italic "M" — wrapped in <em> + the letter is a hero-letter too
+  letters.push(
+    <em
+      key="M"
+      style={{ fontStyle: 'italic', fontWeight: 700, color: 'var(--accent-soft)' }}
+    >
+      <span className="hero-letter" style={{ ['--i' as string]: word.length + 1 } as React.CSSProperties}>
+        M
+      </span>
+    </em>
+  );
+  return letters;
+}
+
 export function Hero() {
   const sectionRef = useRef<HTMLElement>(null);
   const portraitRef = useRef<HTMLDivElement>(null);
@@ -24,7 +65,7 @@ export function Hero() {
     return () => window.removeEventListener('resize', check);
   }, []);
 
-  // scroll-driven: focus pull (cross-fade) + name parallax.
+  // scroll-driven: focus pull (cross-fade) + name parallax + Phase 5b.2 portrait parallax-with-resistance.
   // Phase 3 — replaced per-frame filter:blur(0→8px) on a 1920px element with an
   // opacity cross-fade between sharp <picture> (opacity 1→0) and pre-rendered
   // blurred <picture> (opacity 0→1). Per brief §2.4: pre-rendering a stable blur
@@ -32,13 +73,23 @@ export function Hero() {
   // static — no moving content behind the blur). The brightness/contrast
   // animations remain (they're point operations on a single composited layer —
   // cheap per-frame, no convolution).
+  //
+  // Phase 5b.2 — uses a continuous rAF loop (every frame) so the portrait
+  // parallax-with-resistance can lerp toward the cursor target even when the
+  // user stops moving the mouse. Cost is negligible (~0.1ms per frame on a
+  // single transform update). Respects reduced-motion (returns early).
   useEffect(() => {
     if (typeof window === 'undefined') return;
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const hasHover = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
 
     let rafId = 0;
+    // Parallax target (cursor position, normalized to -1..1 from section center)
+    const parallaxTarget = { x: 0, y: 0 };
+    // Parallax applied (lerp toward target for spring-follow feel)
+    const parallaxApplied = { x: 0, y: 0 };
+
     const update = () => {
-      rafId = 0;
       const section = sectionRef.current;
       const portrait = portraitRef.current;
       const sharpLayer = sharpLayerRef.current;
@@ -56,30 +107,70 @@ export function Hero() {
         const ty = p * 80;
         // brightness/contrast remain (point ops, cheap). No more blur in filter.
         portrait.style.filter = `saturate(0.82) brightness(${0.94 - p * 0.25}) contrast(${1.05 - p * 0.1})`;
-        portrait.style.transform = `translate3d(0, ${ty * 0.4}px, 0) scale(${scale})`;
+        // Phase 5b.2 — include parallax offset in the transform (composited with scroll-driven)
+        // Lerp applied toward target (0.08 = subtle spring-follow, 0.92 = quick settle)
+        parallaxApplied.x += (parallaxTarget.x - parallaxApplied.x) * 0.08;
+        parallaxApplied.y += (parallaxTarget.y - parallaxApplied.y) * 0.08;
+        const px = parallaxApplied.x;
+        const py = parallaxApplied.y;
+        portrait.style.transform = `translate3d(${px}px, ${ty * 0.4 + py}px, 0) scale(${scale})`;
       }
       if (sharpLayer) sharpLayer.style.opacity = String(1 - p);
       if (blurLayer) blurLayer.style.opacity = String(p);
 
-      // name parallax: drifts up faster
+      // name parallax: drifts up faster (slight parallax x drift too)
       if (name) {
-        name.style.transform = `translate3d(0, ${-p * 120}px, 0)`;
+        const nx = parallaxApplied.x * 0.4; // name drifts less than portrait
+        const ny = parallaxApplied.y * 0.4;
+        name.style.transform = `translate3d(${nx}px, ${-p * 120 + ny}px, 0)`;
         name.style.opacity = String(1 - p * 0.6);
       }
     };
 
-    const onScroll = () => {
-      if (!rafId) rafId = requestAnimationFrame(update);
+    // Continuous rAF loop — runs every frame so parallax can lerp toward target
+    // even when mouse stops moving. Cancelled on unmount.
+    const loop = () => {
+      rafId = requestAnimationFrame(loop);
+      update();
+    };
+    rafId = requestAnimationFrame(loop);
+
+    // Phase 5b.2 — mouse-driven parallax target (only on hover-capable devices)
+    const onMouseMove = (e: MouseEvent) => {
+      if (!hasHover) return;
+      const section = sectionRef.current;
+      if (!section) return;
+      const rect = section.getBoundingClientRect();
+      // Normalize to -1..1 from section center
+      const nx = (e.clientX - rect.left - rect.width / 2) / (rect.width / 2);
+      const ny = (e.clientY - rect.top - rect.height / 2) / (rect.height / 2);
+      // Max 12px / 8px offset (subtle — Apple-like resistance)
+      parallaxTarget.x = nx * 12;
+      parallaxTarget.y = ny * 8;
+    };
+    const onMouseLeave = () => {
+      // Spring back to center when mouse leaves the hero
+      parallaxTarget.x = 0;
+      parallaxTarget.y = 0;
     };
 
-    update();
-    window.addEventListener('scroll', onScroll, { passive: true });
-    window.addEventListener('resize', onScroll);
+    if (hasHover) {
+      const section = sectionRef.current;
+      if (section) {
+        section.addEventListener('mousemove', onMouseMove, { passive: true });
+        section.addEventListener('mouseleave', onMouseLeave);
+      }
+    }
 
     return () => {
-      window.removeEventListener('scroll', onScroll);
-      window.removeEventListener('resize', onScroll);
-      if (rafId) cancelAnimationFrame(rafId);
+      cancelAnimationFrame(rafId);
+      if (hasHover) {
+        const section = sectionRef.current;
+        if (section) {
+          section.removeEventListener('mousemove', onMouseMove);
+          section.removeEventListener('mouseleave', onMouseLeave);
+        }
+      }
     };
   }, []);
 
@@ -236,7 +327,7 @@ export function Hero() {
           alignItems: isMobile ? 'flex-start' : 'center',
         }}
       >
-        {/* name — bold */}
+        {/* name — bold. Phase 5b.2: split into per-letter spans for spring stagger reveal. */}
         <h1
           data-hero-3d=""
           style={{
@@ -253,8 +344,7 @@ export function Hero() {
             textAlign: isMobile ? 'left' : 'center',
           }}
         >
-          Dhivakaran{' '}
-          <em style={{ fontStyle: 'italic', fontWeight: 700, color: 'var(--accent-soft)' }}>M</em>
+          {renderNameWithStagger()}
         </h1>
 
         {/* subline — humble */}

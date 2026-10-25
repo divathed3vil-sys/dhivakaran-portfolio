@@ -425,6 +425,31 @@
     transform: scale(1.04);
   }
 
+  /* Phase 5b.2 — Hero name spring-stagger reveal.
+     Per-letter spans (.hero-letter) start hidden (translateY 110% + opacity 0)
+     and spring in with --ease-spring-medium (pronounced overshoot) + staggered
+     delay (35ms per letter). Only fires AFTER data-loading is removed
+     (i.e., after IntroLoader finishes ~2s). */
+  .hero-letter {
+    display: inline-block;
+    will-change: transform, opacity;
+  }
+  html[data-loading="true"] .hero-letter {
+    transform: translateY(110%);
+    opacity: 0;
+  }
+  html:not([data-loading]) [data-hero-3d] .hero-letter {
+    animation: hero-letter-stagger var(--dur-spring-medium) var(--ease-spring-medium) both;
+    animation-delay: calc(0.14s + var(--i, 0) * 35ms);
+  }
+  @keyframes hero-letter-stagger {
+    from { transform: translateY(110%); opacity: 0; }
+    to   { transform: translateY(0); opacity: 1; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .hero-letter { animation: none !important; transform: none !important; opacity: 1 !important; }
+  }
+
   /* reveal primitive */
   [data-reveal="waiting"] {
     opacity: 0;
