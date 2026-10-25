@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import { Toaster } from "@/components/ui/toaster";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://dhivakaran-portfolio.vercel.app"),
@@ -81,7 +80,10 @@ export default function RootLayout({
           Skip to content
         </a>
         {children}
-        <Toaster />
+        {/* Phase 4 — Toaster removed: nothing in the codebase triggers useToast()
+            or toast() calls. Drops @radix-ui/react-toast + lucide-react (X icon)
+            from initial bundle. Re-add as dynamic({ ssr:false }) when toasts
+            are actually needed (e.g. Phase 5b "saved!" feedback on Studio edits). */}
       </body>
     </html>
   );

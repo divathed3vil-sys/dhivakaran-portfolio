@@ -949,3 +949,43 @@ Stage Summary:
 - will-change trimmed: 'transform, filter' → 'transform' on hero wrapper (no more filter changes per frame)
 - Visual: Hero focus-pull still works (sharp→blur cross-fade as user scrolls past), all other sections render identically — no visual regression
 - Ready for commit + deploy to Vercel production, then Phase 4 (JS bundle diet: dynamic-import Studio + VisualLab, audit heavy chunks, drop unused deps)
+
+---
+Task ID: OPT-4 (Phase 4 — JS bundle diet)
+Agent: main-orchestrator
+Task: Dynamic-import VisualLab + Studio tabs, remove unused Toaster from layout, audit heavy unused deps. Verify via lint + Agent Browser + Vercel build.
+
+Work Log:
+- AUDIT FINDINGS (key insights):
+  - ZERO `framer-motion` imports anywhere in src/ — installed but never used. Tree-shaken away, doesn't affect bundle. (Keep for Phase 5b "Apple-like animations" use.)
+  - ZERO `@radix-ui/*` imports by portfolio code — the 38 Radix packages installed are unused by `/` route.
+  - ZERO `@dnd-kit/*` imports by current code (planned for Phase 5 Studio drag-drop, but not yet wired up).
+  - ZERO shadcn/ui component imports by portfolio code — the only shadcn/ui usage is `Toaster` in layout.tsx.
+  - Toaster itself is NEVER triggered — no `useToast()` or `toast()` calls anywhere. Pure overhead.
+  - Studio tabs (selected-frames-tab, lab-tab, videos-tab, site-settings-tab) don't import any heavy external libs — just React state + Supabase data helpers. But they're still ~100-225 lines each that load on first paint if statically imported.
+  - Visual Lab (427 lines, pan/drag/wheel/inertia + Supabase fetch) is statically imported in page.tsx but only conditionally rendered. Static import means its module loads at first paint even if never opened.
+
+- src/app/layout.tsx: removed `import { Toaster }` + `<Toaster />`. Drops @radix-ui/react-toast + lucide-react X-icon dependency from initial bundle. Comment explains why + how to re-add later.
+- src/app/page.tsx: VisualLab → `dynamic(() => import('@/components/portfolio/visual-lab').then(m => ({ default: m.VisualLab })), { ssr: false, loading: () => null })`. Chunk loads only when user opens the lab.
+- src/components/portfolio/studio/studio-overlay.tsx: 4 tab imports (SelectedFramesTab, LabTab, VideosTab, SiteSettingsTab) → each wrapped in `dynamic(..., { ssr: false })`. Each tab's code loads only when the user actually opens that tab. The Studio nav chrome (this component) stays small in the initial bundle.
+- @next/bundle-analyzer: cannot run because it's webpack-based and Next 16 default uses Turbopack. Vercel build stats + dev server chunk count are the source of truth instead.
+- Lint: COMPLETELY CLEAN (0 errors, 0 warnings).
+- Agent Browser verification:
+  - Page loads cleanly. Visual Lab NOT loaded on first paint (verified: visualLabChunkLoaded=false initially, became true only after clicking the lab card)
+  - Clicked Visual Lab card → opens correctly, dynamic chunk loads on-demand (visualLabChunkLoaded=true after click)
+  - Typed "divahere" → Studio auth card opens with 2 input fields (username + password), dialogs include "Studio access"
+  - No console errors, only HMR + Fast Refresh dev messages
+  - Dev log clean (HTTP 200 throughout)
+- Dev server chunk count comparison:
+  - Phase 0 baseline: 21 chunks referenced in initial HTML
+  - Phase 4: 18 chunks referenced in initial HTML (3 fewer — VisualLab + 2 tab-related chunks now lazy)
+  - Note: dev measurements include dev-only packages (react-devtools, next-devtools, HMR client, polyfill-nomodule) that won't ship to production. Real production delta will be measured by Vercel build.
+
+Stage Summary:
+- Phase 4 complete: dynamic imports for Visual Lab + Studio tabs, Toaster removed
+- 3 chunks dropped from initial HTML on / (21 → 18 in dev)
+- Visual Lab chunk now loads on-demand (verified via Agent Browser)
+- Studio tab chunks load on-demand (structurally verified — dynamic-imported in studio-overlay.tsx, each tab only renders when active)
+- Removed unused Toaster from layout → drops @radix-ui/react-toast from initial bundle
+- Lint completely clean (better than Phase 1 which had 2 Google Fonts warnings)
+- Ready for commit + deploy to Vercel production, then Phase 5 (Studio drag-drop priority reorder + bulk ops + live preview + counters — bridge to the "Apple-like animations + glassmorphism" work in Phase 5b)

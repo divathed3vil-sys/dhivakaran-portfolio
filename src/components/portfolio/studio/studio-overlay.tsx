@@ -1,11 +1,28 @@
 'use client';
 
+import dynamic from 'next/dynamic';
 import { useEffect, useState } from 'react';
 import { useStudio } from './studio-provider';
-import { SelectedFramesTab } from './selected-frames-tab';
-import { LabTab } from './lab-tab';
-import { VideosTab } from './videos-tab';
-import { SiteSettingsTab } from './site-settings-tab';
+
+// Phase 4 — each Studio tab is dynamic-imported so its specific code only
+// loads when the user actually opens that tab (not when the Studio overlay
+// first mounts). The tab navigation chrome (this component) stays small.
+const SelectedFramesTab = dynamic(
+  () => import('./selected-frames-tab').then((m) => ({ default: m.SelectedFramesTab })),
+  { ssr: false }
+);
+const LabTab = dynamic(
+  () => import('./lab-tab').then((m) => ({ default: m.LabTab })),
+  { ssr: false }
+);
+const VideosTab = dynamic(
+  () => import('./videos-tab').then((m) => ({ default: m.VideosTab })),
+  { ssr: false }
+);
+const SiteSettingsTab = dynamic(
+  () => import('./site-settings-tab').then((m) => ({ default: m.SiteSettingsTab })),
+  { ssr: false }
+);
 
 type Tab = 'frames' | 'lab' | 'videos' | 'settings';
 
