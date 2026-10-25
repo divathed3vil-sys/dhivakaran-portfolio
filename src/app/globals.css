@@ -175,6 +175,18 @@
     border-color: var(--rule);
   }
 
+  /* Phase 5b fix — all <img> elements are non-draggable + non-selectable by
+     default. Prevents browser default drag-and-drop picking up images
+     (especially in Selected Work cells + Visual Lab tiles). Also blocks the
+     ghost-image drag that happens on click-and-move. Doesn't prevent
+     right-click save (that's a separate contextmenu handler on specific imgs). */
+  img {
+    -webkit-user-drag: none;
+    user-drag: none;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
   html {
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;

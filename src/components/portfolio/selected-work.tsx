@@ -46,7 +46,6 @@ export function SelectedWork() {
   const [descText, setDescText] = useState<string | null>(null);
   const [descPos, setDescPos] = useState({ x: 0, y: 0 });
   const [lightboxSrc, setLightboxSrc] = useState<string | null>(null);
-  const [zoom, setZoom] = useState(1);
 
   // floating description card — follows cursor, shows on hover over cells with data-desc
   const handleMouseMove = (e: React.MouseEvent) => {
@@ -148,11 +147,13 @@ export function SelectedWork() {
                       <img
                         src={cell.src}
                         alt={cell.label || ''}
+                        draggable={false}
+                        onContextMenu={(e) => e.preventDefault()}
                         loading="lazy"
                         decoding="async"
                         width={800}
                         height={600}
-                        onClick={() => { setLightboxSrc(cell.src); setZoom(1); }}
+                        onClick={() => setLightboxSrc(cell.src)}
                         style={{
                           filter: 'saturate(0.95) contrast(1.05) brightness(0.96)',
                           transition: 'filter 0.4s var(--ease-out-soft)',
@@ -231,35 +232,37 @@ export function SelectedWork() {
         </div>
       )}
 
-      {/* Lightbox — click image to open, blur+dim bg, scroll to zoom, double-click/click outside to close */}
+      {/* Lightbox - click image to open, click anywhere to close.
+          Phase 5b fix: removed scroll-to-zoom. Image constrained to 85vw/85vh. */}
       {lightboxSrc && (
         <div
-          onClick={() => { setLightboxSrc(null); setZoom(1); }}
-          onWheel={(e) => { e.preventDefault(); setZoom((z) => Math.max(1, Math.min(5, z + (e.deltaY < 0 ? 0.2 : -0.2)))); }}
+          onClick={() => setLightboxSrc(null)}
+          onContextMenu={(e) => e.preventDefault()}
           style={{
             position: 'fixed', inset: 0, zIndex: 10002,
             background: 'rgba(0,0,0,0.92)',
             backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            cursor: 'zoom-out',
+            cursor: 'pointer',
           }}
         >
           <img
             src={lightboxSrc}
             alt=""
-            onClick={(e) => e.stopPropagation()}
-            onDoubleClick={() => { setLightboxSrc(null); setZoom(1); }}
+            draggable={false}
+            onContextMenu={(e) => e.preventDefault()}
+            onClick={(e) => { e.stopPropagation(); setLightboxSrc(null); }}
             style={{
-              maxWidth: '90vw', maxHeight: '90vh',
+              maxWidth: '85vw', maxHeight: '85vh',
               objectFit: 'contain',
-              transform: `scale(${zoom})`,
-              transition: 'transform 0.15s var(--ease-out-soft)',
-              cursor: zoom > 1 ? 'grab' : 'zoom-in',
+              cursor: 'pointer',
               boxShadow: '0 24px 60px rgba(0,0,0,0.8)',
+              userSelect: 'none',
+              WebkitUserDrag: 'none',
             }}
           />
           <div style={{ position: 'absolute', bottom: '2rem', left: '50%', transform: 'translateX(-50%)', color: 'var(--canvas)', opacity: 0.4, fontSize: '0.75rem', fontFamily: 'var(--font-mono), monospace', letterSpacing: '0.1em', textTransform: 'uppercase', pointerEvents: 'none' }}>
-            scroll to zoom · double-click to close
+            click anywhere to close
           </div>
         </div>
       )}

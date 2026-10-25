@@ -35,6 +35,9 @@ export function VisualLab({ onClose }: { onClose: () => void }) {
   const [viewport, setViewport] = useState({ w: 1440, h: 900 });
   const [dbLabUrls, setDbLabUrls] = useState<string[] | null>(null);
   const [closing, setClosing] = useState(false);
+  // Phase 5b fix — mobile 2-finger pinch zoom (touch devices only)
+  const [zoom, setZoom] = useState(1);
+  const pinchState = useRef<{ initialDist: number; initialZoom: number } | null>(null);
 
   // fetch lab image URLs from Supabase (falls back to hardcoded if empty)
   useEffect(() => {
@@ -245,6 +248,60 @@ export function VisualLab({ onClose }: { onClose: () => void }) {
     };
   }, [fieldW, fieldH, hintGone]);
 
+  // Phase 5b fix — mobile 2-finger pinch zoom (touch devices only).
+  // 1 finger = pan (already handled by pointer events). 2 fingers = pinch zoom.
+  // Zoom is applied to the field via transform: scale(zoom) + transform-origin: center center.
+  // Pan still works during pinch (pointer events fire for the first finger).
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    // Only on touch devices — desktop uses scroll-wheel for pan (no zoom needed there).
+    if (!window.matchMedia('(pointer: coarse)').matches) return;
+
+    const section = sectionRef.current;
+    if (!section) return;
+
+    const distance = (t1: Touch, t2: Touch) => {
+      const dx = t1.clientX - t2.clientX;
+      const dy = t1.clientY - t2.clientY;
+      return Math.hypot(dx, dy);
+    };
+
+    const onTouchStart = (e: TouchEvent) => {
+      if (e.touches.length !== 2) return;
+      // Start pinch — store initial distance + current zoom
+      pinchState.current = {
+        initialDist: distance(e.touches[0], e.touches[1]),
+        initialZoom: zoom,
+      };
+    };
+
+    const onTouchMove = (e: TouchEvent) => {
+      if (e.touches.length !== 2) return;
+      if (!pinchState.current) return;
+      e.preventDefault(); // block browser default pinch-zoom (we handle it)
+      const newDist = distance(e.touches[0], e.touches[1]);
+      const ratio = newDist / pinchState.current.initialDist;
+      const newZoom = Math.max(0.5, Math.min(4, pinchState.current.initialZoom * ratio));
+      setZoom(newZoom);
+    };
+
+    const onTouchEnd = (e: TouchEvent) => {
+      if (e.touches.length < 2) pinchState.current = null;
+    };
+
+    section.addEventListener('touchstart', onTouchStart, { passive: true });
+    section.addEventListener('touchmove', onTouchMove, { passive: false });
+    section.addEventListener('touchend', onTouchEnd, { passive: true });
+    section.addEventListener('touchcancel', onTouchEnd, { passive: true });
+
+    return () => {
+      section.removeEventListener('touchstart', onTouchStart);
+      section.removeEventListener('touchmove', onTouchMove);
+      section.removeEventListener('touchend', onTouchEnd);
+      section.removeEventListener('touchcancel', onTouchEnd);
+    };
+  }, [zoom]);
+
   // cursor-follow "reveal" overlay — backdrop-filter blur with a transparent circle
   // at the cursor (sharp) + opaque elsewhere (blurred). The "flashlight" de-blur.
   useEffect(() => {
@@ -286,9 +343,11 @@ export function VisualLab({ onClose }: { onClose: () => void }) {
       onDoubleClick={() => {
         if (closing) return;
         setClosing(true);
+        // Phase 5b fix — removed window.location.reload() (was causing the
+        // loading screen to flash on every exit). Just close the overlay after
+        // the iris-close animation completes.
         setTimeout(() => {
           onClose();
-          window.location.reload();
         }, 700);
       }}
       style={{
@@ -303,8 +362,17 @@ export function VisualLab({ onClose }: { onClose: () => void }) {
       }}
     >
       {/* tiles — low-res WebP/AVIF via real <img>, NO per-tile filters (just transforms + opacity).
-          loading=lazy + decoding=async so offscreen tiles don't block first paint. */}
-      <div ref={fieldRef} style={{ position: 'absolute', inset: 0 }}>
+          loading=lazy + decoding=async so offscreen tiles don't block first paint.
+          Phase 5b fix — field gets transform: scale(zoom) for mobile 2-finger pinch.
+          Tile <img> elements have draggable=false + onContextMenu preventDefault
+          so they can't be picked up + dragged (browser default on <img>). */}
+      <div ref={fieldRef} style={{
+        position: 'absolute',
+        inset: 0,
+        transform: `scale(${zoom})`,
+        transformOrigin: 'center center',
+        transition: 'transform 0.15s var(--ease-out-soft)',
+      }}>
         {tiles.map((t) => (
           <div
             key={t.key}
@@ -330,6 +398,8 @@ export function VisualLab({ onClose }: { onClose: () => void }) {
             <img
               src={t.src}
               alt=""
+              draggable={false}
+              onContextMenu={(e) => e.preventDefault()}
               loading="lazy"
               decoding="async"
               width={400}
@@ -340,6 +410,8 @@ export function VisualLab({ onClose }: { onClose: () => void }) {
                 objectFit: 'contain',
                 objectPosition: 'center',
                 display: 'block',
+                userSelect: 'none',
+                WebkitUserDrag: 'none',
               }}
             />
           </div>

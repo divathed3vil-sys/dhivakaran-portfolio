@@ -99,6 +99,8 @@ export function VisualLabCard({ onEnter }: { onEnter: () => void }) {
               key={i}
               src={src}
               alt=""
+              draggable={false}
+              onContextMenu={(e) => e.preventDefault()}
               loading="lazy"
               decoding="async"
               width={400}
@@ -110,6 +112,8 @@ export function VisualLabCard({ onEnter }: { onEnter: () => void }) {
                 objectPosition: `${(i * 23) % 100}% ${(i * 37) % 100}%`,
                 filter: 'grayscale(1) contrast(1.1) brightness(0.7)',
                 display: 'block',
+                userSelect: 'none',
+                WebkitUserDrag: 'none',
               }}
             />
           );
