@@ -149,6 +149,53 @@ export async function deleteImage(id: string) {
   return { error };
 }
 
+// Phase 5 — bulk operations for Studio. Each is idempotent + atomic-ish
+// (Supabase doesn't have true transactions across rows, but we batch the calls
+// and surface the first error encountered).
+
+/**
+ * Reorder images by passing an ordered array of IDs. The first ID gets the
+ * HIGHEST priority (so it sorts first when fetched DESC). All other images
+ * get priorities assigned by their index in the array.
+ */
+export async function reorderImages(orderedIds: string[]) {
+  if (!supabase) return { error: 'No Supabase client' };
+  const highest = orderedIds.length;
+  const updates = orderedIds.map((id, index) =>
+    supabase.from('images').update({ priority: highest - index }).eq('id', id)
+  );
+  const results = await Promise.all(updates);
+  const firstError = results.find((r) => r.error);
+  return { error: firstError?.error };
+}
+
+/**
+ * Bulk-update many images with the same patch (e.g. bulk publish, bulk toggle
+ * in_lab). Returns first error encountered.
+ */
+export async function bulkUpdateImages(ids: string[], updates: Record<string, unknown>) {
+  if (!supabase) return { error: 'No Supabase client' };
+  if (ids.length === 0) return { error: 'No IDs provided' };
+  const calls = ids.map((id) =>
+    supabase.from('images').update(updates).eq('id', id).select().single()
+  );
+  const results = await Promise.all(calls);
+  const firstError = results.find((r) => r.error);
+  return { error: firstError?.error };
+}
+
+/**
+ * Bulk-delete many images. Returns first error encountered.
+ */
+export async function bulkDeleteImages(ids: string[]) {
+  if (!supabase) return { error: 'No Supabase client' };
+  if (ids.length === 0) return { error: 'No IDs provided' };
+  const calls = ids.map((id) => supabase.from('images').delete().eq('id', id));
+  const results = await Promise.all(calls);
+  const firstError = results.find((r) => r.error);
+  return { error: firstError?.error };
+}
+
 export async function addVideo(input: {
   url: string;
   platform: 'youtube' | 'vimeo';

@@ -1,13 +1,31 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import {
+  DndContext,
+  DragOverlay,
+  PointerSensor,
+  closestCenter,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+  type DragStartEvent,
+} from '@dnd-kit/core';
+import {
+  SortableContext,
+  arrayMove,
+  rectSortingStrategy,
+  useSortable,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import {
   getCategories, getAllImages, addCategory, deleteCategory,
   uploadImageFile, addImage, deleteImage, updateImage,
+  reorderImages, bulkUpdateImages, bulkDeleteImages,
 } from '@/lib/supabase-data';
 
 type Category = { id: string; name: string; slug: string; type: string; blurb: string | null; priority: number; };
-type Image = { id: string; category_id: string | null; public_url: string; label: string | null; description: string | null; priority: number; published: boolean; in_lab: boolean; };
+type Image = { id: string; category_id: string | null; public_url: string; label: string | null; description: string | null; priority: number; published: boolean; in_lab: boolean; created_at?: string | null; };
 
 export function SelectedFramesTab() {
   const [categories, setCategories] = useState<Category[]>([]);
@@ -28,6 +46,9 @@ export function SelectedFramesTab() {
   const [editDesc, setEditDesc] = useState('');
   const [editPriority, setEditPriority] = useState(0);
   const [editInLab, setEditInLab] = useState(true);
+  // Phase 5 — multi-select for bulk ops
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [activeDragId, setActiveDragId] = useState<string | null>(null);
   const [msg, setMsg] = useState('');
 
   const load = useCallback(async () => {
@@ -57,7 +78,6 @@ export function SelectedFramesTab() {
     setUploadProgress(0);
     setUploadedUrl(null);
     setMsg('Uploading image…');
-    // simulate progress
     const progInterval = setInterval(() => setUploadProgress((p) => Math.min(p + 15, 90)), 100);
     const { publicUrl, error: upErr } = await uploadImageFile(file);
     clearInterval(progInterval);
@@ -96,6 +116,7 @@ export function SelectedFramesTab() {
   const handleDeleteImage = async (id: string) => {
     if (!confirm('Delete this image?')) return;
     await deleteImage(id);
+    setSelected((prev) => { const n = new Set(prev); n.delete(id); return n; });
     load();
   };
 
@@ -105,12 +126,106 @@ export function SelectedFramesTab() {
     load();
   };
 
-  const catImages = images.filter((i) => i.category_id === activeCat);
+  // Phase 5 — catImages sorted by priority DESC (matches the public site's ordering)
+  const catImages = useMemo(
+    () => images.filter((i) => i.category_id === activeCat).sort((a, b) => b.priority - a.priority),
+    [images, activeCat]
+  );
+
+  // Local-state drag-reorder (optimistic) + persist on drop
+  const [localOrder, setLocalOrder] = useState<string[] | null>(null);
+  const displayedImages = useMemo(() => {
+    if (!localOrder) return catImages;
+    // reorder catImages by localOrder
+    return localOrder
+      .map((id) => catImages.find((i) => i.id === id))
+      .filter((x): x is Image => !!x);
+  }, [catImages, localOrder]);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
+  );
+
+  const handleDragStart = (e: DragStartEvent) => setActiveDragId(e.active.id as string);
+  const handleDragEnd = async (e: DragEndEvent) => {
+    setActiveDragId(null);
+    const { active, over } = e;
+    if (!over || active.id === over.id) return;
+    const oldIndex = displayedImages.findIndex((i) => i.id === active.id);
+    const newIndex = displayedImages.findIndex((i) => i.id === over.id);
+    if (oldIndex < 0 || newIndex < 0) return;
+    const newOrder = arrayMove(displayedImages, oldIndex, newIndex);
+    setLocalOrder(newOrder.map((i) => i.id));
+    setMsg('Saving new order…');
+    const { error } = await reorderImages(newOrder.map((i) => i.id));
+    if (error) setMsg(`Reorder error: ${error.message}`);
+    else { setMsg('Order saved.'); setLocalOrder(null); load(); }
+  };
+
+  // Phase 5 — bulk ops
+  const toggleSelect = (id: string) => {
+    setSelected((prev) => {
+      const n = new Set(prev);
+      if (n.has(id)) n.delete(id); else n.add(id);
+      return n;
+    });
+  };
+  const selectAll = () => setSelected(new Set(catImages.map((i) => i.id)));
+  const clearSelection = () => setSelected(new Set());
+  const handleBulkPublish = async (publish: boolean) => {
+    if (selected.size === 0) return;
+    setMsg(`${publish ? 'Publishing' : 'Unpublishing'} ${selected.size} images…`);
+    const { error } = await bulkUpdateImages([...selected], { published: publish });
+    if (error) setMsg(`Error: ${error.message}`);
+    else { setMsg(`${selected.size} images ${publish ? 'published' : 'unpublished'}.`); setSelected(new Set()); load(); }
+  };
+  const handleBulkToggleLab = async (inLab: boolean) => {
+    if (selected.size === 0) return;
+    setMsg(`${inLab ? 'Adding' : 'Removing'} ${selected.size} images ${inLab ? 'to' : 'from'} Lab…`);
+    const { error } = await bulkUpdateImages([...selected], { in_lab: inLab });
+    if (error) setMsg(`Error: ${error.message}`);
+    else { setMsg(`${selected.size} images ${inLab ? 'added to' : 'removed from'} Lab.`); setSelected(new Set()); load(); }
+  };
+  const handleBulkDelete = async () => {
+    if (selected.size === 0) return;
+    if (!confirm(`Delete ${selected.size} selected images?`)) return;
+    setMsg(`Deleting ${selected.size} images…`);
+    const { error } = await bulkDeleteImages([...selected]);
+    if (error) setMsg(`Error: ${error.message}`);
+    else { setMsg(`${selected.size} images deleted.`); setSelected(new Set()); load(); }
+  };
+
+  // Phase 5 — visual indicators
+  const totalImages = images.length;
+  const publishedCount = images.filter((i) => i.published).length;
+  const labCount = images.filter((i) => i.in_lab).length;
+  const lastModified = images
+    .map((i) => i.created_at)
+    .filter((t): t is string => !!t)
+    .sort()
+    .reverse()[0];
+  const lastModifiedLabel = lastModified
+    ? new Date(lastModified).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+    : '—';
 
   if (loading) return <div style={{ color: 'var(--night-muted)' }}>Loading…</div>;
 
   return (
     <div>
+      {/* Phase 5 — visual indicators (image count, published, lab, last-modified) */}
+      <div style={{ display: 'flex', gap: '1.5rem', marginBottom: '1.5rem', padding: '1rem 1.25rem', border: '1.5px solid var(--night-hr)', borderRadius: '4px', background: 'var(--night-soft)', flexWrap: 'wrap' }}>
+        <Stat label="TOTAL" value={totalImages} />
+        <Stat label="PUBLISHED" value={publishedCount} />
+        <Stat label="IN LAB" value={labCount} />
+        <Stat label="CATEGORIES" value={categories.length} />
+        <Stat label="LAST MODIFIED" value={lastModifiedLabel} />
+        <div style={{ marginLeft: 'auto', display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+          <button onClick={() => window.open('/', '_blank')} style={{ ...btnStyle, borderColor: 'var(--accent)', display: 'flex', alignItems: 'center', gap: '0.4rem' }} title="Open the live public site in a new tab">
+            <span style={{ fontSize: '0.85rem' }}>↗</span> Preview Site
+          </button>
+        </div>
+      </div>
+
       {/* Add category */}
       <div style={panelStyle}>
         <div className="text-mono text-label" style={labelStyle}>ADD CATEGORY</div>
@@ -125,7 +240,7 @@ export function SelectedFramesTab() {
       {/* Category tabs */}
       <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '1.5rem' }}>
         {categories.map((cat) => (
-          <button key={cat.id} onClick={() => { setActiveCat(cat.id); setUploadedUrl(null); setUploadProgress(null); }} style={{ ...btnStyle, background: activeCat === cat.id ? 'var(--accent)' : 'transparent', borderColor: activeCat === cat.id ? 'var(--accent)' : 'var(--night-hr)' }}>
+          <button key={cat.id} onClick={() => { setActiveCat(cat.id); setUploadedUrl(null); setUploadProgress(null); setSelected(new Set()); setLocalOrder(null); }} style={{ ...btnStyle, background: activeCat === cat.id ? 'var(--accent)' : 'transparent', borderColor: activeCat === cat.id ? 'var(--accent)' : 'var(--night-hr)' }}>
             {cat.name}<span onClick={(e) => { e.stopPropagation(); handleDeleteCategory(cat.id); }} style={{ marginLeft: '0.5rem', opacity: 0.6 }}> ✕</span>
           </button>
         ))}
@@ -170,47 +285,186 @@ export function SelectedFramesTab() {
         </div>
       )}
 
-      {/* Images list */}
+      {/* Images list — drag-and-drop reorder + multi-select */}
       {activeCat && (
         <div>
-          <div className="text-mono text-label" style={{ color: 'var(--night-muted)', marginBottom: '0.75rem' }}>
-            {(categories.find((c) => c.id === activeCat)?.name || '').toUpperCase()} ({catImages.length})
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '0.75rem' }}>
-            {catImages.map((img) => (
-              <div key={img.id} style={{ border: '1.5px solid var(--night-hr)', borderRadius: '4px', overflow: 'hidden', background: 'var(--night-soft)' }}>
-                <div style={{ width: '100%', aspectRatio: '3/2', backgroundImage: `url(${img.public_url})`, backgroundSize: 'cover', backgroundPosition: 'center' }} />
-                <div style={{ padding: '0.5rem' }}>
-                  <div style={{ fontSize: '0.8rem', color: 'var(--canvas)', marginBottom: '0.3rem' }}>{img.label || 'Untitled'}</div>
-                  {editingId === img.id ? (
-                    <div style={{ borderTop: '1px solid var(--night-hr)', paddingTop: '0.5rem', marginTop: '0.3rem' }}>
-                      <input value={editLabel} onChange={(e) => setEditLabel(e.target.value)} placeholder="Label" style={{ ...inputStyle, marginBottom: '0.3rem', fontSize: '0.75rem' }} />
-                      <input value={editDesc} onChange={(e) => setEditDesc(e.target.value)} placeholder="Description" style={{ ...inputStyle, marginBottom: '0.3rem', fontSize: '0.75rem' }} />
-                      <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center' }}>
-                        <input type="number" value={editPriority} onChange={(e) => setEditPriority(parseInt(e.target.value) || 0)} style={{ ...inputStyle, width: '50px', fontSize: '0.75rem' }} />
-                        <label style={{ color: 'var(--canvas)', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.2rem' }}><input type="checkbox" checked={editInLab} onChange={(e) => setEditInLab(e.target.checked)} size={12} /> Lab</label>
-                        <button onClick={handleSaveEdit} style={{ ...miniBtn, borderColor: 'var(--accent)' }}>Save</button>
-                        <button onClick={() => setEditingId(null)} style={miniBtn}>Cancel</button>
-                      </div>
-                    </div>
-                  ) : (
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span className="text-mono text-label" style={{ color: 'var(--accent)', fontSize: '0.65rem' }}>P{img.priority} {img.in_lab ? '◉' : '○'}</span>
-                      <div style={{ display: 'flex', gap: '0.3rem' }}>
-                        <button onClick={() => handleStartEdit(img)} style={miniBtn} title="Edit">✎</button>
-                        <button onClick={() => handleDeleteImage(img.id)} style={miniBtn} title="Delete">✕</button>
-                      </div>
-                    </div>
-                  )}
-                </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+            <div className="text-mono text-label" style={{ color: 'var(--night-muted)' }}>
+              {(categories.find((c) => c.id === activeCat)?.name || '').toUpperCase()} ({catImages.length})
+              <span style={{ marginLeft: '0.5rem', color: 'var(--accent)' }}>· DRAG ⠿ TO REORDER</span>
+            </div>
+            {catImages.length > 0 && (
+              <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center' }}>
+                {selected.size > 0 ? (
+                  <>
+                    <span className="text-mono text-label" style={{ color: 'var(--accent)' }}>{selected.size} SELECTED</span>
+                    <button onClick={() => handleBulkPublish(true)} style={miniBtn} title="Publish selected">↥ Publish</button>
+                    <button onClick={() => handleBulkPublish(false)} style={miniBtn} title="Unpublish selected">↧ Hide</button>
+                    <button onClick={() => handleBulkToggleLab(true)} style={miniBtn} title="Add selected to Lab">◉ Lab+</button>
+                    <button onClick={() => handleBulkToggleLab(false)} style={miniBtn} title="Remove selected from Lab">○ Lab−</button>
+                    <button onClick={handleBulkDelete} style={{ ...miniBtn, borderColor: 'var(--accent)', color: 'var(--accent)' }} title="Delete selected">✕ Delete</button>
+                    <button onClick={clearSelection} style={miniBtn} title="Clear selection">✕ Clear</button>
+                  </>
+                ) : (
+                  <button onClick={selectAll} style={miniBtn} title="Select all">☐ Select All</button>
+                )}
               </div>
-            ))}
+            )}
           </div>
+          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+            <SortableContext items={displayedImages.map((i) => i.id)} strategy={rectSortingStrategy}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '0.75rem' }}>
+                {displayedImages.map((img) => (
+                  <SortableImageCard
+                    key={img.id}
+                    img={img}
+                    selected={selected.has(img.id)}
+                    onToggleSelect={() => toggleSelect(img.id)}
+                    editing={editingId === img.id}
+                    onStartEdit={() => handleStartEdit(img)}
+                    onCancelEdit={() => setEditingId(null)}
+                    onSaveEdit={handleSaveEdit}
+                    onDelete={() => handleDeleteImage(img.id)}
+                    editLabel={editLabel}
+                    setEditLabel={setEditLabel}
+                    editDesc={editDesc}
+                    setEditDesc={setEditDesc}
+                    editPriority={editPriority}
+                    setEditPriority={setEditPriority}
+                    editInLab={editInLab}
+                    setEditInLab={setEditInLab}
+                  />
+                ))}
+              </div>
+            </SortableContext>
+            <DragOverlay>{activeDragId ? <DragPreview img={displayedImages.find((i) => i.id === activeDragId)} /> : null}</DragOverlay>
+          </DndContext>
           {catImages.length === 0 && <div style={{ color: 'var(--night-muted)', fontStyle: 'italic' }}>No images yet.</div>}
         </div>
       )}
 
       {msg && <div style={{ marginTop: '1rem', color: 'var(--accent-soft)', fontSize: '0.85rem' }}>{msg}</div>}
+    </div>
+  );
+}
+
+// Phase 5 — sortable image card with drag handle (⠿), multi-select checkbox, edit/delete buttons.
+// The drag listeners are scoped to the ⠿ handle so the edit/delete/checkbox buttons still work.
+function SortableImageCard({
+  img, selected, onToggleSelect, editing, onStartEdit, onCancelEdit, onSaveEdit, onDelete,
+  editLabel, setEditLabel, editDesc, setEditDesc, editPriority, setEditPriority, editInLab, setEditInLab,
+}: {
+  img: Image;
+  selected: boolean;
+  onToggleSelect: () => void;
+  editing: boolean;
+  onStartEdit: () => void;
+  onCancelEdit: () => void;
+  onSaveEdit: () => void;
+  onDelete: () => void;
+  editLabel: string;
+  setEditLabel: (v: string) => void;
+  editDesc: string;
+  setEditDesc: (v: string) => void;
+  editPriority: number;
+  setEditPriority: (v: number) => void;
+  editInLab: boolean;
+  setEditInLab: (v: boolean) => void;
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: img.id });
+  return (
+    <div
+      ref={setNodeRef}
+      style={{
+        transform: CSS.Transform.toString(transform),
+        transition,
+        opacity: isDragging ? 0.3 : 1,
+        border: selected ? '1.5px solid var(--accent)' : '1.5px solid var(--night-hr)',
+        borderRadius: '4px',
+        overflow: 'hidden',
+        background: 'var(--night-soft)',
+      }}
+    >
+      <div style={{ position: 'relative' }}>
+        <div style={{ width: '100%', aspectRatio: '3/2', backgroundImage: `url(${img.public_url})`, backgroundSize: 'cover', backgroundPosition: 'center' }} />
+        {/* drag handle — listeners scoped here so the rest of the card stays click-friendly */}
+        <button
+          {...attributes}
+          {...listeners}
+          style={{
+            position: 'absolute', top: '4px', left: '4px', width: '24px', height: '24px',
+            background: 'rgba(10,10,10,0.7)', color: 'var(--canvas)', border: 'none', borderRadius: '3px',
+            cursor: 'grab', fontSize: '0.85rem', lineHeight: 1, display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}
+          title="Drag to reorder"
+          aria-label="Drag handle"
+        >
+          ⠿
+        </button>
+        {/* multi-select checkbox */}
+        <input
+          type="checkbox"
+          checked={selected}
+          onChange={onToggleSelect}
+          style={{ position: 'absolute', top: '6px', right: '6px', width: '16px', height: '16px', cursor: 'pointer' }}
+          aria-label="Select image"
+        />
+        {/* published + lab indicators */}
+        <div style={{ position: 'absolute', bottom: '4px', left: '4px', display: 'flex', gap: '0.2rem' }}>
+          <span style={{ background: 'rgba(10,10,10,0.7)', color: img.published ? 'var(--accent)' : 'var(--night-muted)', padding: '1px 5px', borderRadius: '2px', fontSize: '0.6rem', fontFamily: 'var(--font-mono), monospace' }} title={img.published ? 'Published' : 'Hidden'}>
+            {img.published ? '◉' : '○'}
+          </span>
+          {img.in_lab && (
+            <span style={{ background: 'rgba(10,10,10,0.7)', color: 'var(--accent-soft)', padding: '1px 5px', borderRadius: '2px', fontSize: '0.6rem', fontFamily: 'var(--font-mono), monospace' }} title="In Lab">
+              LAB
+            </span>
+          )}
+        </div>
+      </div>
+      <div style={{ padding: '0.5rem' }}>
+        <div style={{ fontSize: '0.8rem', color: 'var(--canvas)', marginBottom: '0.3rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{img.label || 'Untitled'}</div>
+        {editing ? (
+          <div style={{ borderTop: '1px solid var(--night-hr)', paddingTop: '0.5rem', marginTop: '0.3rem' }}>
+            <input value={editLabel} onChange={(e) => setEditLabel(e.target.value)} placeholder="Label" style={{ ...inputStyle, marginBottom: '0.3rem', fontSize: '0.75rem' }} />
+            <input value={editDesc} onChange={(e) => setEditDesc(e.target.value)} placeholder="Description" style={{ ...inputStyle, marginBottom: '0.3rem', fontSize: '0.75rem' }} />
+            <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center' }}>
+              <input type="number" value={editPriority} onChange={(e) => setEditPriority(parseInt(e.target.value) || 0)} style={{ ...inputStyle, width: '50px', fontSize: '0.75rem' }} />
+              <label style={{ color: 'var(--canvas)', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.2rem' }}><input type="checkbox" checked={editInLab} onChange={(e) => setEditInLab(e.target.checked)} size={12} /> Lab</label>
+              <button onClick={onSaveEdit} style={{ ...miniBtn, borderColor: 'var(--accent)' }}>Save</button>
+              <button onClick={onCancelEdit} style={miniBtn}>Cancel</button>
+            </div>
+          </div>
+        ) : (
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span className="text-mono text-label" style={{ color: 'var(--accent)', fontSize: '0.65rem' }}>P{img.priority}</span>
+            <div style={{ display: 'flex', gap: '0.3rem' }}>
+              <button onClick={onStartEdit} style={miniBtn} title="Edit">✎</button>
+              <button onClick={onDelete} style={miniBtn} title="Delete">✕</button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// DragOverlay preview — shows the card floating next to the cursor during drag
+function DragPreview({ img }: { img: Image | undefined }) {
+  if (!img) return null;
+  return (
+    <div style={{ width: '180px', border: '1.5px solid var(--accent)', borderRadius: '4px', overflow: 'hidden', background: 'var(--night-soft)', boxShadow: '0 12px 32px rgba(0,0,0,0.6)' }}>
+      <div style={{ width: '100%', aspectRatio: '3/2', backgroundImage: `url(${img.public_url})`, backgroundSize: 'cover', backgroundPosition: 'center' }} />
+      <div style={{ padding: '0.5rem', fontSize: '0.8rem', color: 'var(--canvas)' }}>{img.label || 'Untitled'}</div>
+    </div>
+  );
+}
+
+// Visual indicator stat block
+function Stat({ label, value }: { label: string; value: string | number }) {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.15rem' }}>
+      <span className="text-mono text-label" style={{ color: 'var(--night-muted)', fontSize: '0.65rem' }}>{label}</span>
+      <span style={{ color: 'var(--canvas)', fontFamily: 'var(--font-mono), monospace', fontSize: '0.95rem', fontWeight: 500 }}>{value}</span>
     </div>
   );
 }

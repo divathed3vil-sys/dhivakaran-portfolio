@@ -70,7 +70,19 @@ export function StudioOverlay() {
             <div className="text-mono text-label" style={{ color: 'var(--accent)', marginBottom: '0.3rem' }}>◉ STUDIO</div>
             <h1 style={{ fontFamily: 'var(--font-fraunces), serif', fontWeight: 500, fontSize: 'clamp(1.75rem, 4vw, 2.75rem)', margin: 0, lineHeight: 0.9, letterSpacing: '-0.02em', color: 'var(--canvas)' }}>Control Room</h1>
           </div>
-          <button type="button" onClick={closeStudio} style={{ padding: '0.5rem 1rem', border: '1.5px solid var(--accent)', color: 'var(--canvas)', background: 'transparent', cursor: 'pointer', fontFamily: 'var(--font-mono), monospace', fontSize: '0.75rem', letterSpacing: '0.12em', textTransform: 'uppercase', transition: 'background 0.3s var(--ease-out-soft)' }} onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--accent)'; }} onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}>Sign Out ↑</button>
+          <div style={{ display: 'flex', gap: '0.5rem' }}>
+            {/* Phase 5 — live preview button: opens public / in a new tab.
+                Lets you check changes without leaving the Studio. */}
+            <button
+              type="button"
+              onClick={() => window.open('/', '_blank')}
+              style={{ padding: '0.5rem 1rem', border: '1.5px solid var(--night-hr)', color: 'var(--canvas)', background: 'transparent', cursor: 'pointer', fontFamily: 'var(--font-mono), monospace', fontSize: '0.75rem', letterSpacing: '0.12em', textTransform: 'uppercase', transition: 'border-color 0.3s var(--ease-out-soft)' }}
+              title="Open the live public site in a new tab"
+            >
+              ↗ Preview Site
+            </button>
+            <button type="button" onClick={closeStudio} style={{ padding: '0.5rem 1rem', border: '1.5px solid var(--accent)', color: 'var(--canvas)', background: 'transparent', cursor: 'pointer', fontFamily: 'var(--font-mono), monospace', fontSize: '0.75rem', letterSpacing: '0.12em', textTransform: 'uppercase', transition: 'background 0.3s var(--ease-out-soft)' }} onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--accent)'; }} onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}>Sign Out ↑</button>
+          </div>
         </div>
 
         {/* tabs */}
