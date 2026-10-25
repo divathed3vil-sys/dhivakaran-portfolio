@@ -789,3 +789,30 @@ Decision rules locked in:
 - No partial-phase pushes
 - main branch protected — work happens on optimization/ branch, merged to main only after Phase 6 final verification
 - Never break the existing visual design (non-destructive — output-preserving optimizations preferred; any conditionally-equivalent change is visually verified)
+
+---
+Task ID: OPT-0 (Phase 0 — Baseline + safety net)
+Agent: main-orchestrator
+Task: Install bundle analyzer, create optimization branch, snapshot baseline metrics, write audit doc. No user-visible change.
+
+Work Log:
+- Created `optimization/` branch off `main` (commit 1d8d10b) — main stays protected
+- Installed `@next/bundle-analyzer@16.4.3` as dev-dep (does not ship to production)
+- Created `audit/` directory for all phase snapshots
+- Measured HTML response: 127,546 B (125 KB), TTFB ~47 ms, status 200
+- Measured 21 JS chunks referenced on `/`: total 5.10 MB (dev — includes react-devtools 816 KB, next-devtools, HMR, polyfill-nomodule 112 KB which won't ship to prod). Estimated prod initial JS: ~350-500 KB
+- Measured CSS: 134 KB dev globals.css + 10 KB Google Fonts CSS (render-blocking external)
+- Measured Google Fonts WOFF2 ceiling: Fraunces 321 KB (6 subsets) + JetBrains Mono 66 KB (6 subsets) = 378 KB total. Browser typically downloads only Latin subset on first paint, but CSS is render-blocking
+- Audited local images: landing-full.webp (312 KB) served to ALL viewports for Hero LCP, including 400 px mobiles — no fetchpriority, no preload, no srcset, no AVIF
+- Audited remote images: Supabase content images use lowResUrl() with ?width=&quality=&resize= contain but NO format negotiation (no AVIF), no srcset, no remotePatterns in next.config.ts (can't use next/image)
+- Audited rendering: ZERO next/image usages, ZERO responsive picture/srcset, ZERO fetchpriority, ZERO preload, ZERO loading=lazy, ZERO decoding=async, ZERO aspect-ratio, ZERO content-visibility, ZERO contain. Hero has per-frame filter:blur(0→8px) on 1920px element (real GPU cost). Studio + VisualLab + VisualLabCard all statically imported into initial bundle.
+- Audited deps: 58 Radix packages (11 MB disk) only used in Studio (gated); framer-motion (5.4 MB disk) sparingly used — to audit in Phase 4; recharts/react-syntax-highlighter/@mdxeditor/react-day-picker/@tanstack NOT used on / — verify they don't transitively leak into initial chunk
+- Wrote audit/baseline-phase-0.md (10 sections, includes Phase 6 comparison targets)
+- Verified dev server still healthy after audit: HTTP 200 in ~46 ms, dev.log clean
+
+Stage Summary:
+- Phase 0 complete: baseline captured, branch created, bundle analyzer installed
+- audit/baseline-phase-0.md is the reference for all future phase comparisons
+- No code changes, no commits, no pushes — pure measurement phase
+- Dev server confirmed healthy (HTTP 200, no errors in dev.log)
+- Ready for Phase 1 (Media pipeline — AVIF + responsive picture/next-image + LCP preload + Supabase remotePatterns) upon user approval
