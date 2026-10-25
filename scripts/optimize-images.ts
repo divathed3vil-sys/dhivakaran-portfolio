@@ -1,14 +1,14 @@
 // Image optimization script — generates AVIF + WebP at 4 width variants per source.
+// For Hero image (landing.jpg): also emits pre-blurred variants (Phase 3 — replaces
+// per-frame filter:blur(0→8px) on Hero scroll with a cross-fade between sharp + blurred layers).
+//
 // Run: bun run scripts/optimize-images.ts
 //
-// Naming: <base>-<width>.<ext>
-//   landing-400.avif / landing-400.webp   (mobile)
-//   landing-800.avif / landing-800.webp   (mobile retina / small tablet)
-//   landing-1280.avif / landing-1280.webp  (laptop)
-//   landing-1920.avif / landing-1920.webp (desktop)
-//   landing-fallback.jpg                  (progressive JPEG for old browsers, 1920px q80)
+// Naming: <base>-<width>.<ext>          (sharp variants)
+//         <base>-<width>-blur.<ext>     (pre-blurred variants for Hero, 16px Gaussian)
 //
-// Phase 1 of optimization roadmap: AVIF + responsive picture/next-image + LCP preload.
+// Phase 1: AVIF + responsive picture/next-image + LCP preload
+// Phase 3: Pre-rendered blur layer (per brief §2.4 — replaces per-frame GPU blur with cross-fade)
 // Old -full/-med/-low variants are removed after the new ones are generated.
 import sharp from 'sharp';
 import { readdir, rm, stat } from 'fs/promises';
@@ -23,12 +23,19 @@ const WEBP_QUALITY = 72;   // matches old -med/-full quality
 const JPEG_QUALITY = 80;
 const JPEG_MAX_WIDTH = 1920;  // cap JPEG fallback at 1920px (already largest width)
 
+// Phase 3: sources that need pre-rendered blur variants (for Hero scroll cross-fade)
+// 16px blur at the largest width produces a perceptual "defocus" equivalent to the
+// original scroll-driven filter:blur(0→8px) at p=1. Cross-fade sharp→blur over scroll
+// progress approximates the focus-pull animation at near-zero per-frame GPU cost.
+const BLUR_SOURCES = ['landing'];  // base names that need pre-blurred variants
+const BLUR_RADIUS = 16;             // Gaussian sigma — matches original 8px scroll max with buffer
+
 async function main() {
   const files = (await readdir(SRC_DIR)).filter((f) =>
     /\.(png|jpg|jpeg|webp|avif)$/i.test(f)
     // skip existing variants (new naming scheme + old)
     && !/-full|-med|-low/.test(f)
-    && !/-(400|800|1280|1920)\.(avif|webp|webp)$/.test(f)
+    && !/-(400|800|1280|1920)(-blur)?\.(avif|webp)$/i.test(f)
     && !/-fallback\.jpg$/i.test(f)
   );
 
@@ -53,6 +60,8 @@ async function main() {
     const srcW = metadata.width || 0;
     const srcH = metadata.height || 0;
     console.log(`  source: ${srcW}×${srcH} ${metadata.hasAlpha ? '(has alpha)' : ''}`);
+
+    const needsBlur = BLUR_SOURCES.includes(base);
 
     for (const width of WIDTHS) {
       // Skip if width exceeds source (no upscaling — preserves original quality)
@@ -80,6 +89,29 @@ async function main() {
         .toFile(webpOut);
       totalWebp += webpInfo.size;
       console.log(`  + ${base}-${width}.webp  (${(webpInfo.size / 1024).toFixed(1)} KB)`);
+
+      // Phase 3: pre-rendered blur variants for Hero
+      if (needsBlur) {
+        const blurAvifOut = join(SRC_DIR, `${base}-${width}-blur.avif`);
+        const blurAvifInfo = await pipeline
+          .clone()
+          .resize({ width, withoutEnlargement: true })
+          .blur(BLUR_RADIUS)
+          .avif({ quality: AVIF_QUALITY, effort: 4 })
+          .toFile(blurAvifOut);
+        totalAvif += blurAvifInfo.size;
+        console.log(`  + ${base}-${width}-blur.avif  (${(blurAvifInfo.size / 1024).toFixed(1)} KB) ← pre-blurred`);
+
+        const blurWebpOut = join(SRC_DIR, `${base}-${width}-blur.webp`);
+        const blurWebpInfo = await pipeline
+          .clone()
+          .resize({ width, withoutEnlargement: true })
+          .blur(BLUR_RADIUS)
+          .webp({ quality: WEBP_QUALITY })
+          .toFile(blurWebpOut);
+        totalWebp += blurWebpInfo.size;
+        console.log(`  + ${base}-${width}-blur.webp  (${(blurWebpInfo.size / 1024).toFixed(1)} KB) ← pre-blurred`);
+      }
     }
 
     // JPEG fallback — progressive, capped at JPEG_MAX_WIDTH
@@ -117,3 +149,4 @@ main().catch((err) => {
   console.error('ERROR:', err);
   process.exit(1);
 });
+

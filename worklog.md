@@ -899,3 +899,53 @@ Stage Summary:
 - Lint completely clean (better than Phase 1)
 - Screenshots saved: audit/phase2-hero-desktop.png, phase2-hero-mobile.png, phase2-about.png
 - Ready for commit + deploy to Vercel production, then Phase 3 (rendering efficiency: content-visibility, contain, pre-rendered hero blur)
+
+---
+Task ID: OPT-3 (Phase 3 — Rendering efficiency)
+Agent: main-orchestrator
+Task: Add CSS containment (content-visibility + contain) to below-fold sections + cards. Replace per-frame filter:blur(0→8px) on Hero with cross-fade between sharp + pre-rendered blurred layers (per brief §2.4 + §8.3.2).
+
+Work Log:
+- scripts/optimize-images.ts: extended to also emit pre-blurred AVIF + WebP variants for the landing source (BLUR_SOURCES=['landing'], BLUR_RADIUS=16). Pre-blurred variants are MUCH smaller than sharp ones because blur destroys high-frequency detail:
+  - landing-1920.avif 22.0 KB sharp → landing-1920-blur.avif 2.7 KB blurred (88% smaller!)
+  - landing-1280.avif 7.5 KB sharp → landing-1280-blur.avif 1.8 KB blurred
+  - landing-800.avif 3.6 KB sharp → landing-800-blur.avif 1.1 KB blurred
+  - landing-400.avif 1.7 KB sharp → landing-400-blur.avif 0.6 KB blurred
+- src/components/portfolio/hero.tsx:
+  - Added sharpLayerRef + blurLayerRef for the two stacked <picture> layers
+  - Wrapper div: removed filter:blur, kept saturate/brightness/contrast (point ops, cheap). willChange reduced to just 'transform' (was 'transform, filter')
+  - Sharp <picture> layer (ref=sharpLayerRef): opacity 1 initially, fades to 0 on scroll. Same AVIF/WebP/JPEG srcset as before. fetchPriority=high. will-change:opacity.
+  - Blur <picture> layer (ref=blurLayerRef): opacity 0 initially, fades to 1 on scroll. Pre-rendered blurred AVIF/WebP/JPEG srcset. fetchPriority=low (doesn't compete with LCP). will-change:opacity.
+  - Scroll handler: writes sharpLayer.style.opacity = 1-p, blurLayer.style.opacity = p. brightness/contrast still animated on wrapper (point ops). transform still animated on wrapper (compositor-friendly).
+  - Eliminates per-frame filter:blur() on a 1920px element — replaces it with opacity cross-fade (compositor-friendly, no GPU convolution).
+- src/components/portfolio/about.tsx: added contentVisibility:'auto' + containIntrinsicSize:'auto 200vh' (matches the 200vh sticky-travel wrapper height)
+- src/components/portfolio/selected-work.tsx: section got contentVisibility:'auto' + containIntrinsicSize:'auto 150vh'. Each .contact-sheet-cell <article> got contain:'layout paint' (isolates scroll-triggered paint invalidation per cell)
+- src/components/portfolio/video-section.tsx: contentVisibility:'auto' + containIntrinsicSize:'auto 80vh'
+- src/components/portfolio/visual-lab-card.tsx: contentVisibility:'auto' + containIntrinsicSize:'auto 70vh' + contain:'layout paint' (the 12 blurred tile imgs are heavy without containment)
+- src/components/portfolio/skillset.tsx: contentVisibility:'auto' + containIntrinsicSize:'auto 100vh'
+- src/components/portfolio/contact.tsx: contentVisibility:'auto' + containIntrinsicSize:'auto 80vh'
+- src/components/portfolio/footer.tsx: contentVisibility:'auto' + containIntrinsicSize:'auto 60vh' + contain:'layout paint' (footer has heavy clip-path + wordmark + bokeh overlay)
+- Lint: COMPLETELY CLEAN (0 errors, 0 warnings)
+- Agent Browser verification:
+  - Hero at p=0: 2 picture layers, sharp opacity=1, blur opacity=0, blur layer pre-fetched landing-1920-blur.avif (2.7 KB)
+  - Hero at scrollY=300 (mid-scroll, p~0.33): sharp opacity=0.67, blur opacity=0.33 — cross-fade working as designed
+  - All 7 content-visibility sections render correctly when scrolled into view:
+    - About: offsetHeight=1800 (matches 200vh on 900px viewport), 1 child (sticky-travel wrapper preserved)
+    - SelectedWork: renders fine
+    - VideoSection: renders fine
+    - VisualLabCard: renders fine
+    - Skillset: renders fine
+    - Contact: renders fine
+    - Footer: clip-path animation still works, renders fine
+  - Image resource requests show landing-1920.avif (LCP) + landing-1920-blur.avif (pre-fetched for cross-fade) + landing-400.avif (VisualLabCard tiles)
+  - No console errors, no React warnings, dev.log clean (HTTP 200 throughout)
+  - Screenshots in audit/: phase3-hero-0p, phase3-hero-midp, phase3-hero-initial, phase3-about, phase3-selected-work, phase3-skillset, phase3-contact, phase3-footer
+
+Stage Summary:
+- Phase 3 complete: CSS containment everywhere + pre-rendered Hero blur
+- 7 below-fold sections now skip paint/layout when offscreen (content-visibility:auto + contain-intrinsic-size matching their actual rendered height to prevent scrollbar jump)
+- 3 element groups now have isolated layout/paint (SelectedWork cells, VisualLabCard, Footer) — scroll-triggered invalidation no longer spreads across siblings
+- Hero scroll cost reduced from per-frame filter:blur(0→8px) convolution on a 1920px element → per-frame opacity cross-fade (compositor-friendly, no GPU work). Pre-blurred AVIF layer is 2.7 KB (vs the 22 KB sharp AVIF — 88% smaller because blur compresses away)
+- will-change trimmed: 'transform, filter' → 'transform' on hero wrapper (no more filter changes per frame)
+- Visual: Hero focus-pull still works (sharp→blur cross-fade as user scrolls past), all other sections render identically — no visual regression
+- Ready for commit + deploy to Vercel production, then Phase 4 (JS bundle diet: dynamic-import Studio + VisualLab, audit heavy chunks, drop unused deps)

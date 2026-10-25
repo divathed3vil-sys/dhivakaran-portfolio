@@ -181,6 +181,9 @@ export function Skillset() {
         paddingBlock: 'calc(80 * var(--px))',
         position: 'relative',
         overflow: 'hidden',
+        // Phase 3 — skip paint/layout when offscreen.
+        contentVisibility: 'auto',
+        containIntrinsicSize: 'auto 100vh',
       }}
     >
       <BokehField count={8} />

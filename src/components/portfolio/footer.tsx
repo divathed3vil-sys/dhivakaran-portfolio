@@ -62,6 +62,11 @@ export function Footer() {
         overflow: 'hidden',
         // initial clip — fully masked from below
         clipPath: 'inset(5% 7% 100% 7%)',
+        // Phase 3 — skip paint/layout when offscreen + isolate layout/paint
+        // when onscreen (footer has heavy clip-path + wordmark + bokeh overlay).
+        contentVisibility: 'auto',
+        containIntrinsicSize: 'auto 60vh',
+        contain: 'layout paint',
       }}
     >
       <div className="canvas-max" style={{ position: 'relative' }}>

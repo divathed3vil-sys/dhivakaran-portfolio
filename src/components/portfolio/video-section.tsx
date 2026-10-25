@@ -67,6 +67,9 @@ export function VideoSection() {
         paddingBlock: 'calc(80 * var(--px))',
         position: 'relative',
         overflow: 'hidden',
+        // Phase 3 — skip paint/layout for offscreen content.
+        contentVisibility: 'auto',
+        containIntrinsicSize: 'auto 80vh',
       }}
     >
       <div className="canvas-max" style={{ position: 'relative' }}>

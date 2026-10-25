@@ -67,6 +67,11 @@ export function VisualLabCard({ onEnter }: { onEnter: () => void }) {
         overflow: 'hidden',
         background: 'var(--night)',
         cursor: 'pointer',
+        // Phase 3 — skip paint/layout when offscreen + isolate layout/paint
+        // when onscreen (the 12 blurred tile imgs are heavy without containment).
+        contentVisibility: 'auto',
+        containIntrinsicSize: 'auto 70vh',
+        contain: 'layout paint',
       }}
     >
       {/* blurry glimpse of the lab — a grid of <img> tiles, heavily blurred.

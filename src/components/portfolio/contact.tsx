@@ -92,6 +92,9 @@ export function Contact() {
         paddingBlock: 'calc(80 * var(--px)) calc(40 * var(--px))',
         position: 'relative',
         overflow: 'hidden',
+        // Phase 3 — skip paint/layout when offscreen.
+        contentVisibility: 'auto',
+        containIntrinsicSize: 'auto 80vh',
       }}
       aria-label="Contact — the final print"
     >

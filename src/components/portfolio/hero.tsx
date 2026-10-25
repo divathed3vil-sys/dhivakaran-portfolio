@@ -9,6 +9,8 @@ import { useEffect, useRef, useState } from 'react';
 export function Hero() {
   const sectionRef = useRef<HTMLElement>(null);
   const portraitRef = useRef<HTMLDivElement>(null);
+  const sharpLayerRef = useRef<HTMLPictureElement>(null);
+  const blurLayerRef = useRef<HTMLPictureElement>(null);
   const nameRef = useRef<HTMLDivElement>(null);
   const keyLightRef = useRef<HTMLDivElement>(null);
   const [isMobile, setIsMobile] = useState(false);
@@ -22,7 +24,14 @@ export function Hero() {
     return () => window.removeEventListener('resize', check);
   }, []);
 
-  // scroll-driven: focus pull + name parallax
+  // scroll-driven: focus pull (cross-fade) + name parallax.
+  // Phase 3 — replaced per-frame filter:blur(0→8px) on a 1920px element with an
+  // opacity cross-fade between sharp <picture> (opacity 1→0) and pre-rendered
+  // blurred <picture> (opacity 0→1). Per brief §2.4: pre-rendering a stable blur
+  // is output-preserving when the underlying scene is static (the Hero image IS
+  // static — no moving content behind the blur). The brightness/contrast
+  // animations remain (they're point operations on a single composited layer —
+  // cheap per-frame, no convolution).
   useEffect(() => {
     if (typeof window === 'undefined') return;
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
@@ -32,6 +41,8 @@ export function Hero() {
       rafId = 0;
       const section = sectionRef.current;
       const portrait = portraitRef.current;
+      const sharpLayer = sharpLayerRef.current;
+      const blurLayer = blurLayerRef.current;
       const name = nameRef.current;
       if (!section) return;
 
@@ -39,14 +50,16 @@ export function Hero() {
       const h = section.offsetHeight;
       const p = Math.max(0, Math.min(1, -rect.top / h));
 
-      // focus pull: portrait defocuses as we leave the hero
+      // focus pull via cross-fade: sharp fades out, pre-blurred fades in
       if (portrait) {
-        const blur = p * 8;
         const scale = 1 + p * 0.08;
         const ty = p * 80;
-        portrait.style.filter = `saturate(0.82) blur(${blur}px) brightness(${0.94 - p * 0.25}) contrast(${1.05 - p * 0.1})`;
+        // brightness/contrast remain (point ops, cheap). No more blur in filter.
+        portrait.style.filter = `saturate(0.82) brightness(${0.94 - p * 0.25}) contrast(${1.05 - p * 0.1})`;
         portrait.style.transform = `translate3d(0, ${ty * 0.4}px, 0) scale(${scale})`;
       }
+      if (sharpLayer) sharpLayer.style.opacity = String(1 - p);
+      if (blurLayer) blurLayer.style.opacity = String(p);
 
       // name parallax: drifts up faster
       if (name) {
@@ -111,11 +124,13 @@ export function Hero() {
       aria-label="Dhivakaran M — opening"
     >
       {/* portrait layer — subject on the right.
-          Responsive <picture> with AVIF → WebP → JPEG fallback.
-          4 width variants (400/800/1280/1920) match viewport via sizes="100vw".
-          fetchPriority=high + decoding=async + loading=eager → LCP discovered
-          before CSS parse (also preloaded in <head>). All existing filter /
-          transform / will-change / transition behavior preserved on wrapper. */}
+          Phase 3 — TWO stacked <picture> layers cross-faded by scroll:
+            1. Sharp layer (LCP-critical, fetchPriority=high, preloaded in <head>)
+            2. Pre-rendered blurred layer (tiny — 2.7 KB AVIF at 1920px, low priority)
+          Scroll handler: sharp opacity 1→0, blur opacity 0→1.
+          Wrapper still owns saturate/brightness/contrast (point ops, cheap) + transform.
+          No more per-frame filter:blur() — eliminates a per-frame GPU convolution
+          on a 1920px element (brief §2.4 + §8.3.2 "static precomputation"). */}
       <div
         ref={portraitRef}
         data-hero-portrait=""
@@ -126,10 +141,11 @@ export function Hero() {
           filter: 'saturate(0.82) contrast(1.05) brightness(0.94)',
           transformOrigin: '60% 60%',
           transition: 'transform 0.95s var(--ease-reveal), filter 0.95s var(--ease-reveal)',
-          willChange: 'transform, filter',
+          willChange: 'transform',
         }}
       >
-        <picture>
+        {/* Sharp layer — opacity 1 initially, fades to 0 on scroll */}
+        <picture ref={sharpLayerRef} style={{ position: 'absolute', inset: 0, opacity: 1, willChange: 'opacity' }}>
           <source type="image/avif" srcSet="/images/landing-400.avif 400w, /images/landing-800.avif 800w, /images/landing-1280.avif 1280w, /images/landing-1920.avif 1920w" sizes="100vw" />
           <source type="image/webp" srcSet="/images/landing-400.webp 400w, /images/landing-800.webp 800w, /images/landing-1280.webp 1280w, /images/landing-1920.webp 1920w" sizes="100vw" />
           <img
@@ -138,6 +154,31 @@ export function Hero() {
             width={1920}
             height={1080}
             fetchPriority="high"
+            decoding="async"
+            loading="eager"
+            style={{
+              position: 'absolute',
+              inset: 0,
+              width: '100%',
+              height: '100%',
+              objectFit: 'cover',
+              objectPosition: '75% 25%',
+            }}
+          />
+        </picture>
+        {/* Pre-blurred layer — opacity 0 initially, fades to 1 on scroll.
+            Tiny (2.7 KB AVIF @ 1920px) — fetchPriority=low so it doesn't compete
+            with the LCP image preload. loading=eager so it's ready before scroll. */}
+        <picture ref={blurLayerRef} style={{ position: 'absolute', inset: 0, opacity: 0, willChange: 'opacity' }}>
+          <source type="image/avif" srcSet="/images/landing-400-blur.avif 400w, /images/landing-800-blur.avif 800w, /images/landing-1280-blur.avif 1280w, /images/landing-1920-blur.avif 1920w" sizes="100vw" />
+          <source type="image/webp" srcSet="/images/landing-400-blur.webp 400w, /images/landing-800-blur.webp 800w, /images/landing-1280-blur.webp 1280w, /images/landing-1920-blur.webp 1920w" sizes="100vw" />
+          <img
+            src="/images/landing-fallback.jpg"
+            alt=""
+            aria-hidden="true"
+            width={1920}
+            height={1080}
+            fetchPriority="low"
             decoding="async"
             loading="eager"
             style={{

@@ -81,6 +81,9 @@ export function SelectedWork() {
         paddingBlock: 'calc(80 * var(--px))',
         position: 'relative',
         overflow: 'hidden',
+        // Phase 3 — skip paint/layout for offscreen content (brief §8.2).
+        contentVisibility: 'auto',
+        containIntrinsicSize: 'auto 150vh',
       }}
     >
       <div className="canvas-max" style={{ position: 'relative' }}>
@@ -135,7 +138,12 @@ export function SelectedWork() {
                       className="contact-sheet-cell halftone scratch-host"
                       tabIndex={0}
                       data-desc={cell.desc || ''}
-                      style={{ background: 'var(--night-soft)' }}
+                      style={{
+                        background: 'var(--night-soft)',
+                        // Phase 3 — isolate layout/paint so scrolling doesn't
+                        // invalidate sibling cells (brief §8.2).
+                        contain: 'layout paint',
+                      }}
                     >
                       <img
                         src={cell.src}
