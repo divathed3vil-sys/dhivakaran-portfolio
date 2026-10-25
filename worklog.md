@@ -857,3 +857,45 @@ Stage Summary:
 - No visual regression verified via Agent Browser on both desktop + mobile
 - Screenshots saved: audit/phase1-hero-desktop.png, phase1-hero-mobile.png, phase1-about.png, phase1-selected-work.png, phase1-lab-card.png, phase1-visual-lab.png
 - Ready for commit + push to optimization branch, then Phase 2 (self-hosted subset fonts + preconnect + metadata)
+
+---
+Task ID: OPT-2 (Phase 2 — Fonts + critical path)
+Agent: main-orchestrator
+Task: Self-host Fraunces (Roman + Italic variable WOFF2, Latin subset) + JetBrains Mono (Roman variable WOFF2, Latin subset), preload Fraunces Roman for LCP, eliminate render-blocking Google Fonts CSS request.
+
+Work Log:
+- Fetched Google Fonts CSS with browser UA to extract Latin subset WOFF2 URLs for: Fraunces variable Roman (weight 300-700), Fraunces variable Italic (weight 300-600), JetBrains Mono variable Roman (weight 400-600). Re-requested JetBrains Mono with variable URL (wght@400..600) instead of 3 static weights to get a single file.
+- Downloaded 3 WOFF2 files to /public/fonts/:
+  - fraunces-roman-latin.woff2 67.3 KB (LCP-critical — used by Hero H1)
+  - fraunces-italic-latin.woff2 81.5 KB (used by About "about me" italic, Hero "M" italic)
+  - jetbrains-mono-roman-latin.woff2 31.4 KB (used by labels)
+  Total: 180 KB
+- src/app/globals.css: added 3 @font-face declarations at the top of the file (before @custom-variant), each with font-display: swap, the Latin unicode-range (U+0000-00FF, U+0131, U+0152-0153, ...), and the local src path. The existing --font-fraunces / --font-mono CSS variables continue to point to "Fraunces" / "JetBrains Mono" font-family names, which now resolve to the self-hosted files.
+- src/app/layout.tsx: added <link rel=preload as=font href=/fonts/fraunces-roman-latin.woff2 type=font/woff2 crossOrigin=anonymous fetchPriority=high> for LCP-critical font. Removed: 2 <link rel=preconnect> (fonts.googleapis.com, fonts.gstatic.com), 2 <link rel=stylesheet> (Fraunces CSS, JetBrains Mono CSS). Eliminates 1 render-blocking external CSS request + 2 external network round-trips.
+- Lint: COMPLETELY CLEAN (0 errors, 0 warnings) — the 2 pre-existing Google Fonts warnings from Phase 1 are gone since the <link> tags are removed.
+- Agent Browser verification:
+  - Desktop 1440x900: page renders cleanly. Hero H1 computed style = fontFamily:"Fraunces", fontWeight:"700", fontStyle:"normal" ✓
+  - Label computed style = fontFamily:"JetBrains Mono", fontWeight:"500" ✓
+  - document.fonts.check('700 12rem Fraunces') = true (Fraunces Roman loaded + ready)
+  - document.fonts.check('400 1rem "JetBrains Mono"') = true (JetBrains Mono loaded + ready)
+  - document.fonts.check('italic 700 5rem Fraunces') = true (Fraunces Italic loaded after scroll to About)
+  - 3 preloads present: HMR client (dev only), Fraunces Roman WOFF2, LCP image (imageSrcSet)
+  - 0 Google Fonts CSS links (was 2 in Phase 0/1)
+  - 0 gstatic links (was 2 in Phase 0/1)
+  - Mobile iPhone 14: page renders correctly, no font regression
+  - Console: no errors, only HMR info
+  - Dev log: clean (HTTP 200 throughout)
+- Font file transfer (dev server, same-origin):
+  - Fraunces Roman: 67.3 KB in 5.8 ms (vs Google CDN: 50-100 ms round-trip)
+  - Fraunces Italic: 81.5 KB in 1.5 ms
+  - JetBrains Mono: 31.4 KB in 1.2 ms
+  - All from localhost — no external TLS handshake
+
+Stage Summary:
+- Phase 2 complete: fonts fully self-hosted, LCP-critical Fraunces Roman preloaded, render-blocking Google Fonts CSS request eliminated
+- Font bytes reduction: 378 KB ceiling + 10 KB CSS → 180 KB total + 0 external CSS = ~54% reduction
+- Critical path: 0 render-blocking external requests (was 1)
+- LCP-critical font now preloaded in parallel with LCP image from same origin (no external TLS handshake to gstatic.com)
+- Lint completely clean (better than Phase 1)
+- Screenshots saved: audit/phase2-hero-desktop.png, phase2-hero-mobile.png, phase2-about.png
+- Ready for commit + deploy to Vercel production, then Phase 3 (rendering efficiency: content-visibility, contain, pre-rendered hero blur)

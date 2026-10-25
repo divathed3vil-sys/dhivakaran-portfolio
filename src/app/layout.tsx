@@ -57,25 +57,21 @@ export default function RootLayout({
           imageSrcSet="/images/landing-400.avif 400w, /images/landing-800.avif 800w, /images/landing-1280.avif 1280w, /images/landing-1920.avif 1920w"
           imageSizes="100vw"
         />
-        {/* Google Fonts — will be replaced with self-hosted WOFF2 in Phase 2 */}
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        {/* LCP-critical font preload — Fraunces Roman 700 is used by the hero
+            H1 ("Dhivakaran M"). Variable WOFF2 covers 300-700, so this one
+            preload satisfies all roman weights. crossorigin is required for
+            fonts. Italic + JetBrains Mono use font-display: swap (no preload —
+            they're not on the LCP critical path). */}
         <link
-          rel="preconnect"
-          href="https://fonts.gstatic.com"
+          rel="preload"
+          as="font"
+          href="/fonts/fraunces-roman-latin.woff2"
+          type="font/woff2"
           crossOrigin="anonymous"
+          fetchPriority="high"
         />
-        <link
-          href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..700;1,9..144,300..600&display=swap"
-          rel="stylesheet"
-        />
-        <link
-          href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap"
-          rel="stylesheet"
-        />
-        {/* Note: Supabase preconnect will be added in Phase 5 when we know
-            the actual project URL — for now, the wildcard *.supabase.co in
-            next.config.ts handles remotePatterns for next/image. The browser
-            does its own DNS+connect on first content image request. */}
+        {/* Self-hosted WOFF2 fonts — declared via @font-face in globals.css.
+            No external render-blocking Google Fonts request. */}
       </head>
       <body className="antialiased font-sans">
         <a
