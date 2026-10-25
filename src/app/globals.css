@@ -100,6 +100,17 @@
   --ease-trail-in: cubic-bezier(0.45, 0, 0.25, 1);
   --ease-trail-out: cubic-bezier(0.55, 0, 0.45, 1);
   --ease-opacity: cubic-bezier(0.33, 1, 0.68, 1);
+  /* Phase 5b — Apple-style spring easings (per Apple Human Interface Guidelines +
+     iOS default spring params). Use for any transform/opacity animation that
+     should feel "physics-based" rather than tween-based. */
+  --ease-spring-soft: cubic-bezier(0.34, 1.56, 0.64, 1);    /* subtle overshoot — buttons, hovers, small reveals */
+  --ease-spring-medium: cubic-bezier(0.34, 1.8, 0.64, 1);   /* pronounced overshoot — cards landing, panels opening */
+  --ease-spring-settle: cubic-bezier(0.22, 1, 0.36, 1);     /* smooth settle, no overshoot — large surfaces, scroll-to-stop */
+  --ease-spring-bounce: cubic-bezier(0.68, -0.6, 0.32, 1.6); /* playful bounce — error shakes, delight moments */
+  /* standard spring durations (use with the easings above) */
+  --dur-spring-soft: 0.5s;
+  --dur-spring-medium: 0.7s;
+  --dur-spring-large: 0.9s;
 }
 
 /* ============================================================================
@@ -582,27 +593,71 @@ html {
 
 /* ---- Blur system — see BlurEffects component (scroll blur + edge vignette + random flicker) ---- */
 
-/* ---- #18 magnetic cursor (subtle attraction + soft trailing glow) ---- */
+/* ---- #18 Apple-style magnetic cursor (dot + ring + soft glow halo) ----
+   Phase 5b upgrade: was a single trailing glow, now a 3-element system:
+   - .cursor-dot — small solid dot, tracks cursor 1:1 (no lag)
+   - .cursor-ring — larger ring, spring-follows cursor with lerp 0.15
+   - .magnetic-glow — soft red halo behind the ring (legacy, kept for the
+     signature red accent visible on dark + light sections via mix-blend-mode)
+   Ring + glow scale up on hover over interactive elements (a, button, [role=button]).
+   All hidden on touch + reduced-motion (dot/ring/glow share the same guards). */
+.cursor-dot,
+.cursor-ring,
 .magnetic-glow {
   position: fixed;
   top: 0;
   left: 0;
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
   pointer-events: none;
   z-index: 9990;
-  background: radial-gradient(circle, rgba(214, 41, 41, 0.18), transparent 70%);
   transform: translate(-50%, -50%);
-  transition: transform 0.18s var(--ease-out-soft), opacity 0.3s var(--ease-out-soft);
   opacity: 0;
+  will-change: transform, opacity;
+}
+.cursor-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+  mix-blend-mode: difference;
+  transition: width 0.3s var(--ease-spring-soft), height 0.3s var(--ease-spring-soft), opacity 0.3s var(--ease-out-soft);
+}
+.cursor-ring {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1.5px solid var(--accent);
+  mix-blend-mode: difference;
+  transition: width 0.4s var(--ease-spring-medium), height 0.4s var(--ease-spring-medium),
+              border-color 0.3s var(--ease-out-soft), opacity 0.3s var(--ease-out-soft);
+}
+.magnetic-glow {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(214, 41, 41, 0.22), transparent 70%);
   mix-blend-mode: screen;
+  transition: opacity 0.3s var(--ease-out-soft);
+}
+/* Magnetic hover state — applied via data attribute on body */
+body[data-cursor-hover] .cursor-dot {
+  width: 4px;
+  height: 4px;
+}
+body[data-cursor-hover] .cursor-ring {
+  width: 64px;
+  height: 64px;
+  border-color: var(--accent-soft);
+}
+body[data-cursor-hover] .magnetic-glow {
+  opacity: 1 !important;
 }
 @media (hover: hover) and (pointer: fine) {
+  body[data-cursor-ready] .cursor-dot,
+  body[data-cursor-ready] .cursor-ring,
   body[data-cursor-ready] .magnetic-glow { opacity: 1; }
 }
 @media (pointer: coarse), (prefers-reduced-motion: reduce) {
-  .magnetic-glow { display: none !important; }
+  .cursor-dot, .cursor-ring, .magnetic-glow { display: none !important; }
 }
 
 /* ---- #8 halftone overlay (static, subtle, on images) ---- */

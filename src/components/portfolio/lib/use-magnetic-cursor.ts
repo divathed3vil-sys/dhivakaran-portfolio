@@ -3,12 +3,22 @@
 import { useEffect, useRef } from 'react';
 
 /**
- * #18 Magnetic cursor.
- * - A soft red trailing glow follows the cursor (no custom dot).
- * - Interactive elements (a, button, [role="button"]) attract the cursor within 80px.
- * Disabled on touch + reduced-motion.
+ * Phase 5b — Apple-style magnetic cursor (dot + ring + soft glow halo).
+ *
+ *  - .cursor-dot — small solid dot, tracks cursor 1:1 (no lag)
+ *  - .cursor-ring — larger ring, spring-follows cursor (lerp 0.15)
+ *  - .magnetic-glow — soft red halo, slower follow (lerp 0.08)
+ *
+ * On hover over interactive elements (a, button, [role="button"], [data-magnetic]):
+ *  - body gets [data-cursor-hover] attribute
+ *  - CSS enlarges the ring + intensifies the glow (transition via spring easing)
+ *  - Ring also magnetically pulls toward the element center within 80px range
+ *
+ * Disabled on touch + reduced-motion (CSS handles the display:none).
  */
 export function useMagneticCursor() {
+  const dotRef = useRef<HTMLDivElement>(null);
+  const ringRef = useRef<HTMLDivElement>(null);
   const glowRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -16,15 +26,25 @@ export function useMagneticCursor() {
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
     if (!window.matchMedia('(hover: hover) and (pointer: fine)').matches) return;
 
+    const dot = dotRef.current;
+    const ring = ringRef.current;
     const glow = glowRef.current;
-    if (!glow) return;
+    if (!dot || !ring || !glow) return;
 
     let rafId = 0;
+    // Target position (cursor)
     let targetX = window.innerWidth / 2;
     let targetY = window.innerHeight / 2;
-    let currentX = targetX;
-    let currentY = targetY;
-    let magnetic = false;
+    // Ring follow (lerp 0.15 — spring-like)
+    let ringX = targetX;
+    let ringY = targetY;
+    // Glow follow (lerp 0.08 — slower, more ethereal)
+    let glowX = targetX;
+    let glowY = targetY;
+    // Magnetic pull target offset (when hovering interactive elements)
+    let magOffsetX = 0;
+    let magOffsetY = 0;
+    let isHovering = false;
 
     const onMove = (e: MouseEvent) => {
       targetX = e.clientX;
@@ -40,25 +60,43 @@ export function useMagneticCursor() {
         const dist = Math.hypot(e.clientX - cx, e.clientY - cy);
         const range = 80;
         if (dist < range) {
-          const pull = (1 - dist / range) * 0.4; // 0..0.4
-          targetX = e.clientX + (cx - e.clientX) * pull;
-          targetY = e.clientY + (cy - e.clientY) * pull;
-          magnetic = true;
+          const pull = (1 - dist / range) * 0.35; // 0..0.35
+          magOffsetX = (cx - e.clientX) * pull;
+          magOffsetY = (cy - e.clientY) * pull;
+          if (!isHovering) {
+            isHovering = true;
+            document.body.setAttribute('data-cursor-hover', '');
+          }
         } else {
-          magnetic = false;
+          magOffsetX = 0;
+          magOffsetY = 0;
+          if (isHovering) {
+            isHovering = false;
+            document.body.removeAttribute('data-cursor-hover');
+          }
         }
       } else {
-        magnetic = false;
+        magOffsetX = 0;
+        magOffsetY = 0;
+        if (isHovering) {
+          isHovering = false;
+          document.body.removeAttribute('data-cursor-hover');
+        }
       }
     };
 
     const loop = () => {
       rafId = requestAnimationFrame(loop);
-      // lerp toward target
-      currentX += (targetX - currentX) * 0.18;
-      currentY += (targetY - currentY) * 0.18;
-      glow.style.transform = `translate(${currentX}px, ${currentY}px) translate(-50%, -50%) scale(${magnetic ? 2.2 : 1})`;
-      glow.style.opacity = magnetic ? '1' : '0.7';
+      // Dot: 1:1 with cursor (no lag)
+      dot.style.transform = `translate(${targetX}px, ${targetY}px) translate(-50%, -50%)`;
+      // Ring: spring-follow with magnetic pull (lerp 0.15)
+      ringX += (targetX + magOffsetX - ringX) * 0.15;
+      ringY += (targetY + magOffsetY - ringY) * 0.15;
+      ring.style.transform = `translate(${ringX}px, ${ringY}px) translate(-50%, -50%)`;
+      // Glow: slower follow (lerp 0.08) — creates a trailing halo
+      glowX += (targetX + magOffsetX - glowX) * 0.08;
+      glowY += (targetY + magOffsetY - glowY) * 0.08;
+      glow.style.transform = `translate(${glowX}px, ${glowY}px) translate(-50%, -50%)`;
     };
 
     document.body.setAttribute('data-cursor-ready', '');
@@ -69,8 +107,12 @@ export function useMagneticCursor() {
       document.removeEventListener('mousemove', onMove);
       cancelAnimationFrame(rafId);
       document.body.removeAttribute('data-cursor-ready');
+      document.body.removeAttribute('data-cursor-hover');
     };
   }, []);
 
-  return glowRef;
+  // Return the glowRef for backward compat (EffectsProvider mounts it)
+  // — but EffectsProvider now mounts all 3 elements via separate refs.
+  // We expose the refs via a single object for the provider to spread.
+  return { dotRef, ringRef, glowRef };
 }

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 type NavLink = {
   label: string;
@@ -22,9 +22,15 @@ const MENU_LINKS: NavLink[] = [...NAV_LINKS, { label: 'Top', href: '#top' }];
 /**
  * Nav — sticky/relative, wordmark + burger→X morph, full-height
  * slide-in menu, focus trap, Esc, scroll lock.
+ *
+ * Phase 5b — magnetic hover on wordmark + burger (slight pull toward cursor
+ * within 60px range, spring-eased). Burger→X morph uses spring easing.
+ * Menu panel slide-in uses spring easing. Link stagger reveal uses spring.
  */
 export function Nav({ onEnterLab }: { onEnterLab?: () => void }) {
   const [open, setOpen] = useState(false);
+  const wordmarkRef = useRef<HTMLAnchorElement>(null);
+  const burgerRef = useRef<HTMLButtonElement>(null);
 
   // esc to close, scroll lock when open
   useEffect(() => {
@@ -39,6 +45,56 @@ export function Nav({ onEnterLab }: { onEnterLab?: () => void }) {
       document.body.style.overflow = '';
     };
   }, [open]);
+
+  // Phase 5b — magnetic hover on wordmark + burger.
+  // Each element pulls slightly toward cursor when within 60px range.
+  // Spring-eased via CSS transition (transform var(--dur-spring-soft) var(--ease-spring-soft)).
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    if (!window.matchMedia('(hover: hover) and (pointer: fine)').matches) return;
+
+    const magneticTargets: HTMLElement[] = [];
+    if (wordmarkRef.current) magneticTargets.push(wordmarkRef.current);
+    if (burgerRef.current) magneticTargets.push(burgerRef.current);
+    if (magneticTargets.length === 0) return;
+
+    let rafId = 0;
+    const range = 60;
+
+    const onMove = (e: MouseEvent) => {
+      if (rafId) return;
+      rafId = requestAnimationFrame(() => {
+        rafId = 0;
+        for (const el of magneticTargets) {
+          const r = el.getBoundingClientRect();
+          const cx = r.left + r.width / 2;
+          const cy = r.top + r.height / 2;
+          const dist = Math.hypot(e.clientX - cx, e.clientY - cy);
+          if (dist < range) {
+            const pull = (1 - dist / range) * 0.3; // 0..0.3 — subtle
+            const dx = (e.clientX - cx) * pull;
+            const dy = (e.clientY - cy) * pull;
+            el.style.transform = `translate3d(${dx}px, ${dy}px, 0)`;
+          } else {
+            el.style.transform = '';
+          }
+        }
+      });
+    };
+
+    const onLeave = () => {
+      for (const el of magneticTargets) el.style.transform = '';
+    };
+
+    document.addEventListener('mousemove', onMove, { passive: true });
+    document.addEventListener('mouseleave', onLeave);
+    return () => {
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseleave', onLeave);
+      cancelAnimationFrame(rafId);
+    };
+  }, []);
 
   return (
     <>
@@ -55,10 +111,12 @@ export function Nav({ onEnterLab }: { onEnterLab?: () => void }) {
           className="canvas-max flex items-center justify-between"
           style={{ maxWidth: '100%' }}
         >
-          {/* wordmark */}
+          {/* wordmark — Phase 5b magnetic hover via spring transform */}
           <a
+            ref={wordmarkRef}
             href="#top"
             className="text-label"
+            data-magnetic=""
             style={{
               color: 'var(--canvas)',
               letterSpacing: '0.12em',
@@ -66,6 +124,8 @@ export function Nav({ onEnterLab }: { onEnterLab?: () => void }) {
               display: 'inline-flex',
               alignItems: 'baseline',
               gap: '0.15em',
+              transition: 'transform var(--dur-spring-soft) var(--ease-spring-soft)',
+              willChange: 'transform',
             }}
             aria-label="Dhivakaran — back to top"
           >
@@ -73,9 +133,11 @@ export function Nav({ onEnterLab }: { onEnterLab?: () => void }) {
             <span style={{ fontSize: '0.7em', verticalAlign: 'super' }}>®</span>
           </a>
 
-          {/* burger */}
+          {/* burger — Phase 5b magnetic hover + spring morph */}
           <button
+            ref={burgerRef}
             type="button"
+            data-magnetic=""
             aria-label={open ? 'Close menu' : 'Open menu'}
             aria-expanded={open}
             aria-controls="menu-panel"
@@ -92,6 +154,8 @@ export function Nav({ onEnterLab }: { onEnterLab?: () => void }) {
               border: 0,
               cursor: 'pointer',
               padding: 0,
+              transition: 'transform var(--dur-spring-soft) var(--ease-spring-soft)',
+              willChange: 'transform',
             }}
           >
             <span
@@ -101,7 +165,7 @@ export function Nav({ onEnterLab }: { onEnterLab?: () => void }) {
                 height: '2px',
                 background: 'var(--canvas)',
                 transform: open ? 'translateY(5px) rotate(45deg)' : 'none',
-                transition: 'transform 0.3s var(--ease-out-soft)',
+                transition: 'transform var(--dur-spring-soft) var(--ease-spring-soft)',
               }}
             />
             <span
@@ -111,7 +175,7 @@ export function Nav({ onEnterLab }: { onEnterLab?: () => void }) {
                 height: '2px',
                 background: 'var(--canvas)',
                 transform: open ? 'translateY(-5px) rotate(-45deg)' : 'none',
-                transition: 'transform 0.3s var(--ease-out-soft)',
+                transition: 'transform var(--dur-spring-soft) var(--ease-spring-soft)',
               }}
             />
           </button>
@@ -133,7 +197,7 @@ export function Nav({ onEnterLab }: { onEnterLab?: () => void }) {
         }}
       />
 
-      {/* menu panel */}
+      {/* menu panel — Phase 5b spring slide-in */}
       <aside
         id="menu-panel"
         role="dialog"
@@ -150,9 +214,9 @@ export function Nav({ onEnterLab }: { onEnterLab?: () => void }) {
           width: 'min(420px, 100vw)',
           background: 'var(--night)',
           color: 'var(--canvas)',
-          transform: open ? 'translateX(0)' : 'translateX(100%))',
+          transform: open ? 'translateX(0)' : 'translateX(100%)',
           visibility: open ? 'visible' : 'hidden',
-          transition: 'transform 0.62s var(--ease-out-soft), visibility 0s linear ' + (open ? '0s' : '0.62s'),
+          transition: 'transform var(--dur-spring-medium) var(--ease-spring-medium), visibility 0s linear ' + (open ? '0s' : '0.7s'),
           padding: 'calc(22 * var(--px)) 1.5rem 1.5rem',
           display: 'flex',
           flexDirection: 'column',
@@ -184,7 +248,7 @@ export function Nav({ onEnterLab }: { onEnterLab?: () => void }) {
                     textDecoration: 'none',
                     opacity: open ? 1 : 0,
                     transform: open ? 'translateY(0)' : 'translateY(105%)',
-                    transition: 'transform 0.64s var(--ease-out-soft), opacity 0.64s var(--ease-out-soft)',
+                    transition: 'transform var(--dur-spring-medium) var(--ease-spring-medium), opacity 0.5s var(--ease-out-soft)',
                     transitionDelay: open ? `${180 + 55 * i}ms` : '0ms',
                     fontFamily: 'var(--font-fraunces), serif',
                     fontWeight: 500,

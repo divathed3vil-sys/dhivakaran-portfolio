@@ -1101,3 +1101,66 @@ Stage Summary:
 - Zero new dependencies (dnd-kit was already installed; @next/bundle-analyzer is dev-dep only and didn't end up being usable with Turbopack)
 - Stretch goal JS ≤ 150 KB not met (214 KB) — would require architectural changes (RSC for data fetching, dropping Lenis) outside "non-destructive optimization" scope. 214 KB is the realistic floor for this stack.
 - Foundation is solid for Phase 5b (Apple-like animations + glassmorphism): every new effect can be benchmarked against the Phase 6 baseline. Ready to build on top.
+
+---
+Task ID: OPT-5b.1 (Phase 5b — Spring physics + Apple-style cursor + Nav magnetic hover)
+Agent: main-orchestrator
+Task: Phase 5b kick-off. Add Apple-style spring easings to design system, upgrade magnetic cursor from single glow to dot+ring+glow system, wire magnetic hover on Nav wordmark + burger, upgrade Nav menu transitions to spring easings. Non-destructive — existing design preserved, new effects layer on top.
+
+Work Log:
+- src/app/globals.css — added Apple spring easings to --ease-* palette:
+  - --ease-spring-soft: cubic-bezier(0.34, 1.56, 0.64, 1) — subtle overshoot for buttons + hovers
+  - --ease-spring-medium: cubic-bezier(0.34, 1.8, 0.64, 1) — pronounced overshoot for cards + panels
+  - --ease-spring-settle: cubic-bezier(0.22, 1, 0.36, 1) — smooth settle, no overshoot, large surfaces
+  - --ease-spring-bounce: cubic-bezier(0.68, -0.6, 0.32, 1.6) — playful bounce for error shakes + delight moments
+  - --dur-spring-soft: 0.5s, --dur-spring-medium: 0.7s, --dur-spring-large: 0.9s
+  Existing easings (--ease-out-soft, --ease-curtain, --ease-reveal, etc.) preserved for backward compat.
+- src/components/portfolio/lib/use-magnetic-cursor.ts — rewrote the hook to drive 3 elements instead of 1:
+  - .cursor-dot: 6px solid red dot, tracks cursor 1:1 (no lag) — the "Apple dot" feel
+  - .cursor-ring: 36px red ring, spring-follows cursor with lerp 0.15 (subtle lag)
+  - .magnetic-glow: 60px soft red halo, slower lerp 0.08 (trailing effect, legacy)
+  All 3 use mix-blend-mode: difference (dot + ring) or screen (glow) so visible on any bg.
+  Magnetic hover: when cursor is within 80px of an interactive element (a/button/[role=button]/[data-magnetic]), the ring + glow magnetically pull toward element center (pull factor 0.35), AND body gets [data-cursor-hover] attribute which CSS uses to scale up the ring (36px → 64px) + intensify glow.
+  Returns { dotRef, ringRef, glowRef } object for EffectsProvider to spread.
+- src/components/portfolio/effects-provider.tsx — mounts all 3 cursor elements (was just 1 magnetic-glow):
+  <div className="magnetic-glow" ref={glowRef} aria-hidden="true" />
+  <div className="cursor-ring" ref={ringRef} aria-hidden="true" />
+  <div className="cursor-dot" ref={dotRef} aria-hidden="true" />
+- src/app/globals.css — added CSS for the 3 cursor elements:
+  - Default state: all 3 fixed positioned, opacity 0, will-change: transform + opacity
+  - body[data-cursor-ready] (set by hook on first mousemove): all 3 opacity 1 (only inside @media hover:hover + pointer:fine — touch + reduced-motion get display:none)
+  - body[data-cursor-hover] (set by hook when hovering interactive elements): dot shrinks 6px→4px, ring grows 36px→64px + border-color shifts to accent-soft, glow opacity→1
+  - Transitions on width/height use --ease-spring-soft + --ease-spring-medium for the spring physics feel
+- src/components/portfolio/nav.tsx — added magnetic hover on wordmark + burger:
+  - New refs: wordmarkRef, burgerRef
+  - New useEffect: listens to mousemove, on each move computes distance from cursor to each magnetic target's center. If within 60px range, pulls element toward cursor by 0.3 factor (subtle). Spring-eased via CSS transition (transform var(--dur-spring-soft) var(--ease-spring-soft)).
+  - rAF-coalesced (only schedules 1 update per frame, drops intermediate mousemoves)
+  - Respects reduced-motion + touch (returns early if matchMedia fails)
+  - data-magnetic attribute added to wordmark + burger so the cursor hook also recognizes them as magnetic targets
+- src/components/portfolio/nav.tsx — upgraded existing transitions to spring easings:
+  - Wordmark: transition was none, now 'transform var(--dur-spring-soft) var(--ease-spring-soft)' + will-change: transform
+  - Burger: same spring transition for magnetic hover
+  - Burger→X morph: was 0.3s ease-out-soft, now var(--dur-spring-soft) var(--ease-spring-soft) — bouncier X morph
+  - Menu panel slide-in: was 0.62s ease-out-soft, now var(--dur-spring-medium) var(--ease-spring-medium) — more elastic panel reveal
+  - Link stagger reveal: was 0.64s ease-out-soft, now var(--dur-spring-medium) var(--ease-spring-medium) — springier stagger
+- bun run lint: COMPLETELY CLEAN (0 errors, 0 warnings)
+- Agent Browser verification (dev server):
+  - Page loads cleanly, title correct, 6 sections render
+  - 3 cursor elements present in DOM: .cursor-dot, .cursor-ring, .magnetic-glow ✓
+  - Nav wordmark + burger present, data-magnetic attribute set ✓
+  - Spring easings loaded: --ease-spring-soft=cubic-bezier(.34, 1.56, .64, 1), --ease-spring-medium=cubic-bezier(.34, 1.8, .64, 1), --dur-spring-soft=.5s, --dur-spring-medium=.7s ✓
+  - Nav wordmark transition computed: 'transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1)' ✓ (spring-soft applied)
+  - Burger button transition computed: 'transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1)' ✓
+  - No console errors (only HMR + React DevTools info)
+  - No body[data-cursor-ready] because agent-browser headless doesn't match (hover: hover) + (pointer: fine) media queries — this is correct behavior (touch + headless = no custom cursor). The cursor + magnetic hover will activate in the user's real desktop browser.
+- Dev server stability: confirmed alive across multiple bash sessions after using project's .zscripts/dev.sh startup script (earlier attempts with direct `next dev` + setsid/disown kept dying when bash session ended)
+
+Stage Summary:
+- Phase 5b.1 complete: spring physics foundation laid + Apple-style cursor system in place + Nav magnetic hover wired
+- Non-destructive: existing design language preserved (warm parchment + onyx + brass/red, Fraunces serif, B&W hero). New effects layer ON TOP — they activate only on hover-supporting devices with reduced-motion respected.
+- Spring easings available globally via CSS vars: --ease-spring-soft/medium/settle/bounce + --dur-spring-soft/medium/large. Any future animation can reference these for the Apple "physics-based" feel.
+- Apple-style cursor (dot + ring + glow halo) replaces the single trailing glow. All 3 elements driven by one rAF loop, magnetic pull + hover-scale via data attributes + CSS transitions with spring easing.
+- Nav wordmark + burger now magnetically attract toward cursor within 60px range (subtle 0.3 pull factor). Spring-eased.
+- Menu panel slide-in + burger→X morph + link stagger reveal all upgraded to spring easings (more elastic, Apple-like).
+- All effects respect prefers-reduced-motion + touch device detection (CSS guards + matchMedia checks in JS).
+- Ready for Phase 5b.2 (Hero name spring stagger + portrait parallax-with-resistance) upon user approval

@@ -7,7 +7,7 @@ import { BlurEffects } from './blur-effects';
 
 /**
  * EffectsProvider — orchestrates the global, cross-cutting effects:
- *  - #18 magnetic cursor trailing glow (fixed element)
+ *  - Phase 5b: Apple-style magnetic cursor (dot + ring + soft glow halo)
  *  - #7 light-leak sweep at section boundaries
  *  - BlurEffects — scroll-activated blur + permanent edge vignette + random
  *    subtle flickers (very low intensity, only while scrolling + at edges)
@@ -15,14 +15,18 @@ import { BlurEffects } from './blur-effects';
  * Section-specific effects are applied inline in their components.
  */
 export function EffectsProvider({ children }: { children: ReactNode }) {
-  const glowRef = useMagneticCursor();
+  const { dotRef, ringRef, glowRef } = useMagneticCursor();
 
   return (
     <>
       {children}
       <LightLeak />
       <BlurEffects />
+      {/* Phase 5b — Apple-style cursor: dot (1:1) + ring (spring lerp 0.15) + glow (slow lerp 0.08).
+          All hidden on touch + reduced-motion via CSS guards. */}
       <div className="magnetic-glow" ref={glowRef} aria-hidden="true" />
+      <div className="cursor-ring" ref={ringRef} aria-hidden="true" />
+      <div className="cursor-dot" ref={dotRef} aria-hidden="true" />
     </>
   );
 }
