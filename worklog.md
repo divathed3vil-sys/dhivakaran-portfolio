@@ -759,3 +759,33 @@ All verified on https://dhivakaran-portfolio.vercel.app:
 - Selected Frames tab: "UPLOAD IMAGE" + drag-drop zone present ✓
 - Footer: "Thanks to Z.ai" ✓
 - Page renders (no errors) ✓
+
+---
+Task ID: OPT-0 (Optimization roadmap)
+Agent: main-orchestrator
+Task: Read research brief, audit current portfolio, propose engineering-level optimization roadmap (non-destructive, phased, after user approval per phase).
+
+Work Log:
+- Read full 933-line research brief at /home/z/my-project/upload/visual_performance_research_brief.md (architecture, rendering, media, loading, backend, trade-offs, measurement, optimization catalogue, reference architecture, roadmap, reading list, exercises, conclusions)
+- Audited project: Next.js 16 + React 19 + Supabase + Prisma + Framer Motion + Lenis + 38 Radix packages + Sharp
+- Audited local images: landing.jpg (2.6MB) → landing-full.webp (308KB), landing-med.webp (8KB), landing-low.webp (4KB); about.jpg (404KB) → about-low.webp (12KB), about-med.webp (32KB)
+- Audited code paths: Hero uses CSS background-image (no <picture>, no fetchpriority, no preload, no AVIF); About portrait uses background-image + float + shape-outside; Selected Work cells use background-image; Visual Lab tiles use background-image; fonts loaded via blocking Google Fonts CSS (Fraunces variable ital+opsz+4 weights + JetBrains Mono 3 weights, not subset, not self-hosted); next.config.ts has NO image config, NO remotePatterns for Supabase
+- Found NO next/image usage anywhere, NO responsive srcset anywhere, NO preload of LCP asset, NO content-visibility, NO contain, NO bundle-analyzer
+- Found hero scroll handler writes filter:blur(0→8px) per frame on a full-bleed 1920px element — real GPU cost
+- Found Studio + VisualLab + VisualLabCard all statically imported into the initial bundle even though they're only opened on user action
+- Found 38 Radix UI components + recharts + react-syntax-highlighter + react-day-picker + @mdxeditor/editor + react-query + react-table all installed — need to confirm none are transitively pulled into the / route's initial chunk
+
+Stage Summary — ROADMAP PROPOSED (6 phases, non-destructive, each verified + committed + pushed individually before next phase begins):
+- Phase 0: Baseline snapshot + bundle analyzer + safety branch (no user-visible change)
+- Phase 1: Media pipeline — AVIF + responsive <picture>/next-image + LCP preload + Supabase remotePatterns
+- Phase 2: Self-hosted subset fonts + preconnect + font preload + metadata
+- Phase 3: CSS containment (content-visibility, contain) + pre-rendered hero blur layer
+- Phase 4: JS bundle diet — dynamic-import Studio + VisualLab, audit heavy chunks, drop unused Radix
+- Phase 5: Studio controls — drag-drop priority reorder (already have @dnd-kit), bulk ops, live preview, counters
+- Phase 6: Production verification + Agent Browser end-to-end + baseline comparison + push
+
+Decision rules locked in:
+- Each phase = single atomic commit, pushed only after: lint clean + Agent Browser renders / without regression + no console errors
+- No partial-phase pushes
+- main branch protected — work happens on optimization/ branch, merged to main only after Phase 6 final verification
+- Never break the existing visual design (non-destructive — output-preserving optimizations preferred; any conditionally-equivalent change is visually verified)

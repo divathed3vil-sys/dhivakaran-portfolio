@@ -1,0 +1,934 @@
+     1→     1→# Engineering Ultra-High-Performance, Visually Intensive Web and Mobile Applications
+     2→     2→
+     3→     3→**Graduate-level research brief — Master's in Computer Science**  
+     4→     4→**Disciplines:** Web Systems Engineering, Computer Graphics, Distributed Systems, Mobile Computing, Human–Computer Interaction  
+     5→     5→**Technology focus:** React Native, React Native Web, Expo, React, Next.js, WebGL, WebGPU, Skia, Node.js, Go, Rust  
+     6→     6→**Research reference date:** October 2026
+     7→     7→
+     8→     8→---
+     9→     9→
+    10→    10→## Abstract
+    11→    11→
+    12→    12→Modern web applications increasingly incorporate computationally expensive visual systems, including real-time background blurring, translucent interface surfaces, complex animation sequences, high-resolution photography, cinematic video, and interactive graphics. These effects compete for finite CPU, GPU, memory, decoding, network, and battery resources.
+    13→    13→
+    14→    14→The engineering objective is to achieve **maximum rendering efficiency, minimum loading latency, and consistent interaction responsiveness without unnecessarily sacrificing visual quality**. This brief evaluates cross-platform architecture, GPU compositing and visual effects, media encoding and delivery, critical rendering paths, backend and cache design, physical limitations, experimental verification, and an extensive catalogue of advanced optimization techniques.
+    15→    15→
+    16→    16→The central finding is that **high visual complexity does not inherently require poor performance**. Cost frequently comes from redundant computation, inefficient rendering boundaries, repeated decoding, excessive JavaScript, and poorly prioritized downloads. Physical constraints nevertheless remain: applications must distinguish output-preserving optimization from perceptual approximation and explicitly disclosed quality adaptation.
+    17→    17→
+    18→    18→---
+    19→    19→
+    20→    20→## 1. Architecture Overview
+    21→    21→
+    22→    22→### 1.1 Fundamental decision
+    23→    23→
+    24→    24→Three principal strategies are available:
+    25→    25→
+    26→    26→1. **React Native Web:** Share React Native component abstractions while rendering to the browser through React DOM.
+    27→    27→2. **Expo with React Native Web:** Develop a universal app using Expo's routing, build, and native tooling; Expo is not a competing renderer to React Native Web.
+    28→    28→3. **Next.js for web plus Expo/React Native for mobile:** Separate platform-specific UI implementations while sharing TypeScript business logic, APIs, and design tokens.
+    29→    29→
+    30→    30→On the web, React Native Web still relies on the browser's style, layout, paint, rasterization, and compositing pipeline. It does not inherently bypass browser rendering costs. Expo improves developer workflows and platform integration; it does not automatically provide identical rendering primitives or effects across native and web.
+    31→    31→
+    32→    32→### 1.2 Comparison
+    33→    33→
+    34→    34→| Criterion | React Native Web | Expo + RN Web | Next.js + React DOM |
+    35→    35→|---|---|---|---|
+    36→    36→| Purpose | Cross-platform component compatibility | Universal app platform | Web-first app framework |
+    37→    37→| Web renderer | React DOM | React DOM via RNW or web components | React DOM |
+    38→    38→| Native mobile | Requires RN infrastructure | Integrated | Separate native frontend |
+    39→    39→| SSR/SSG | Integration dependent | Rendering-mode/version dependent | Mature integrated support |
+    40→    40→| Streaming SSR | Framework dependent | Depends on supported rendering mode | Mature |
+    41→    41→| Advanced CSS | Platform-specific escape hatches | Web-specific implementations | Direct access |
+    42→    42→| WebGL/WebGPU | Web-specific integrations | Web-specific integrations | Direct browser integration |
+    43→    43→| Native Skia | Platform dependent | Compatible libraries available | Separate web integration |
+    44→    44→| Browser semantics/SEO | Requires careful configuration | Rendering-mode dependent | Strong web focus |
+    45→    45→| Bundle size | Dependency dependent | Dependency dependent | Dependency dependent |
+    46→    46→| Code sharing | High | High | Shared logic, fewer identical UI components |
+    47→    47→| Browser-specific control | Good | Good | Excellent |
+    48→    48→
+    49→    49→**Neither bundle size nor GPU speed can be inferred from the framework name alone.** Measure the production build, loaded routes, and actual rendering behavior.
+    50→    50→
+    51→    51→### 1.3 Recommended structure
+    52→    52→
+    53→    53→For a browser-first cinematic product, prefer **Next.js for web plus Expo/React Native for mobile**, sharing business logic and an API. If a largely unified UI codebase is mandatory, use Expo + RN Web with platform-specific graphics components.
+    54→    54→
+    55→    55→```text
+    56→    56→application/
+    57→    57→├── apps/
+    58→    58→│   ├── web/                 # Next.js
+    59→    59→│   └── mobile/              # Expo / React Native
+    60→    60→├── packages/
+    61→    61→│   ├── ui/
+    62→    62→│   ├── design-system/
+    63→    63→│   ├── application/
+    64→    64→│   ├── api-client/
+    65→    65→│   └── graphics/
+    66→    66→│       ├── web/             # CSS, WebGL, WebGPU
+    67→    67→│       └── native/          # Skia, native animations
+    68→    68→└── services/
+    69→    69→    ├── api/
+    70→    70→    ├── media/
+    71→    71→    └── workers/
+    72→    72→```
+    73→    73→
+    74→    74→Use Turborepo or Nx and pnpm workspaces if the repository benefits from their coordination. **Share logic where possible; specialize rendering where necessary.** A web glass panel may use `backdrop-filter`; the native counterpart may need `BlurView`, Skia, or native platform effects.
+    75→    75→
+    76→    76→Sources: [React Native Web](https://necolas.github.io/react-native-web/), [Expo web](https://docs.expo.dev/workflow/web/), [Expo static rendering](https://docs.expo.dev/router/web/static-rendering/), [Next.js prefetching](https://nextjs.org/docs/app/guides/prefetching).
+    77→    77→
+    78→    78→---
+    79→    79→
+    80→    80→## 2. Rendering and Effects Performance
+    81→    81→
+    82→    82→### 2.1 Browser rendering pipeline
+    83→    83→
+    84→    84→```text
+    85→    85→JavaScript → Style → Layout → Paint → Rasterization → GPU Compositing → Display
+    86→    86→```
+    87→    87→
+    88→    88→These stages can overlap, and compositor-driven animations can avoid some main-thread stages. Changing layout dimensions may require layout and paint; changing a composited transform may avoid them. Changing a live backdrop blur may require backdrop sampling, intermediate render targets, filtering, and additional composition.
+    89→    89→
+    90→    90→```css
+    91→    91→.panel-width { width: 500px; }          /* May invalidate layout */
+    92→    92→.panel-motion { transform: translateX(100px); } /* Often compositable */
+    93→    93→.glass { backdrop-filter: blur(30px); } /* Backdrop capture/filter cost */
+    94→    94→```
+    95→    95→
+    96→    96→**GPU-accelerated does not mean free.** Costs include GPU bandwidth, intermediate textures, synchronization, and power.
+    97→    97→
+    98→    98→### 2.2 Gaussian blur mathematics
+    99→    99→
+   100→   100→A 2D Gaussian filter is:
+   101→   101→
+   102→   102→$$
+   103→   103→G(x,y)=\frac{1}{2\pi\sigma^2}e^{-\frac{x^2+y^2}{2\sigma^2}}
+   104→   104→$$
+   105→   105→
+   106→   106→Convolution with image $I$ is:
+   107→   107→
+   108→   108→$$
+   109→   109→I_{\mathrm{blur}}(x,y)=\sum_{i,j}I(x-i,y-j)G(i,j).
+   110→   110→$$
+   111→   111→
+   112→   112→A naive $k\times k$ kernel costs roughly $O(WHk^2)$ for an image of dimensions $W\times H$. The Gaussian is separable, $G(x,y)=G_x(x)G_y(y)$, so two one-dimensional passes cost approximately $O(WHk)$. Optimized pipelines may additionally exploit GPU sampling, caching, specialized kernels, and approximations.
+   113→   113→
+   114→   114→At 1920 × 1080, a single full-frame pass covers 2,073,600 pixel positions. At 60 FPS that is about 124 million pixel positions per second **before** counting neighboring samples, extra passes, memory transfers, or additional compositing. A useful conceptual cost model is:
+   115→   115→
+   116→   116→$$C_{\mathrm{blur}}\approx f(A,r,n,p,m)$$
+   117→   117→
+   118→   118→where $A$ is area, $r$ radius, $n$ passes, $p$ update frequency, and $m$ memory/compositing behavior. **Avoid recalculating an unchanged expensive result.**
+   119→   119→
+   120→   120→### 2.3 `filter` versus `backdrop-filter`
+   121→   121→
+   122→   122→```css
+   123→   123→.image { filter: blur(24px); }
+   124→   124→.glass {
+   125→   125→  background: rgb(255 255 255 / 12%);
+   126→   126→  backdrop-filter: blur(24px);
+   127→   127→  -webkit-backdrop-filter: blur(24px);
+   128→   128→}
+   129→   129→```
+   130→   130→
+   131→   131→`filter` transforms the element's output; `backdrop-filter` transforms what lies behind an element. A pre-blurred static image can replace a static blur only when the relevant scene is stable. It **cannot** transparently replace a live glass pane over moving video, text, or particles. Backdrop-root behavior, stacking contexts, and ancestor styles require verification.
+   132→   132→
+   133→   133→### 2.4 Pre-rendering and caching
+   134→   134→
+   135→   135→For a static scene, generate a high-quality blurred derivative once:
+   136→   136→
+   137→   137→```text
+   138→   138→hero-original.avif → preprocessing → hero-blurred.avif
+   139→   139→```
+   140→   140→
+   141→   141→Then display the derivative instead of applying repeated live filtering. For mutable scenes, cache filtered offscreen textures and invalidate only when backdrop content changes. Region-based invalidation must expand the changed region to account for the filter kernel.
+   142→   142→
+   143→   143→Pixel identity is not guaranteed when preprocessing uses different color spaces, edge handling, alpha premultiplication, resampling, or convolution kernels. Define the reference effect and compare outputs.
+   144→   144→
+   145→   145→### 2.5 Layer promotion
+   146→   146→
+   147→   147→```css
+   148→   148→.cinematic-panel { will-change: transform, opacity; }
+   149→   149→```
+   150→   150→
+   151→   151→`will-change` is a hint, **not** a guarantee of compositor-only animation. Excessive layers may increase GPU memory, texture management, and composition costs; some values affect backdrop-root behavior. Use targeted, temporary hints and verify with DevTools.
+   152→   152→
+   153→   153→### 2.6 Layout thrashing and frame scheduling
+   154→   154→
+   155→   155→Repeated DOM writes followed by layout reads can force synchronous layout:
+   156→   156→
+   157→   157→```js
+   158→   158→el.style.width = '500px';
+   159→   159→const height = el.offsetHeight; // May force layout
+   160→   160→el.style.width = '550px';
+   161→   161→```
+   162→   162→
+   163→   163→Batch reads and writes; animate transform/opacity when possible:
+   164→   164→
+   165→   165→```js
+   166→   166→const width = el.getBoundingClientRect().width;
+   167→   167→requestAnimationFrame(() => {
+   168→   168→  el.style.transform = `translateX(${width}px)`;
+   169→   169→});
+   170→   170→```
+   171→   171→
+   172→   172→`requestAnimationFrame` aligns callbacks with browser updates but does not automatically prevent forced layout. CSS Animations and the Web Animations API can be preferable for compositor-eligible effects.
+   173→   173→
+   174→   174→The nominal frame interval is $T=1000/f$ ms:
+   175→   175→
+   176→   176→| Refresh rate | Frame interval |
+   177→   177→|---|---:|
+   178→   178→| 30 Hz | 33.33 ms |
+   179→   179→| 60 Hz | 16.67 ms |
+   180→   180→| 90 Hz | 11.11 ms |
+   181→   181→| 120 Hz | 8.33 ms |
+   182→   182→| 144 Hz | 6.94 ms |
+   183→   183→
+   184→   184→Application JavaScript does not get the entire interval: browser tasks, rasterization, GPU work, and synchronization share the deadline.
+   185→   185→
+   186→   186→### 2.7 Graphics technology selection
+   187→   187→
+   188→   188→| Requirement | Starting point |
+   189→   189→|---|---|
+   190→   190→| Static heavy image blur | Pre-rendered image |
+   191→   191→| Live frosted glass | CSS `backdrop-filter` |
+   192→   192→| Standard cinematic movement | CSS / Web Animations API |
+   193→   193→| Navigation transitions | View Transition API |
+   194→   194→| Interactive 2D graphics | Canvas 2D / PixiJS |
+   195→   195→| Interactive 3D | WebGL / Three.js |
+   196→   196→| Custom GPU filters | WebGL / WebGPU |
+   197→   197→| Native 2D effects | React Native Skia |
+   198→   198→
+   199→   199→WebGL supports custom shaders and raster graphics; WebGPU exposes modern compute and render pipelines with explicit resources. Skia provides powerful native 2D rendering; CanvasKit/WebAssembly on the web brings its own download and startup considerations. Rendering an entire UI to a canvas creates accessibility, text, focus, hit-testing, and semantics challenges.
+   200→   200→
+   201→   201→### 2.8 OffscreenCanvas and workers
+   202→   202→
+   203→   203→```js
+   204→   204→const canvas = document.querySelector('canvas');
+   205→   205→const offscreen = canvas.transferControlToOffscreen();
+   206→   206→const worker = new Worker('/graphics-worker.js', { type: 'module' });
+   207→   207→worker.postMessage({ canvas: offscreen }, [offscreen]);
+   208→   208→```
+   209→   209→
+   210→   210→Eligible drawing work may be moved off the main JavaScript thread. This helps main-thread responsiveness but does **not** remove GPU processing cost or fix GPU bandwidth bottlenecks.
+   211→   211→
+   212→   212→### 2.9 Profiling workflow
+   213→   213→
+   214→   214→Record initial load, scrolling, hover, navigation, blur effects, and playback in Chrome Performance. Inspect long tasks, style/layout work, paint events, GPU-related tracks, and frame pacing. Use Rendering and Layers panels for repaint/layer investigations and React Profiler to identify component-update costs. Compare baseline and optimized builds on identical devices and visual states.
+   215→   215→
+   216→   216→Sources: [MDN backdrop-filter](https://developer.mozilla.org/en-US/docs/Web/CSS/backdrop-filter), [Chrome rendering tools](https://developer.chrome.com/docs/devtools/rendering/), [MDN WebGPU](https://developer.mozilla.org/en-US/docs/Web/API/WebGPU_API), [MDN OffscreenCanvas](https://developer.mozilla.org/en-US/docs/Web/API/OffscreenCanvas), [React Profiler](https://react.dev/reference/react/Profiler).
+   217→   217→
+   218→   218→---
+   219→   219→
+   220→   220→## 3. Media Delivery
+   221→   221→
+   222→   222→### 3.1 End-to-end pipeline
+   223→   223→
+   224→   224→```text
+   225→   225→Creation → Encoding → Origin → CDN → Transfer → Decode → Memory/texture → Display
+   226→   226→```
+   227→   227→
+   228→   228→An encoding that reduces network bytes may increase decoding latency or energy. A conceptual display latency budget is:
+   229→   229→
+   230→   230→$$T_{display}=T_{discovery}+T_{connection}+T_{transfer}+T_{decode}+T_{render}$$
+   231→   231→
+   232→   232→Stages may overlap. Optimize the actual critical path.
+   233→   233→
+   234→   234→### 3.2 Modern image formats
+   235→   235→
+   236→   236→| Format | Benefits | Cautions |
+   237→   237→|---|---|---|
+   238→   238→| AVIF | Compression efficiency, transparency, high bit depth/HDR capabilities | Encoding and decoding variation |
+   239→   239→| WebP | Mature lossy/lossless support, alpha, animation | May lose to alternatives for certain content |
+   240→   240→| JPEG XL | Wide gamut, HDR, lossless/lossy, progressive features | Browser deployment compatibility varies |
+   241→   241→| JPEG | Broad fallback compatibility | Lower compression efficiency for some assets |
+   242→   242→
+   243→   243→Maintain archival masters and generate multiple delivery formats. Evaluate both visual quality and encode/decode cost with `avifenc`, `cwebp`, `cjxl`, Sharp/libvips, and tools such as SSIMULACRA2, Butteraugli, PSNR, and SSIM. Lossy formats are not pixel-identical by definition; lossless preservation also requires correct color handling.
+   244→   244→
+   245→   245→### 3.3 Responsive images
+   246→   246→
+   247→   247→For an element 600 CSS px wide on a DPR 2 screen, approximately 1200 source pixels are ordinarily sufficient for the displayed raster (before zooming or later enlargement). Do not serve 6000 px by default merely because the source exists.
+   248→   248→
+   249→   249→```html
+   250→   250→<picture>
+   251→   251→  <source type="image/avif"
+   252→   252→    srcset="/media/hero-800.avif 800w, /media/hero-1200.avif 1200w, /media/hero-1920.avif 1920w, /media/hero-2560.avif 2560w"
+   253→   253→    sizes="100vw" />
+   254→   254→  <source type="image/webp"
+   255→   255→    srcset="/media/hero-800.webp 800w, /media/hero-1200.webp 1200w, /media/hero-1920.webp 1920w, /media/hero-2560.webp 2560w"
+   256→   256→    sizes="100vw" />
+   257→   257→  <img src="/media/hero-1920.jpg" width="1920" height="1080"
+   258→   258→    alt="Cinematic background" fetchpriority="high"
+   259→   259→    loading="eager" decoding="async" />
+   260→   260→</picture>
+   261→   261→```
+   262→   262→
+   263→   263→Set `sizes` to the *actual* display behavior; `100vw` is wrong for a narrow card. Preserve larger originals for zoomable inspection and expanded animations.
+   264→   264→
+   265→   265→### 3.4 Hero priority and progressive presentation
+   266→   266→
+   267→   267→Make the LCP image discoverable in server HTML, prioritize it, avoid lazy loading it, and reserve its layout dimensions. Preload CSS-discovered or otherwise late-discovered critical images carefully:
+   268→   268→
+   269→   269→```html
+   270→   270→<link rel="preload" as="image" href="/media/hero-1920.avif" fetchpriority="high">
+   271→   271→```
+   272→   272→
+   273→   273→Preloading too many resources can worsen contention. Responsive preloads must match the actual variant logic.
+   274→   274→
+   275→   275→Use progressive encodes where supported, blur-up previews, dominant-color placeholders, or layered reveals to improve perceived continuity. **A placeholder is temporary, not a replacement for the high-quality final image.**
+   276→   276→
+   277→   277→### 3.5 Video codecs and decoding
+   278→   278→
+   279→   279→| Codec | Benefits | Cautions |
+   280→   280→|---|---|---|
+   281→   281→| H.264/AVC | Broad compatibility and hardware acceleration | Older compression efficiency |
+   282→   282→| H.265/HEVC | Strong compression, capable hardware support | Licensing and platform differences |
+   283→   283→| VP9 | Efficient, established on web | Hardware support varies |
+   284→   284→| AV1 | Excellent modern compression potential | Software decoding can be expensive |
+   285→   285→
+   286→   286→Use `navigator.mediaCapabilities.decodingInfo()` for capability probes, then measure real playback:
+   287→   287→
+   288→   288→```js
+   289→   289→const result = await navigator.mediaCapabilities.decodingInfo({
+   290→   290→  type: 'file',
+   291→   291→  video: {
+   292→   292→    contentType: 'video/mp4; codecs="av01.0.08M.08"',
+   293→   293→    width: 1920, height: 1080, bitrate: 6000000, framerate: 30
+   294→   294→  }
+   295→   295→});
+   296→   296→console.log(result.supported, result.smooth, result.powerEfficient);
+   297→   297→```
+   298→   298→
+   299→   299→These are predictions, not guarantees of sustained thermal performance.
+   300→   300→
+   301→   301→### 3.6 HLS and DASH
+   302→   302→
+   303→   303→Encode a master into multiple representations and deliver a manifest plus segments. An adaptive player weighs throughput, buffer, decoder, and display constraints:
+   304→   304→
+   305→   305→```text
+   306→   306→Master → Renditions (1080p/720p/480p) → HLS/DASH manifest → CDN → Player
+   307→   307→```
+   308→   308→
+   309→   309→Bandwidth adaptation and resolution reduction are not interchangeable: lowering resolution can remove detail. For strict fidelity, provide an Original mode on capable devices/networks and clearly describe any adaptive quality choices. Use FFmpeg, Shaka Packager, Shaka Player, hls.js, and platform players as appropriate.
+   310→   310→
+   311→   311→### 3.7 Startup and playback
+   312→   312→
+   313→   313→Show a correctly matched poster before video is decoded:
+   314→   314→
+   315→   315→```html
+   316→   316→<video autoplay muted loop playsinline
+   317→   317→  poster="/media/hero-poster.avif" preload="metadata">
+   318→   318→  <source src="/media/hero-video.mp4" type="video/mp4">
+   319→   319→</video>
+   320→   320→```
+   321→   321→
+   322→   322→For progressive MP4, fast-start placement of metadata helps; for HLS/DASH, optimize initialization segments and manifest availability. Avoid simultaneous invisible playback. Use `requestVideoFrameCallback` for frame-synchronized visual work. Measure startup latency, rebuffering, dropped frames, power, and decode cost.
+   323→   323→
+   324→   324→### 3.8 CDN and edge configuration
+   325→   325→
+   326→   326→```text
+   327→   327→Browser → CDN edge → Regional cache → Object storage
+   328→   328→```
+   329→   329→
+   330→   330→Use content-addressed immutable URLs:
+   331→   331→
+   332→   332→```http
+   333→   333→Cache-Control: public, max-age=31536000, immutable
+   334→   334→```
+   335→   335→
+   336→   336→For intentionally mutable resources, consider shorter freshness with revalidation:
+   337→   337→
+   338→   338→```http
+   339→   339→Cache-Control: public, max-age=300, stale-while-revalidate=3600
+   340→   340→```
+   341→   341→
+   342→   342→HTTP/3 (QUIC) may improve connection behavior, particularly on some lossy networks, but is not universally faster than HTTP/2. Compare in controlled network conditions.
+   343→   343→
+   344→   344→Sources: [MDN image formats](https://developer.mozilla.org/en-US/docs/Web/Media/Guides/Formats/Image_types), [responsive images](https://web.dev/learn/design/responsive-images), [Media Capabilities](https://developer.mozilla.org/en-US/docs/Web/API/MediaCapabilities), [RFC 8216 HLS](https://www.rfc-editor.org/rfc/rfc8216), [RFC 9114 HTTP/3](https://www.rfc-editor.org/rfc/rfc9114).
+   345→   345→
+   346→   346→---
+   347→   347→
+   348→   348→## 4. Loading Strategy
+   349→   349→
+   350→   350→### 4.1 Optimize the critical path
+   351→   351→
+   352→   352→Treat loading as scheduling: initial navigation, critical fonts, CSS, and hero imagery matter before offscreen WebGL, secondary video, analytics, or a distant gallery. Defer work **without removing it**.
+   353→   353→
+   354→   354→### 4.2 Code splitting and lazy loading
+   355→   355→
+   356→   356→Use route splitting, dynamic imports, dependency deduplication, tree shaking, dead-code elimination, and server components when appropriate.
+   357→   357→
+   358→   358→```tsx
+   359→   359→import dynamic from 'next/dynamic';
+   360→   360→const CinematicGallery = dynamic(() => import('./CinematicGallery'), {
+   361→   361→  ssr: false,
+   362→   362→  loading: () => <GalleryPoster />
+   363→   363→});
+   364→   364→```
+   365→   365→
+   366→   366→`ssr: false` is appropriate for genuinely browser-only work, not all large components. Retain SSR for content that benefits from early HTML delivery. Lazy-load below-fold images, but not the hero LCP asset:
+   367→   367→
+   368→   368→```html
+   369→   369→<img src="/media/project-01.avif" loading="lazy" decoding="async"
+   370→   370→     width="1200" height="800" alt="Project preview">
+   371→   371→```
+   372→   372→
+   373→   373→### 4.3 Preload, prefetch, predictive fetch
+   374→   374→
+   375→   375→**Preload** identifies resources needed now; **prefetch** anticipates later navigation. Prioritize based on probability of use, latency reduction, and bandwidth cost. A conceptual heuristic is:
+   376→   376→
+   377→   377→$$U_i=\frac{P_i\cdot L_i}{C_i}$$
+   378→   378→
+   379→   379→where $P_i$ is probability of use, $L_i$ anticipated latency saved, and $C_i$ resource cost. Real schedulers should also account for privacy, battery, cache state, and network congestion.
+   380→   380→
+   381→   381→### 4.4 Streaming SSR and hydration
+   382→   382→
+   383→   383→Use server-rendered initial structure and React Suspense boundaries to stream independent content when possible:
+   384→   384→
+   385→   385→```tsx
+   386→   386→import { Suspense } from 'react';
+   387→   387→export default function Page() {
+   388→   388→  return <main>
+   389→   389→    <Hero />
+   390→   390→    <Suspense fallback={<GalleryPoster />}><Gallery /></Suspense>
+   391→   391→  </main>;
+   392→   392→}
+   393→   393→```
+   394→   394→
+   395→   395→Streaming does not excuse excessive hydration. Keep static editorial content server-rendered; reserve client components for actual interaction and effects.
+   396→   396→
+   397→   397→### 4.5 Service workers
+   398→   398→
+   399→   399→Workbox or custom service workers can support repeat visits and offline shells. Cache versioned JS/CSS aggressively, public media appropriately, and APIs using privacy-aware network/cache strategies. Beware storage eviction, invalidation, authentication, and indiscriminate caching of large 4K segments.
+   400→   400→
+   401→   401→### 4.6 Core Web Vitals and custom targets
+   402→   402→
+   403→   403→Official “good” thresholds at the **75th percentile** of field visits:
+   404→   404→
+   405→   405→| Metric | Good threshold |
+   406→   406→|---|---:|
+   407→   407→| Largest Contentful Paint (LCP) | ≤ 2.5 seconds |
+   408→   408→| Interaction to Next Paint (INP) | ≤ 200 milliseconds |
+   409→   409→| Cumulative Layout Shift (CLS) | ≤ 0.1 |
+   410→   410→
+   411→   411→Proposed stretch targets—not official standards—might be LCP ≤ 1.8 s, INP ≤ 100 ms, CLS ≤ 0.02, and critical compressed JavaScript ≤ 150 KB, subject to application and audience measurements.
+   412→   412→
+   413→   413→Also monitor TTFB, FCP, Total Blocking Time, long tasks, Long Animation Frames, frame pacing, media startup, dropped frames, decoding, memory, energy, and bytes transferred. A site can pass Core Web Vitals and still animate poorly.
+   414→   414→
+   415→   415→Sources: [Core Web Vitals](https://developers.google.com/search/docs/appearance/core-web-vitals), [Next.js navigation/prefetching](https://nextjs.org/docs/app/guides/prefetching), [React Compiler](https://react.dev/learn/react-compiler).
+   416→   416→
+   417→   417→---
+   418→   418→
+   419→   419→## 5. Backend Design
+   420→   420→
+   421→   421→### 5.1 Backend responsibilities
+   422→   422→
+   423→   423→Backends affect media discovery, TTFB, API latency, authorization, data consistency, cacheability, and server rendering; they do not directly speed up a purely client-side GPU shader.
+   424→   424→
+   425→   425→### 5.2 Node.js, Go, Rust
+   426→   426→
+   427→   427→| Backend | Strengths | Limitations | Good fit |
+   428→   428→|---|---|---|---|
+   429→   429→| Node.js + TypeScript (Fastify/NestJS/Hono) | Shared types, async I/O, ecosystem | CPU-heavy tasks can block event loop | App APIs and orchestration |
+   430→   430→| Go (`net/http`, Chi, Gin) | Concurrency, deployment simplicity | Separate language/tooling | High-concurrency services |
+   431→   431→| Rust (Axum/Actix) | Memory safety, resource control | Higher complexity | Specialized performance-critical services |
+   432→   432→
+   433→   433→**Default:** Node.js/TypeScript for application APIs plus separate media workers. Introduce Go/Rust only where measurement justifies it.
+   434→   434→
+   435→   435→### 5.3 REST, GraphQL, typed RPC
+   436→   436→
+   437→   437→REST offers simple HTTP semantics and straightforward cacheability. GraphQL provides field selection and complex relationship retrieval but introduces resolver waterfalls, query-complexity abuse, and more involved caching. If selecting GraphQL, add persisted queries, complexity limits, batching/DataLoader, tracing, and safe authorization. Optimize sequential round trips rather than assuming one protocol is faster.
+   438→   438→
+   439→   439→### 5.4 PostgreSQL data model
+   440→   440→
+   441→   441→Store metadata and variant identifiers in PostgreSQL; store large binaries in object storage.
+   442→   442→
+   443→   443→```text
+   444→   444→users
+   445→   445→projects
+   446→   446→collections
+   447→   447→media_assets
+   448→   448→media_variants
+   449→   449→video_renditions
+   450→   450→permissions
+   451→   451→content_versions
+   452→   452→```
+   453→   453→
+   454→   454→A media record should describe dimensions, codecs, bit depth, color metadata, duration, variants, and manifest URLs. Profile queries with `EXPLAIN ANALYZE`, add targeted indexes, use pooling, batch access, paginate collections, and introduce replicas/materialized views only when needed.
+   455→   455→
+   456→   456→### 5.5 Cache layers
+   457→   457→
+   458→   458→```text
+   459→   459→Browser cache → CDN edge → Application/Redis → PostgreSQL
+   460→   460→```
+   461→   461→
+   462→   462→Redis can cache public metadata, computed responses, sessions, and rate limits. Use time-based, version-based, and event-driven invalidation. Shared caches must never leak personalized/private responses.
+   463→   463→
+   464→   464→### 5.6 Storage and signed media URLs
+   465→   465→
+   466→   466→The API authenticates and returns metadata; the CDN serves assets directly from edge/object storage. Avoid proxying large media through the main application server. Signed URLs may embed expiry and signatures; for HLS/DASH, authorization must cover manifests **and** segments/keys. Normalize internal cache keys where safe to avoid one cache entry per viewer without bypassing authorization.
+   467→   467→
+   468→   468→### 5.7 Media workers and publication
+   469→   469→
+   470→   470→```text
+   471→   471→Upload → Object storage → Job queue → Image/video workers
+   472→   472→       → Quality verification → Atomic publication → CDN
+   473→   473→```
+   474→   474→
+   475→   475→Use BullMQ, SQS, RabbitMQ, or Temporal depending on durability requirements; FFmpeg and Sharp/libvips handle transformations. Publish manifests only after all referenced segments are available. Make processing retryable and idempotent.
+   476→   476→
+   477→   477→---
+   478→   478→
+   479→   479→## 6. Trade-Offs and Physical Limits
+   480→   480→
+   481→   481→### 6.1 Why absolute “no compromise” is impossible
+   482→   482→
+   483→   483→Every device has limited shader throughput, memory bandwidth, decode capacity, network bandwidth, thermal headroom, and battery. At 60 Hz the frame interval is approximately 16.67 ms; at 120 Hz it is 8.33 ms. Actual frame time reflects a CPU/GPU/synchronization critical path, often with overlap:
+   484→   484→
+   485→   485→$$T_{frame}\approx\operatorname{criticalPath}(T_{CPU},T_{GPU},T_{sync})$$
+   486→   486→
+   487→   487→A scene that can sustain 60 FPS might not meet 120 FPS. Software can remove waste but cannot promise arbitrary throughput on all hardware.
+   488→   488→
+   489→   489→An uncompressed 3840×2160 RGBA8 texture occupies:
+   490→   490→
+   491→   491→$$3840\times2160\times4=33,177,600\ \text{bytes}\approx31.6\ \text{MiB}$$
+   492→   492→
+   493→   493→Multiple render targets, mipmaps, decoder buffers, multisampling, and buffering amplify memory consumption.
+   494→   494→
+   495→   495→### 6.2 Three optimization categories
+   496→   496→
+   497→   497→**A. Output-preserving:** avoid unnecessary renders, cache stable results, reuse textures, remove dead code, defer noncritical initialization, avoid duplicate network transfers, batch layout operations.
+   498→   498→
+   499→   499→**B. Conditionally equivalent:** pre-render blur, change codecs, resize images, swap CSS filters for shaders, approximate convolution, alter color pipelines. These require quantitative and visual verification.
+   500→   500→
+   501→   501→**C. Explicit quality adaptation:** lower resolution, reduce FPS, decrease filter intensity, remove particles, or substitute images for video. These change the experience and must not be described as fidelity-neutral.
+   502→   502→
+   503→   503→### 6.3 Capability-aware implementation
+   504→   504→
+   505→   505→Assess API support, media decoding, measured frame times, GPU limits where observable, memory pressure, and sustained playback. Use hysteresis to avoid rapid quality oscillation. A device's initial capability does not guarantee sustained performance after heating.
+   506→   506→
+   507→   507→Provide clearly labeled modes such as **Original**, **Adaptive**, and **Performance** when quality changes are contemplated. Respect reduced-motion accessibility settings separately from automatic hardware degradation.
+   508→   508→
+   509→   509→---
+   510→   510→
+   511→   511→## 7. Measurement and Verification
+   512→   512→
+   513→   513→### 7.1 Hypotheses
+   514→   514→
+   515→   515→- **H1:** Pre-rendered static blur reduces GPU time while meeting a defined perceptual tolerance.
+   516→   516→- **H2:** Delaying noncritical visual modules improves critical loading metrics.
+   517→   517→- **H3:** Responsive media cuts transfer without removing detail visible at the target display size.
+   518→   518→- **H4:** CDN caching improves media retrieval across regions.
+   519→   519→- **H5:** Hardware-assisted decoding reduces CPU and energy cost for equivalent media presentation.
+   520→   520→
+   521→   521→### 7.2 Test matrix
+   522→   522→
+   523→   523→Include a high-end desktop, integrated-GPU laptop, midrange laptop, flagship phone, midrange phone, and older supported phone. Include fast broadband, ordinary cellular, slow/high-latency cellular, loss, and intermittent access. Use physical devices for GPU/thermal tests; DevTools CPU throttling is not a complete physical-device substitute.
+   524→   524→
+   525→   525→### 7.3 Tooling
+   526→   526→
+   527→   527→- **Lighthouse:** repeatable lab audits of loading, accessibility, and conventions.
+   528→   528→- **WebPageTest:** filmstrips, waterfalls, geographic tests, repeat-view tests.
+   529→   529→- **Chrome DevTools:** Performance, Network, Layers, Rendering, Memory.
+   530→   530→- **React Profiler:** component render and commit behavior.
+   531→   531→- **RUM / `web-vitals`:** field LCP, INP, CLS and segmented experience.
+   532→   532→- **Playwright / Puppeteer:** reproducible interactions, screenshot capture.
+   533→   533→- **OpenTelemetry / Grafana / Prometheus:** end-to-end instrumentation.
+   534→   534→- **Perfetto, Android Studio, Xcode Instruments:** native timing, GPU and energy behavior.
+   535→   535→- **FFmpeg, VMAF, SSIMULACRA2, Butteraugli:** media comparisons.
+   536→   536→
+   537→   537→### 7.4 Benchmark suite
+   538→   538→
+   539→   539→| Scenario | Measures |
+   540→   540→|---|---|
+   541→   541→| Cold load | LCP, requests, transfer bytes, JS execution |
+   542→   542→| Repeat load | Cache behavior and warm LCP |
+   543→   543→| Navigation | Transition latency, visual stalls |
+   544→   544→| Heavy blur | Frame-time distribution, GPU work |
+   545→   545→| Image gallery | Decode/display time, memory |
+   546→   546→| Video | Startup, dropped frames, rebuffering, energy |
+   547→   547→| Long session | Memory growth, thermal behavior |
+   548→   548→| Interaction during effects | INP and missed deadlines |
+   549→   549→| Background/foreground | Resume, resource recovery |
+   550→   550→| Slow network | Useful content availability |
+   551→   551→| Fidelity validation | Pixels and perceptual metrics |
+   552→   552→
+   553→   553→Use p50, p95, p99, and where appropriate p99.9 frame times; average FPS alone conceals jank.
+   554→   554→
+   555→   555→### 7.5 Visual equivalence
+   556→   556→
+   557→   557→Use deterministic screenshots under fixed viewport, device scale factor, fonts, color space, content, animation timestamp, cropping, and rendering conditions. Pixel equality is meaningful under controlled identical renderers; cross-platform anti-aliasing differences can require perceptual metrics.
+   558→   558→
+   559→   559→PSNR is:
+   560→   560→
+   561→   561→$$PSNR=10\log_{10}\left(\frac{MAX^2}{MSE}\right)$$
+   562→   562→
+   563→   563→Compare SSIM/MS-SSIM, SSIMULACRA2, Butteraugli, and VMAF for video, supplemented by controlled human evaluation. None of these metrics alone proves perfect perceptual identity.
+   564→   564→
+   565→   565→### 7.6 Experimental design
+   566→   566→
+   567→   567→Run repeated baseline tests; vary **one optimization** at a time; randomize/alternate test order to reduce cache/thermal bias; report confidence intervals and effect sizes; replicate across devices. Segment field data by browser, platform, device class, network, region, and cold/warm visit.
+   568→   568→
+   569→   569→Illustrative hypothetical results (not measurements):
+   570→   570→
+   571→   571→| Metric | Baseline | Optimized | Change |
+   572→   572→|---|---:|---:|---:|
+   573→   573→| LCP | 3.2 s | 1.9 s | −40.6% |
+   574→   574→| Main-thread blocking | 420 ms | 180 ms | −57.1% |
+   575→   575→| p95 frame time | 28 ms | 16 ms | −42.9% |
+   576→   576→| Initial transfer | 4.0 MB | 1.8 MB | −55.0% |
+   577→   577→| Visual quality | Reference | Pass | Within tolerance |
+   578→   578→
+   579→   579→---
+   580→   580→
+   581→   581→## 8. Comprehensive Optimization Catalogue
+   582→   582→
+   583→   583→No static document can enumerate every future technique. This catalogue captures the main families and identifies which claims need validation.
+   584→   584→
+   585→   585→### 8.1 JavaScript and React
+   586→   586→
+   587→   587→- Tree shaking; dead-code elimination; production minification.
+   588→   588→- Route/component splitting and dynamic imports.
+   589→   589→- Dependency deduplication, bundle analysis, platform-specific entry points.
+   590→   590→- React Compiler where compatible; correct memoization; state locality.
+   591→   591→- Context splitting, selective subscriptions, stable keys, avoid remounts.
+   592→   592→- Windowing/virtualization for long lists with correct behavior/accessibility.
+   593→   593→- Web Workers for CPU-heavy work; transferable buffers; typed arrays.
+   594→   594→- SharedArrayBuffer where cross-origin-isolation/security prerequisites are met.
+   595→   595→- Batch state and DOM updates; event delegation; appropriate passive listeners.
+   596→   596→- Debounce/throttle only when altered timing is acceptable.
+   597→   597→- Use CSS, motion values, native worklets, or small isolated updates for high-frequency animation instead of rerendering large React trees.
+   598→   598→
+   599→   599→Example pointer scheduling:
+   600→   600→
+   601→   601→```js
+   602→   602→let x = 0, y = 0, pending = false;
+   603→   603→window.addEventListener('pointermove', e => {
+   604→   604→  x = e.clientX; y = e.clientY;
+   605→   605→  if (pending) return;
+   606→   606→  pending = true;
+   607→   607→  requestAnimationFrame(() => {
+   608→   608→    pending = false;
+   609→   609→    visual.style.transform = `translate3d(${x}px,${y}px,0)`;
+   610→   610→  });
+   611→   611→}, { passive: true });
+   612→   612→```
+   613→   613→
+   614→   614→### 8.2 CSS/layout
+   615→   615→
+   616→   616→- `contain: layout paint` where semantics permit.
+   617→   617→- `content-visibility: auto` with suitable intrinsic size for distant content.
+   618→   618→- Prefer compositable transforms/opacity where appropriate.
+   619→   619→- Avoid layout thrashing, unnecessary DOM depth, and repaint-heavy scrolling.
+   620→   620→- Use `aspect-ratio` and intrinsic dimensions to avoid layout shifts.
+   621→   621→- Avoid overusing `will-change`, stacking contexts, huge shadows, and overlapping filtered surfaces.
+   622→   622→- Manage CSS custom properties and style generation sensibly.
+   623→   623→- Test clipping/isolation changes for backdrop-filter correctness.
+   624→   624→
+   625→   625→```css
+   626→   626→.gallery-card { contain: layout paint; }
+   627→   627→.gallery-section {
+   628→   628→  content-visibility: auto;
+   629→   629→  contain-intrinsic-size: auto 800px;
+   630→   630→}
+   631→   631→```
+   632→   632→
+   633→   633→### 8.3 Blur and filters
+   634→   634→
+   635→   635→1. Separable Gaussian convolution.
+   636→   636→2. Static precomputation.
+   637→   637→3. Temporal caching of identical results.
+   638→   638→4. Kernel-aware regional invalidation.
+   639→   639→5. Reuse intermediate GPU textures.
+   640→   640→6. Fuse mathematically compatible render passes.
+   641→   641→7. Specialize shaders by kernel size.
+   642→   642→8. Downsample intermediate filtering **only if visual validation passes**.
+   643→   643→9. Dual Kawase blur approximations **only if accepted**.
+   644→   644→10. Mipmap-assisted blur approximations **only if accepted**.
+   645→   645→11. Generate analytical glows instead of unnecessarily rasterizing and blurring them.
+   646→   646→12. Atlas repeated blur patterns.
+   647→   647→13. Tile large effects with sufficient overlap.
+   648→   648→14. Prepare shaders asynchronously before reveal without blocking startup.
+   649→   649→15. Avoid unnecessary backdrop invalidation.
+   650→   650→16. Reorder operations only when mathematical equivalence is established.
+   651→   651→
+   652→   652→### 8.4 WebGL/WebGPU
+   653→   653→
+   654→   654→- Reduce redundant samples, branches, expensive operations, and CPU/GPU data transfers.
+   655→   655→- Cache/precompile pipelines; reuse buffers, textures, and bind groups.
+   656→   656→- Batch draw calls, use instancing, reduce state/framebuffer switches.
+   657→   657→- Pool render targets; minimize unnecessary intermediate passes/readbacks.
+   658→   658→- Select texture precision and formats based on output fidelity requirements.
+   659→   659→- Use texture compression or mipmaps only where visual requirements allow.
+   660→   660→- Consider compute shaders, workgroup sizes, buffer mapping, timestamp queries, and command scheduling where supported.
+   661→   661→- Profile memory bandwidth, occupancy, driver behavior, and synchronization rather than shader arithmetic alone.
+   662→   662→
+   663→   663→### 8.5 Image pipeline
+   664→   664→
+   665→   665→- Preserve originals and accurate ICC/color metadata.
+   666→   666→- Generate display-aware size variants, crops, and encodings.
+   667→   667→- Benchmark codec/file size **and decode** performance.
+   668→   668→- Normalize EXIF orientation correctly.
+   669→   669→- Remove only unnecessary metadata; respect rights and color information.
+   670→   670→- Cache transformed variants at CDN edges.
+   671→   671→- Avoid duplicate decoding and unnecessary image recreation.
+   672→   672→- Supply original-resolution access for inspection and zoom use cases.
+   673→   673→- Compare animated images against efficient video where appropriate.
+   674→   674→
+   675→   675→### 8.6 Video pipeline
+   676→   676→
+   677→   677→- Optimize AV1/HEVC/VP9/H.264 representation ladders.
+   678→   678→- Control GOP/keyframe and segment boundary structure.
+   679→   679→- Preserve bit depth, gamut, HDR transfer function, and timestamps.
+   680→   680→- Use perceptual quality measurements, not bitrate alone.
+   681→   681→- Avoid repeated lossy transcoding generations.
+   682→   682→- Test hardware decoding and thermal stability.
+   683→   683→- Cache segments, optimize manifests and initialization segments.
+   684→   684→- Maintain correct byte-range and MIME behavior.
+   685→   685→- Avoid invisible decoders; pool/reuse players where justified.
+   686→   686→- Preload only genuinely imminent video resources.
+   687→   687→- Monitor startup, rebuffering, frame drops, energy, and quality switching.
+   688→   688→
+   689→   689→### 8.7 Network
+   690→   690→
+   691→   691→- HTTP/2 or HTTP/3 as measured; connection reuse/coalescing.
+   692→   692→- Brotli for appropriate text; Zstandard where supported by the full delivery path.
+   693→   693→- DNS prefetch, preconnect, preload, prefetch—selectively.
+   694→   694→- HTTP 103 Early Hints where supported and beneficial.
+   695→   695→- CDN edge and regional caching; origin shields; cache-key normalization.
+   696→   696→- Immutable versioned URLs, conditional requests, stale-while-revalidate.
+   697→   697→- Request batching, collapsing, cancellation, and useful prioritization.
+   698→   698→- Evaluate routing, TLS resumption, packet loss, congestion, geographic latency.
+   699→   699→
+   700→   700→### 8.8 Backend/database
+   701→   701→
+   702→   702→- Parallelize independent I/O, avoid serial waterfalls.
+   703→   703→- Profile query plans and prevent N+1 requests.
+   704→   704→- Use targeted indexes, pooling, batching, pagination, materialized views when justified.
+   705→   705→- Use queues for media processing; make jobs idempotent.
+   706→   706→- Apply bounded concurrency, timeouts, retries with backoff, backpressure, and circuit breakers.
+   707→   707→- Cache at appropriate levels with safe invalidation and authorization.
+   708→   708→- Avoid oversized JSON and unnecessary serialization.
+   709→   709→
+   710→   710→### 8.9 Build/deployment
+   711→   711→
+   712→   712→- Analyze production bundles and transitive dependencies.
+   713→   713→- Build browser/native-specific outputs; eliminate unreachable code.
+   714→   714→- Precompute assets, ensure reproducible builds, validate publication.
+   715→   715→- Minimize container/startup overhead where material.
+   716→   716→- Version assets and automate safe CDN invalidation.
+   717→   717→- Instrument deployments and maintain rollback paths.
+   718→   718→
+   719→   719→### 8.10 Native mobile
+   720→   720→
+   721→   721→- Adopt compatible React Native architecture and profile both UI and JS threads.
+   722→   722→- Use Reanimated worklets or native animation APIs for eligible effects.
+   723→   723→- Use Skia for complex 2D graphics where it beats simpler native components.
+   724→   724→- Tune virtualized lists, recycling, image caches, and memory lifetime.
+   725→   725→- Defer unnecessary startup initialization; align splash removal with ready content.
+   726→   726→- Profile Android with Perfetto/Android Studio; iOS with Instruments and appropriate Metal/Core Animation analysis.
+   727→   727→- Evaluate backgrounding, resume, thermal throttling, and sustained energy consumption.
+   728→   728→
+   729→   729→### 8.11 Typography
+   730→   730→
+   731→   731→- Use WOFF2; subset fonts; consider variable fonts when byte-efficient.
+   732→   732→- Preload only critical font weights/files.
+   733→   733→- Avoid layout shifts using sensible fallback metrics and reserved layout.
+   734→   734→- Preserve required typography if exact first-frame appearance matters.
+   735→   735→- Verify platform-specific antialiasing, color, and rasterization.
+   736→   736→
+   737→   737→### 8.12 Scheduling/resource arbitration
+   738→   738→
+   739→   739→Prioritize (1) interaction and visible rendering, (2) content needed now, (3) imminent assets, and (4) speculative/background work. Split long tasks or move them to workers; schedule nonurgent work during genuinely available idle periods. **Avoid launching heavy WebGL initialization, 4K decoding, and hydration simultaneously unless the device can sustain it.**
+   740→   740→
+   741→   741→### 8.13 Prediction and navigation restoration
+   742→   742→
+   743→   743→- Predict likely next routes from strong intent signals.
+   744→   744→- Prefetch metadata/images/modules without saturating active downloads.
+   745→   745→- Cancel obsolete speculation where practical.
+   746→   746→- Preserve bfcache eligibility and handle page lifecycle events.
+   747→   747→- Evaluate browser prerendering with privacy, side-effect, and resource safeguards.
+   748→   748→
+   749→   749→### 8.14 Long-session memory and power
+   750→   750→
+   751→   751→- Release detached listeners, nodes, image bitmaps, video players, workers, and GPU resources.
+   752→   752→- Reuse textures instead of accumulating render targets.
+   753→   753→- Test repeated navigation and prolonged playback under thermal load.
+   754→   754→- Pause invisible computation and unnecessary timers.
+   755→   755→- Use hardware decoding when efficient and equivalent.
+   756→   756→- Separate normal cache/GC fluctuation from progressive leaks.
+   757→   757→
+   758→   758→Example resource cleanup (library-specific):
+   759→   759→
+   760→   760→```js
+   761→   761→function disposeGraphics(r) {
+   762→   762→  r.texture?.dispose();
+   763→   763→  r.geometry?.dispose();
+   764→   764→  r.material?.dispose();
+   765→   765→}
+   766→   766→```
+   767→   767→
+   768→   768→### 8.15 Widely repeated claims requiring skepticism
+   769→   769→
+   770→   770→| Claim | Qualification |
+   771→   771→|---|---|
+   772→   772→| “GPU acceleration is always fast.” | Bandwidth, memory, synchronization, shaders, and power remain finite. |
+   773→   773→| “Use `will-change` everywhere.” | Excessive layers can harm performance. |
+   774→   774→| “Always use AVIF.” | Decoding, compatibility, and content matter. |
+   775→   775→| “WebGPU beats CSS.” | Browser compositor paths may be superior for ordinary effects. |
+   776→   776→| “Smaller JS fixes everything.” | Layout, paint, decoding, and GPU cost also matter. |
+   777→   777→| “GraphQL is faster than REST.” | Query design and caching dominate. |
+   778→   778→| “Rust makes every backend fastest.” | Workload and bottlenecks dominate. |
+   779→   779→| “Preload everything.” | Creates competing critical requests. |
+   780→   780→| “Lazy-load every image.” | Delays the LCP asset. |
+   781→   781→| “Canvas is best for all animations.” | Accessibility and browser-compositor overhead matter. |
+   782→   782→| “Average FPS proves smoothness.” | p95/p99 frame times and missed deadlines matter. |
+   783→   783→| “Lighthouse 100 proves optimization.” | Sustained graphics and visual fidelity need separate tests. |
+   784→   784→
+   785→   785→---
+   786→   786→
+   787→   787→## 9. Proposed Reference Architecture
+   788→   788→
+   789→   789→```text
+   790→   790→                 CLIENT APPLICATIONS
+   791→   791→          ┌───────────────────────────────┐
+   792→   792→       NEXT.JS WEB                   EXPO MOBILE
+   793→   793→     React / CSS / GPU               RN / Skia
+   794→   794→          └──────────────┬────────────────┘
+   795→   795→                         │
+   796→   796→               SHARED TYPES & API CLIENT
+   797→   797→                         │
+   798→   798→              ┌──────────┴───────────┐
+   799→   799→              ▼                      ▼
+   800→   800→          CONTENT API             MEDIA CDN
+   801→   801→              │                      │
+   802→   802→        Node.js / Go API           Edge cache
+   803→   803→              │                      │
+   804→   804→       ┌──────┴──────┐         Object storage
+   805→   805→       ▼             ▼                ▲
+   806→   806→   PostgreSQL      Redis              │
+   807→   807→                                     │
+   808→   808→                          Media queues & workers
+   809→   809→                                     │
+   810→   810→                             ┌───────┴────────┐
+   811→   811→                          Image codecs     Video codecs
+   812→   812→                             └───────┬────────┘
+   813→   813→                                     │
+   814→   814→                           Quality verification
+   815→   815→                                     │
+   816→   816→                                Publication
+   817→   817→```
+   818→   818→
+   819→   819→| Layer | Starting recommendation |
+   820→   820→|---|---|
+   821→   821→| Web | Next.js + React + TypeScript |
+   822→   822→| Mobile | Expo + React Native |
+   823→   823→| Shared packages | TypeScript monorepo |
+   824→   824→| Web effects | CSS, Web Animations API, Motion, WebGL/WebGPU |
+   825→   825→| Native effects | Reanimated, Skia, platform-native APIs |
+   826→   826→| API | Node.js + Fastify |
+   827→   827→| Database | PostgreSQL |
+   828→   828→| Cache | Redis where justified |
+   829→   829→| Object storage | S3 or compatible |
+   830→   830→| CDN | Cloudflare / CloudFront / Fastly / Akamai |
+   831→   831→| Images | Sharp/libvips and codec encoders |
+   832→   832→| Video | FFmpeg and packaging tools |
+   833→   833→| Jobs | BullMQ / SQS / equivalent |
+   834→   834→| Measurement | DevTools, Lighthouse, WebPageTest, Playwright, RUM |
+   835→   835→
+   836→   836→Avoid premature microservices, unnecessary Redis, or elaborate orchestration for small products.
+   837→   837→
+   838→   838→---
+   839→   839→
+   840→   840→## 10. Implementation Roadmap
+   841→   841→
+   842→   842→**Phase 1 — Visual reference.** Finish all required effects, timings, images, and media; capture controlled visual baselines. Define color spaces and acceptable deviation.
+   843→   843→
+   844→   844→**Phase 2 — Baseline measurement.** Measure Core Web Vitals, bytes, JS execution, frame distributions, memory, video, and energy across representative devices.
+   845→   845→
+   846→   846→**Phase 3 — Critical path.** Prioritize server HTML, fonts, hero, minimal initial JS, correct loading order, and deferred noncritical graphics.
+   847→   847→
+   848→   848→**Phase 4 — Rendering.** Optimize stable blur, filter regions, layers, GPU resources, animations, repaint boundaries, shader work, and workers.
+   849→   849→
+   850→   850→**Phase 5 — Delivery/backend.** Establish variant images, adaptive video, CDN, object storage, signed access, database queries, and appropriate caches.
+   851→   851→
+   852→   852→**Phase 6 — Production verification.** Validate physical devices, network impairment, repeat views, long sessions, thermal behavior, and visual regression.
+   853→   853→
+   854→   854→---
+   855→   855→
+   856→   856→## 11. Primary Reading List and Technical Specifications
+   857→   857→
+   858→   858→1. [React Native Web — project documentation](https://necolas.github.io/react-native-web/) — component mappings and browser integration.
+   859→   859→2. [Expo — web development](https://docs.expo.dev/workflow/web/) — universal app setup and web-specific components.
+   860→   860→3. [Expo Router — static rendering](https://docs.expo.dev/router/web/static-rendering/) — rendering/deployment approaches.
+   861→   861→4. [Next.js — navigation and prefetching](https://nextjs.org/docs/app/guides/prefetching) — loading and navigation behavior.
+   862→   862→5. [React — React Compiler](https://react.dev/learn/react-compiler) — render computation optimization.
+   863→   863→6. [MDN — backdrop-filter](https://developer.mozilla.org/en-US/docs/Web/CSS/backdrop-filter) — background filter semantics.
+   864→   864→7. [Chrome DevTools — rendering diagnostics](https://developer.chrome.com/docs/devtools/rendering/) — paint, layers, and performance.
+   865→   865→8. [Chrome DevTools — Layers](https://developer.chrome.com/docs/devtools/layers/) — compositor investigation.
+   866→   866→9. [MDN — OffscreenCanvas](https://developer.mozilla.org/en-US/docs/Web/API/OffscreenCanvas) — worker rendering.
+   867→   867→10. [MDN — WebGPU](https://developer.mozilla.org/en-US/docs/Web/API/WebGPU_API) — modern GPU API.
+   868→   868→11. [W3C — WebGPU specification](https://www.w3.org/TR/webgpu/) — GPU resources and execution.
+   869→   869→12. [Khronos — WebGL registry](https://registry.khronos.org/webgl/) — graphics specifications.
+   870→   870→13. [Chrome — View Transitions](https://developer.chrome.com/docs/web-platform/view-transitions/) — visual navigation transitions.
+   871→   871→14. [MDN — Image file type and format guide](https://developer.mozilla.org/en-US/docs/Web/Media/Guides/Formats/Image_types) — format compatibility.
+   872→   872→15. [Web.dev — responsive images](https://web.dev/learn/design/responsive-images) — `srcset`, `sizes`, loading.
+   873→   873→16. [MDN — Media Capabilities API](https://developer.mozilla.org/en-US/docs/Web/API/MediaCapabilities) — codec smoothness and efficiency.
+   874→   874→17. [Alliance for Open Media — AV1](https://aomedia.org/av1-features/) — codec capabilities.
+   875→   875→18. [FFmpeg — documentation](https://ffmpeg.org/documentation.html) — media processing.
+   876→   876→19. **ISO/IEC 23009-1** — MPEG-DASH specification.
+   877→   877→20. [IETF RFC 8216 — HTTP Live Streaming](https://www.rfc-editor.org/rfc/rfc8216) — HLS manifests and segments.
+   878→   878→21. [IETF RFC 9114 — HTTP/3](https://www.rfc-editor.org/rfc/rfc9114) — HTTP over QUIC.
+   879→   879→22. [IETF RFC 9111 — HTTP Caching](https://www.rfc-editor.org/rfc/rfc9111) — cache semantics.
+   880→   880→23. [MDN — Cache-Control](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Cache-Control) — cache directives.
+   881→   881→24. [MDN — 103 Early Hints](https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/103) — earlier resource discovery.
+   882→   882→25. [Cloudflare — private images](https://developers.cloudflare.com/images/manage-images/serve-images/serve-private-images/) — protected CDN delivery.
+   883→   883→26. [Google — Core Web Vitals](https://developers.google.com/search/docs/appearance/core-web-vitals) — LCP/INP/CLS.
+   884→   884→27. [Web.dev — defining Core Web Vitals thresholds](https://web.dev/articles/defining-core-web-vitals-thresholds) — threshold methodology.
+   885→   885→28. [React — Profiler API](https://react.dev/reference/react/Profiler) — component instrumentation.
+   886→   886→29. [GoogleChrome — Lighthouse](https://github.com/GoogleChrome/lighthouse) — automated web audits.
+   887→   887→30. [WebPageTest — documentation](https://docs.webpagetest.org/) — network and rendering comparisons.
+   888→   888→
+   889→   889→---
+   890→   890→
+   891→   891→## 12. Graduate-Level Exercises
+   892→   892→
+   893→   893→### Exercise 1 — Blur optimization
+   894→   894→
+   895→   895→Implement CSS `filter: blur`, pre-rendered blur, and separable GPU Gaussian blur on the same scene. Measure frame p50/p95/p99, memory, GPU work, and perceptual differences. **Question:** When is pre-rendering beneficial, and what invalidates its equivalence?
+   896→   896→
+   897→   897→### Exercise 2 — React Native Web vs Next.js
+   898→   898→
+   899→   899→Create visually equivalent Expo/RN Web and Next.js pages with a hero, two backdrop panels, cinematic transition, gallery, and video. Compare JS transfer/execution, LCP, INP, frame times, accessibility, and maintainability. **Question:** When does universal UI abstraction impose observable web overhead?
+   900→   900→
+   901→   901→### Exercise 3 — Media encoding
+   902→   902→
+   903→   903→Encode 20 representative photographs as AVIF, WebP, and JPEG XL at multiple settings. Measure size, encoding/decoding latency, memory, SSIM, and SSIMULACRA2. **Question:** Which codec minimizes total delivery/decode cost subject to a fixed perceptual-quality threshold?
+   904→   904→
+   905→   905→### Exercise 4 — Adaptive streaming
+   906→   906→
+   907→   907→Construct HLS/DASH ladders with multiple codecs and resolutions. Test broadband, cellular, loss, and device decode variations. Record startup, buffering, dropped frames, quality, CPU, and energy. **Question:** How should adaptation balance quality against stalling and decoding constraints?
+   908→   908→
+   909→   909→### Exercise 5 — End-to-end study
+   910→   910→
+   911→   911→Build a React visual application featuring heavy blur, high-resolution images, transitions, video, backend content, and CDN media. Submit baseline hypotheses, controlled interventions, statistics, pixel/perceptual checks, limits, and negative results. **Question:** Which optimizations give the greatest measured gain per unit implementation complexity without violating the fidelity specification?
+   912→   912→
+   913→   913→---
+   914→   914→
+   915→   915→## 13. Conclusions
+   916→   916→
+   917→   917→High-fidelity visual applications should be optimized around **rendering efficiency rather than effect removal**. A static blur should not be recomputed unnecessarily; images and video should not be fetched or decoded repeatedly; hidden graphics should not block the first meaningful render; React should not rerender large subtrees for unrelated animation state; and backend services should not repeatedly transform assets that can be processed once and cached near users.
+   918→   918→
+   919→   919→Five principal findings follow:
+   920→   920→
+   921→   921→1. **Visual fidelity and efficiency can align.** Caching, code splitting, resource scheduling, and precomputation often eliminate redundant work without reducing final output.
+   922→   922→2. **Architecture matters more than brand names.** Next.js provides strong browser-specific controls; Expo/RN Web provides code sharing; a hybrid approach can exploit both.
+   923→   923→3. **Media delivery is a balance of transfer, decode, and display.** The smallest file is not always the fastest or most energy-efficient to show.
+   924→   924→4. **GPU acceleration still requires disciplined resource management.** Shader time, bandwidth, textures, and synchronization must be profiled.
+   925→   925→5. **Measured evidence is indispensable.** Performance improvements need controlled benchmarks and visual-regression verification.
+   926→   926→
+   927→   927→### Final recommendation
+   928→   928→
+   929→   929→Use **Next.js + React for browser-first web rendering; Expo + React Native for mobile; platform-specific GPU implementations; a TypeScript API; PostgreSQL; Redis where justified; object storage; controlled media-processing workers; and CDN-based delivery**.
+   930→   930→
+   931→   931→First establish visual-reference outputs. Then eliminate redundant computation, shorten the critical path, choose codec/variant delivery by measurement, manage GPU lifetimes, and verify performance under realistic constraints. Disclose adaptations when full fidelity is physically infeasible.
+   932→   932→
+   933→   933→> **Do not optimize an ambitious visual application by making its design less ambitious. First optimize the computation, rendering, scheduling, and delivery systems that make the design possible.**
+   934→   934→
