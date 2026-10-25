@@ -5,6 +5,11 @@ const nextConfig: NextConfig = {
     ignoreBuildErrors: true,
   },
   reactStrictMode: false,
+  // Allow the chat preview panel origin to access the dev server so HMR +
+  // dev-only features work. Without this, Next.js logs a cross-origin warning
+  // and HMR silently breaks — the user can't see code changes live.
+  // Pattern covers: preview-chat-{session-id}.space-z.ai + any *.space-z.ai subdomain.
+  allowedDevOrigins: ['*.space-z.ai', '*.vercel.app'],
   images: {
     // Modern formats first — AVIF where supported, WebP fallback
     formats: ['image/avif', 'image/webp'],
