@@ -34,10 +34,18 @@ function getThumbnail(v: Video): string {
 function getEmbedUrl(v: Video): string {
   if (v.platform === 'youtube') {
     const id = extractYouTubeId(v.url);
-    return id ? `https://www.youtube.com/embed/${id}?autoplay=1&modestbranding=1&rel=0` : v.url;
+    // Phase 5b fix — all the modest-branding + clean-player params YouTube
+    // exposes via iframe URL. vq=hd720 attempts to force 720p default
+    // (deprecated but YouTube still respects it in some cases). iv_load_policy=3
+    // hides annotations. rel=0 hides related videos at end. modestbranding=1
+    // reduces the YouTube logo + chrome. playsinline=1 for iOS inline play.
+    // fs=1 allows fullscreen. cc_load_policy=0 disables closed captions by default.
+    return id
+      ? `https://www.youtube.com/embed/${id}?autoplay=1&modestbranding=1&rel=0&iv_load_policy=3&playsinline=1&fs=1&cc_load_policy=0&vq=hd720`
+      : v.url;
   }
   const id = extractVimeoId(v.url);
-  return id ? `https://player.vimeo.com/video/${id}?autoplay=1` : v.url;
+  return id ? `https://player.vimeo.com/video/${id}?autoplay=1&quality=720p` : v.url;
 }
 
 export function VideoSection() {
@@ -108,34 +116,45 @@ export function VideoSection() {
                   aspectRatio: '16/9',
                   overflow: 'hidden',
                   background: '#000',
-                  border: '6px solid var(--canvas)',
-                  boxShadow: '0 8px 24px -8px rgba(10,10,10,0.3)',
+                  // Phase 5b fix — removed the 6px white border (the "frame" you
+                  // didn't want). Subtle shadow only for depth.
+                  boxShadow: '0 12px 32px -10px rgba(10,10,10,0.4)',
+                  borderRadius: '2px',
+                  transition: 'transform 0.4s var(--ease-spring-soft), box-shadow 0.4s var(--ease-out-soft)',
                 }}
+                onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-4px)'; }}
+                onMouseLeave={(e) => { e.currentTarget.style.transform = ''; }}
               >
                 {getThumbnail(v) ? (
                   <img
                     src={getThumbnail(v)}
                     alt={v.label || 'Video'}
+                    draggable={false}
+                    onContextMenu={(e) => e.preventDefault()}
+                    loading="lazy"
+                    decoding="async"
                     style={{ width: '100%', height: '100%', objectFit: 'cover', filter: 'saturate(0.95) contrast(1.05) brightness(0.9)', transition: 'filter 0.4s var(--ease-out-soft)' }}
                   />
                 ) : (
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'var(--canvas)', fontSize: '0.8rem', opacity: 0.5 }}>{v.platform}</div>
                 )}
-                {/* play button */}
+                {/* play button — Apple-style glass */}
                 <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   <div style={{
                     width: '60px', height: '60px', borderRadius: '50%',
-                    background: 'rgba(10,10,10,0.6)', backdropFilter: 'blur(4px)',
+                    background: 'rgba(10,10,10,0.5)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)',
+                    border: '1px solid rgba(255,255,255,0.15)',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontSize: '1.5rem', color: 'var(--canvas)',
-                    transition: 'transform 0.3s var(--ease-out-soft), background 0.3s var(--ease-out-soft)',
+                    fontSize: '1.4rem', color: 'var(--canvas)',
+                    transition: 'transform 0.3s var(--ease-spring-soft), background 0.3s var(--ease-out-soft)',
                   }}>▶</div>
                 </div>
                 {/* label */}
                 {v.label && (
                   <div className="text-mono text-label" style={{
                     position: 'absolute', bottom: '8px', left: '8px',
-                    color: 'var(--canvas)', background: 'rgba(10,10,10,0.6)',
+                    color: 'var(--canvas)', background: 'rgba(10,10,10,0.7)',
+                    backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)',
                     padding: '2px 6px', zIndex: 2,
                   }}>
                     {v.label}
