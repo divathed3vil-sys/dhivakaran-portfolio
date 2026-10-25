@@ -14,7 +14,7 @@ import { useEffect, useRef, useState } from 'react';
 export function VisualLabCard({ onEnter }: { onEnter: () => void }) {
   const [hovered, setHovered] = useState(false);
   const [isTouch, setIsTouch] = useState(false);
-  const [images, setImages] = useState<string[]>(['/images/landing-low.webp']);
+  const [images, setImages] = useState<string[]>(['/images/landing-400.avif']);
   const cardRef = useRef<HTMLElement>(null);
 
   // fetch real lab image URLs from Supabase (graceful — falls back to landing image)
@@ -34,6 +34,9 @@ export function VisualLabCard({ onEnter }: { onEnter: () => void }) {
     })();
     return () => { cancelled = true; };
   }, []);
+
+  // Use new AVIF landing-low variant as fallback (400px, 1.7 KB)
+  const fallbackImg = '/images/landing-400.avif';
 
   useEffect(() => {
     const t = setTimeout(() => setIsTouch(window.matchMedia('(hover: none)').matches), 0);
@@ -66,7 +69,9 @@ export function VisualLabCard({ onEnter }: { onEnter: () => void }) {
         cursor: 'pointer',
       }}
     >
-      {/* blurry glimpse of the lab — a grid of tiles, heavily blurred */}
+      {/* blurry glimpse of the lab — a grid of <img> tiles, heavily blurred.
+          loading=lazy + decoding=async so offscreen tiles don't block first paint.
+          The wrapper div still owns the blur filter + scale transform. */}
       <div
         aria-hidden="true"
         style={{
@@ -82,15 +87,24 @@ export function VisualLabCard({ onEnter }: { onEnter: () => void }) {
         }}
       >
         {Array.from({ length: 12 }, (_, i) => {
-          const imgs = images.length > 0 ? images : ['/images/landing-low.webp'];
+          const imgs = images.length > 0 ? images : [fallbackImg];
+          const src = imgs[i % imgs.length];
           return (
-            <div
+            <img
               key={i}
+              src={src}
+              alt=""
+              loading="lazy"
+              decoding="async"
+              width={400}
+              height={300}
               style={{
-                backgroundImage: `url(${imgs[i % imgs.length]})`,
-                backgroundSize: 'cover',
-                backgroundPosition: `${(i * 23) % 100}% ${(i * 37) % 100}%`,
+                width: '100%',
+                height: '100%',
+                objectFit: 'cover',
+                objectPosition: `${(i * 23) % 100}% ${(i * 37) % 100}%`,
                 filter: 'grayscale(1) contrast(1.1) brightness(0.7)',
+                display: 'block',
               }}
             />
           );

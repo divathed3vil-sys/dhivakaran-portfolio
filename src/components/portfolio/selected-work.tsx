@@ -140,11 +140,20 @@ export function SelectedWork() {
                       <img
                         src={cell.src}
                         alt={cell.label || ''}
+                        loading="lazy"
+                        decoding="async"
+                        width={800}
+                        height={600}
                         onClick={() => { setLightboxSrc(cell.src); setZoom(1); }}
                         style={{
                           filter: 'saturate(0.95) contrast(1.05) brightness(0.96)',
                           transition: 'filter 0.4s var(--ease-out-soft)',
                           cursor: 'pointer',
+                          width: '100%',
+                          height: '100%',
+                          objectFit: 'contain',
+                          objectPosition: 'center',
+                          display: 'block',
                         }}
                       />
                       <div className="scratch-overlay" />

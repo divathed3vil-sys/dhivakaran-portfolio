@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react';
 export function IntroLoader() {
   const [phase, setPhase] = useState<'in' | 'out' | 'done'>('in');
   const [frame, setFrame] = useState(241);
-  const [chipSrc, setChipSrc] = useState('/images/landing-low.webp');
+  const [chipSrc, setChipSrc] = useState('/images/landing-400.avif');
 
   useEffect(() => {
     if (typeof window === 'undefined') return;

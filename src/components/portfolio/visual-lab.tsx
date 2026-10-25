@@ -302,7 +302,8 @@ export function VisualLab({ onClose }: { onClose: () => void }) {
         animation: closing ? 'iris-close 0.7s var(--ease-curtain) both' : 'iris-open 0.7s var(--ease-curtain) both',
       }}
     >
-      {/* tiles — low-res WebP, NO per-tile filters (just transforms + opacity) */}
+      {/* tiles — low-res WebP/AVIF via real <img>, NO per-tile filters (just transforms + opacity).
+          loading=lazy + decoding=async so offscreen tiles don't block first paint. */}
       <div ref={fieldRef} style={{ position: 'absolute', inset: 0 }}>
         {tiles.map((t) => (
           <div
@@ -319,16 +320,29 @@ export function VisualLab({ onClose }: { onClose: () => void }) {
               left: 0,
               width: `${t.w}px`,
               height: `${t.h}px`,
-              backgroundImage: `url(${t.src})`,
-              backgroundSize: 'contain',
-              backgroundPosition: 'center',
-              backgroundRepeat: 'no-repeat',
               backgroundColor: 'var(--night)',
               willChange: 'transform, opacity',
               border: '0',
               boxShadow: '0 8px 20px -6px rgba(0,0,0,0.5)',
+              overflow: 'hidden',
             }}
-          />
+          >
+            <img
+              src={t.src}
+              alt=""
+              loading="lazy"
+              decoding="async"
+              width={400}
+              height={400}
+              style={{
+                width: '100%',
+                height: '100%',
+                objectFit: 'contain',
+                objectPosition: 'center',
+                display: 'block',
+              }}
+            />
+          </div>
         ))}
       </div>
 

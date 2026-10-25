@@ -110,22 +110,47 @@ export function Hero() {
       }}
       aria-label="Dhivakaran M — opening"
     >
-      {/* portrait layer — subject on the right */}
+      {/* portrait layer — subject on the right.
+          Responsive <picture> with AVIF → WebP → JPEG fallback.
+          4 width variants (400/800/1280/1920) match viewport via sizes="100vw".
+          fetchPriority=high + decoding=async + loading=eager → LCP discovered
+          before CSS parse (also preloaded in <head>). All existing filter /
+          transform / will-change / transition behavior preserved on wrapper. */}
       <div
         ref={portraitRef}
         data-hero-portrait=""
         style={{
           position: 'absolute',
           inset: 0,
-          backgroundImage: 'url(/images/landing-full.webp)',
-          backgroundSize: 'cover',
-          backgroundPosition: '75% 25%',
+          overflow: 'hidden',
           filter: 'saturate(0.82) contrast(1.05) brightness(0.94)',
           transformOrigin: '60% 60%',
           transition: 'transform 0.95s var(--ease-reveal), filter 0.95s var(--ease-reveal)',
           willChange: 'transform, filter',
         }}
-      />
+      >
+        <picture>
+          <source type="image/avif" srcSet="/images/landing-400.avif 400w, /images/landing-800.avif 800w, /images/landing-1280.avif 1280w, /images/landing-1920.avif 1920w" sizes="100vw" />
+          <source type="image/webp" srcSet="/images/landing-400.webp 400w, /images/landing-800.webp 800w, /images/landing-1280.webp 1280w, /images/landing-1920.webp 1920w" sizes="100vw" />
+          <img
+            src="/images/landing-fallback.jpg"
+            alt="Dhivakaran M — opening portrait"
+            width={1920}
+            height={1080}
+            fetchPriority="high"
+            decoding="async"
+            loading="eager"
+            style={{
+              position: 'absolute',
+              inset: 0,
+              width: '100%',
+              height: '100%',
+              objectFit: 'cover',
+              objectPosition: '75% 25%',
+            }}
+          />
+        </picture>
+      </div>
 
       {/* darkening gradient for text legibility on the left */}
       <div

@@ -58,8 +58,10 @@ export function About() {
 
             {/* paragraph with floating portrait insert */}
             <div style={{ position: 'relative', maxWidth: 'calc(1129 * var(--px))' }}>
-              {/* floating portrait insert — about.png */}
-              <div
+              {/* floating portrait insert — responsive <picture> with AVIF → WebP → JPEG.
+                  loading=lazy (below fold) + decoding=async. All visual treatment
+                  (rotation, shadow, filter, shape-outside) preserved. */}
+              <picture
                 className="halftone"
                 style={{
                   float: 'left',
@@ -68,17 +70,33 @@ export function About() {
                   maxWidth: '220px',
                   aspectRatio: '1 / 1',
                   margin: '0.35rem 1.5rem 0.5rem 0',
-                  backgroundImage: 'url(/images/about-med.webp)',
-                  backgroundSize: 'cover',
-                  backgroundPosition: '50% 35%',
                   transform: 'rotate(-6deg)',
                   boxShadow: '0 18px 40px -12px rgba(10, 10, 10, 0.28)',
                   filter: 'saturate(0.7) contrast(1.08) brightness(0.92)',
                   shapeOutside: 'circle(50%)',
                   borderRadius: '2px',
+                  overflow: 'hidden',
                 }}
-                aria-hidden="true"
-              />
+              >
+                <source type="image/avif" srcSet="/images/about-400.avif 400w, /images/about-800.avif 800w" sizes="(max-width: 768px) 120px, 19vw" />
+                <source type="image/webp" srcSet="/images/about-400.webp 400w, /images/about-800.webp 800w" sizes="(max-width: 768px) 120px, 19vw" />
+                <img
+                  src="/images/about-fallback.jpg"
+                  alt=""
+                  width={1086}
+                  height={1448}
+                  loading="lazy"
+                  decoding="async"
+                  aria-hidden="true"
+                  style={{
+                    width: '100%',
+                    height: '100%',
+                    objectFit: 'cover',
+                    objectPosition: '50% 35%',
+                    display: 'block',
+                  }}
+                />
+              </picture>
 
               <WaveText
                 text={ABOUT_PARAGRAPH}
