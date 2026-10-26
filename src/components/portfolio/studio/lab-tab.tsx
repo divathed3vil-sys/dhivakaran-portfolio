@@ -140,11 +140,7 @@ export function LabTab() {
         <Stat label="LAB IMAGES" value={labImages.length} />
         <Stat label="SELECTED" value={selected.size} />
         <Stat label="PUBLISHED" value={labImages.filter((i) => i.published).length} />
-        <div style={{ marginLeft: 'auto' }}>
-          <button onClick={() => window.open('/', '_blank')} style={{ ...btnStyle, borderColor: 'var(--accent)', display: 'flex', alignItems: 'center', gap: '0.4rem' }} title="Open the live Visual Lab in a new tab">
-            <span style={{ fontSize: '0.85rem' }}>↗</span> Preview Site
-          </button>
-        </div>
+        
       </div>
 
       {/* Bulk upload */}

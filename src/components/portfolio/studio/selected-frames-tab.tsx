@@ -325,11 +325,7 @@ export function SelectedFramesTab() {
         <Stat label="IN LAB" value={labCount} />
         <Stat label="CATEGORIES" value={cats.length} />
         <Stat label="LAST MODIFIED" value={lastModifiedLabel} />
-        <div style={{ marginLeft: 'auto', display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-          <button onClick={() => window.open('/', '_blank')} style={{ ...btnStyle, borderColor: 'var(--accent)', display: 'flex', alignItems: 'center', gap: '0.4rem' }} title="Open the live public site in a new tab">
-            <span style={{ fontSize: '0.85rem' }}>↗</span> Preview Site
-          </button>
-        </div>
+        
       </div>
 
       {/* Add category */}
@@ -361,8 +357,8 @@ export function SelectedFramesTab() {
               <label style={{ ...fieldLabelStyle, cursor: 'pointer', display: 'block', padding: '2rem', border: '2px dashed var(--night-hr)', borderRadius: '4px', textAlign: 'center', transition: 'border-color 0.3s' }} onDragOver={(e) => { e.preventDefault(); e.currentTarget.style.borderColor = 'var(--accent)'; }} onDragLeave={(e) => { e.currentTarget.style.borderColor = 'var(--night-hr)'; }} onDrop={(e) => { e.preventDefault(); e.currentTarget.style.borderColor = 'var(--night-hr)'; handleFileSelect(e.dataTransfer.files?.[0] || null); }}>
                 <span style={{ fontSize: '1.5rem', display: 'block', marginBottom: '0.5rem' }}>📁</span>
                 Click or drag an image to upload
+                <input type="file" accept="image/*" style={{ display: 'none' }} onChange={(e) => handleFileSelect(e.target.files?.[0] || null)} />
               </label>
-              <input type="file" accept="image/*" style={{ display: 'none' }} onChange={(e) => handleFileSelect(e.target.files?.[0] || null)} />
             </div>
           )}
           {uploadProgress !== null && uploadProgress < 100 && (
@@ -530,16 +526,13 @@ export function SelectedFramesTab() {
               <label className="text-mono text-label" style={{ color: 'var(--night-muted)', display: 'block', marginBottom: '0.25rem', fontSize: '0.65rem' }}>Description</label>
               <textarea value={isUpload ? imgDesc : editDesc} onChange={(e) => isUpload ? setImgDesc(e.target.value) : setEditDesc(e.target.value)} placeholder="Shows on hover" rows={3} style={{ ...inputStyle, resize: 'vertical' }} />
             </div>
-            {/* Priority + Lab toggle */}
-            <div style={{ display: 'flex', gap: '1rem', marginBottom: '1rem', alignItems: 'flex-end' }}>
-              <div>
-                <label className="text-mono text-label" style={{ color: 'var(--night-muted)', display: 'block', marginBottom: '0.25rem', fontSize: '0.65rem' }}>Priority</label>
-                <input type="number" value={isUpload ? imgPriority : editPriority} onChange={(e) => isUpload ? setImgPriority(parseInt(e.target.value) || 0) : setEditPriority(parseInt(e.target.value) || 0)} style={{ ...inputStyle, width: '80px' }} />
-              </div>
+            {/* Lab toggle (priority is managed by drag-drop reorder, not a number input) */}
+            <div style={{ display: 'flex', gap: '1rem', marginBottom: '1rem', alignItems: 'center' }}>
               <label style={{ color: 'var(--canvas)', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer' }}>
                 <input type="checkbox" checked={isUpload ? imgInLab : editInLab} onChange={(e) => isUpload ? setImgInLab(e.target.checked) : setEditInLab(e.target.checked)} />
                 In Lab
               </label>
+              <span style={{ fontSize: '0.65rem', color: 'var(--night-muted)', fontFamily: 'var(--font-mono), monospace' }}>Priority managed by drag-drop ⠿</span>
             </div>
             {/* Process media (Phase 5b.4) */}
             <div style={{ marginTop: '1.5rem', padding: '0.75rem', border: '1px dashed rgba(255,255,255,0.08)', borderRadius: '3px' }}>

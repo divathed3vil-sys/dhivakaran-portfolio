@@ -275,6 +275,18 @@ export async function deleteVideo(id: string) {
   return { error };
 }
 
+// Phase 5b.7b — update a video (label, description, process media, preview order)
+export async function updateVideo(id: string, updates: Record<string, unknown>) {
+  if (!supabase) return { error: 'No Supabase client' };
+  const { data, error } = await supabase
+    .from('videos')
+    .update(updates)
+    .eq('id', id)
+    .select()
+    .single();
+  return { data, error };
+}
+
 export async function updateSiteSettings(updates: Record<string, unknown>) {
   if (!supabase) return { error: 'No Supabase client' };
   const { data, error } = await supabase

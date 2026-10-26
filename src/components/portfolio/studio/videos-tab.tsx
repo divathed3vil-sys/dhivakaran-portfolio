@@ -19,7 +19,9 @@ import {
   useSortable,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { getAllVideos, addVideo, deleteVideo, reorderImages, bulkUpdateImages, bulkDeleteImages } from '@/lib/supabase-data';
+import { getAllVideos, addVideo, deleteVideo, updateVideo, uploadProcessFile, reorderImages, bulkUpdateImages, bulkDeleteImages } from '@/lib/supabase-data';
+import { StudioDetailPanel } from './studio-detail-panel';
+import { useEffect } from 'react';
 
 type Video = {
   id: string;
@@ -29,6 +31,9 @@ type Video = {
   description: string | null;
   priority: number;
   published: boolean;
+  process_video_url?: string | null;
+  process_image_url?: string | null;
+  preview_order?: string[] | null;
 };
 
 function extractYouTubeId(url: string): string | null {
@@ -77,6 +82,21 @@ export function VideosTab() {
   const [activeDragId, setActiveDragId] = useState<string | null>(null);
   const [localOrder, setLocalOrder] = useState<string[] | null>(null);
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  // Phase 5b.7b — editing state for DetailPanel
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editLabel, setEditLabel] = useState('');
+  const [editDesc, setEditDesc] = useState('');
+  const [processVideoUrl, setProcessVideoUrl] = useState('');
+  const [processImageUrl, setProcessImageUrl] = useState('');
+  const [previewOrder, setPreviewOrder] = useState<string[]>(['description', 'video', 'image']);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth <= 768);
+    check();
+    window.addEventListener('resize', check);
+    return () => window.removeEventListener('resize', check);
+  }, []);
 
   const handleUrlChange = (val: string) => {
     setUrl(val);
@@ -103,7 +123,60 @@ export function VideosTab() {
     if (!confirm('Delete this video?')) return;
     await deleteVideo(id);
     setSelected((prev) => { const n = new Set(prev); n.delete(id); return n; });
+    setEditingId(null);
     invalidateVideos();
+  };
+
+  // Phase 5b.7b — video editing via DetailPanel
+  const handleStartEdit = (v: Video) => {
+    setEditingId(v.id);
+    setEditLabel(v.label || '');
+    setEditDesc(v.description || '');
+    setProcessVideoUrl(v.process_video_url || '');
+    setProcessImageUrl(v.process_image_url || '');
+    setPreviewOrder(v.preview_order || ['description', 'video', 'image']);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingId) return;
+    const { error } = await updateVideo(editingId, {
+      label: editLabel || null,
+      description: editDesc || null,
+      process_video_url: processVideoUrl || null,
+      process_image_url: processImageUrl || null,
+      preview_order: previewOrder,
+    });
+    if (error) { setMsg(`Error: ${error.message}`); return; }
+    setMsg('Video updated.');
+    setEditingId(null);
+    invalidateVideos();
+  };
+
+  const handleProcessVideoUpload = async (file: File | null) => {
+    if (!file) return;
+    setMsg('Uploading process video…');
+    const { publicUrl, error } = await uploadProcessFile(file);
+    if (error || !publicUrl) { setMsg(`Upload error: ${error}`); return; }
+    setProcessVideoUrl(publicUrl);
+    setMsg('Process video uploaded.');
+  };
+
+  const handleProcessImageUpload = async (file: File | null) => {
+    if (!file) return;
+    setMsg('Uploading process image…');
+    const { publicUrl, error } = await uploadProcessFile(file);
+    if (error || !publicUrl) { setMsg(`Upload error: ${error}`); return; }
+    setProcessImageUrl(publicUrl);
+    setMsg('Process image uploaded.');
+  };
+
+  const movePreviewItem = (from: number, to: number) => {
+    setPreviewOrder((prev) => {
+      const next = [...prev];
+      const [item] = next.splice(from, 1);
+      next.splice(to, 0, item);
+      return next;
+    });
   };
 
   const sortedVideos = useMemo(
@@ -174,11 +247,7 @@ export function VideosTab() {
         <Stat label="VIDEOS" value={sortedVideos.length} />
         <Stat label="SELECTED" value={selected.size} />
         <Stat label="PUBLISHED" value={sortedVideos.filter((v) => v.published).length} />
-        <div style={{ marginLeft: 'auto' }}>
-          <button onClick={() => window.open('/', '_blank')} style={{ ...btnStyle, borderColor: 'var(--accent)', display: 'flex', alignItems: 'center', gap: '0.4rem' }} title="Open the live site in a new tab">
-            <span style={{ fontSize: '0.85rem' }}>↗</span> Preview Site
-          </button>
-        </div>
+        
       </div>
 
       {/* Add video form */}
@@ -240,7 +309,7 @@ export function VideosTab() {
                   video={v}
                   selected={selected.has(v.id)}
                   onToggleSelect={() => toggleSelect(v.id)}
-                  onPlay={() => setPlaying(v.id)}
+                  onEdit={() => handleStartEdit(v)}
                   onDelete={() => handleDelete(v.id)}
                 />
               ))}
@@ -251,33 +320,79 @@ export function VideosTab() {
         {sortedVideos.length === 0 && <div style={{ color: 'var(--night-muted)', fontStyle: 'italic' }}>No vids yet.</div>}
       </div>
 
-      {/* Lightbox player — clean YouTube/Vimeo embed */}
-      {playing && (() => {
-        const v = vids.find((x) => x.id === playing);
+      {/* Phase 5b.7b — DetailPanel for video editing (replaces old lightbox) */}
+      {editingId && (() => {
+        const v = vids.find((x) => x.id === editingId);
         if (!v) return null;
         return (
-          <div
-            onClick={() => setPlaying(null)}
-            onContextMenu={(e) => e.preventDefault()}
-            style={{ position: 'fixed', inset: 0, zIndex: 10002, background: 'rgba(0,0,0,0.95)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+          <StudioDetailPanel
+            title={v.label || 'Untitled Video'}
+            isMobile={isMobile}
+            preview={
+              <div style={{ width: '100%', aspectRatio: '16/9', borderRadius: '3px', overflow: 'hidden', background: '#000' }}>
+                <img src={getThumbnail(v)} alt={v.label || ''} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              </div>
+            }
+            onSave={handleSaveEdit}
+            onClose={() => setEditingId(null)}
+            onDelete={async () => {
+              await handleDelete(v.id);
+              setEditingId(null);
+            }}
           >
-            <div style={{ width: 'min(90vw, 1280px)', aspectRatio: '16/9' }} onClick={(e) => e.stopPropagation()}>
-              <iframe src={getEmbedUrl(v)} style={{ width: '100%', height: '100%', border: 0 }} allow="autoplay; fullscreen; encrypted-media" allowFullScreen title={v.label || 'Video'} />
+            {/* Label */}
+            <div style={{ marginBottom: '1rem' }}>
+              <label className="text-mono text-label" style={{ color: 'var(--night-muted)', display: 'block', marginBottom: '0.25rem', fontSize: '0.65rem' }}>Label</label>
+              <input value={editLabel} onChange={(e) => setEditLabel(e.target.value)} placeholder="Title Sequence" style={inputStyle} />
             </div>
-          </div>
+            {/* Description */}
+            <div style={{ marginBottom: '1rem' }}>
+              <label className="text-mono text-label" style={{ color: 'var(--night-muted)', display: 'block', marginBottom: '0.25rem', fontSize: '0.65rem' }}>Description</label>
+              <textarea value={editDesc} onChange={(e) => setEditDesc(e.target.value)} placeholder="Shows on hover" rows={3} style={{ ...inputStyle, resize: 'vertical' }} />
+            </div>
+            {/* Process media */}
+            <div style={{ marginTop: '1.5rem', padding: '0.75rem', border: '1px dashed rgba(255,255,255,0.08)', borderRadius: '3px' }}>
+              <div className="text-mono text-label" style={{ color: 'var(--accent)', marginBottom: '0.5rem', fontSize: '0.65rem' }}>PROCESS MEDIA</div>
+              <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'flex-end' }}>
+                <div>
+                  <label className="text-mono text-label" style={{ color: 'var(--night-muted)', display: 'block', marginBottom: '0.25rem', fontSize: '0.6rem' }}>Process Video</label>
+                  <input type="file" accept="video/*" style={{ ...inputStyle, padding: '0.3rem', fontSize: '0.7rem' }} onChange={(e) => handleProcessVideoUpload(e.target.files?.[0] || null)} />
+                </div>
+                <div>
+                  <label className="text-mono text-label" style={{ color: 'var(--night-muted)', display: 'block', marginBottom: '0.25rem', fontSize: '0.6rem' }}>Process Image</label>
+                  <input type="file" accept="image/*" style={{ ...inputStyle, padding: '0.3rem', fontSize: '0.7rem' }} onChange={(e) => handleProcessImageUpload(e.target.files?.[0] || null)} />
+                </div>
+              </div>
+              {processVideoUrl && <div style={{ marginTop: '0.4rem', fontSize: '0.65rem', color: 'var(--accent-soft)' }}>✓ Process video set</div>}
+              {processImageUrl && <div style={{ marginTop: '0.2rem', fontSize: '0.65rem', color: 'var(--accent-soft)' }}>✓ Process image set</div>}
+              {/* Preview order */}
+              <div style={{ marginTop: '0.75rem' }}>
+                <div className="text-mono text-label" style={{ color: 'var(--night-muted)', marginBottom: '0.3rem', fontSize: '0.6rem' }}>PREVIEW ORDER</div>
+                <div style={{ display: 'flex', gap: '0.3rem', flexWrap: 'wrap' }}>
+                  {previewOrder.map((item, i) => (
+                    <div key={item} style={{ display: 'flex', alignItems: 'center', gap: '0.2rem' }}>
+                      {i > 0 && <button onClick={() => movePreviewItem(i, i - 1)} style={{ ...miniBtn, padding: '0.1rem 0.3rem', fontSize: '0.6rem' }}>←</button>}
+                      <span style={{ padding: '0.2rem 0.5rem', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '2px', fontSize: '0.65rem', color: 'var(--canvas)', fontFamily: 'var(--font-mono), monospace', background: 'rgba(10,10,10,0.5)' }}>{item}</span>
+                      {i < previewOrder.length - 1 && <button onClick={() => movePreviewItem(i, i + 1)} style={{ ...miniBtn, padding: '0.1rem 0.3rem', fontSize: '0.6rem' }}>→</button>}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </StudioDetailPanel>
         );
       })()}
 
-      {msg && <div className="studio-glass studio-hover-reveal" style={{ position: 'fixed', bottom: '1.5rem', right: '1.5rem', padding: '0.75rem 1.25rem', borderRadius: '4px', color: 'var(--canvas)', fontFamily: 'var(--font-mono), monospace', fontSize: '0.8rem', zIndex: 10010, animation: 'studio-toast-in 0.4s var(--ease-spring-soft) both', boxShadow: '0 8px 24px -6px rgba(0,0,0,0.5)' }}>{msg}</div>}
+      {msg && <div className="studio-glass" style={{ position: 'fixed', bottom: '1.5rem', right: '1.5rem', padding: '0.75rem 1.25rem', borderRadius: '4px', color: 'var(--canvas)', fontFamily: 'var(--font-mono), monospace', fontSize: '0.8rem', zIndex: 10010, animation: 'studio-toast-in 0.4s var(--ease-spring-soft) both', boxShadow: '0 8px 24px -6px rgba(0,0,0,0.5)' }}>{msg}</div>}
     </div>
   );
 }
 
-function SortableVideoCard({ video, selected, onToggleSelect, onPlay, onDelete }: {
+function SortableVideoCard({ video, selected, onToggleSelect, onEdit, onDelete }: {
   video: Video;
   selected: boolean;
   onToggleSelect: () => void;
-  onPlay: () => void;
+  onEdit: () => void;
   onDelete: () => void;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: video.id });
@@ -295,7 +410,7 @@ function SortableVideoCard({ video, selected, onToggleSelect, onPlay, onDelete }
         background: 'rgba(22, 22, 22, 0.6)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)',
       }}
     >
-      <div style={{ position: 'relative', aspectRatio: '16/9', background: '#000', cursor: 'pointer' }} onClick={onPlay}>
+      <div style={{ position: 'relative', aspectRatio: '16/9', background: '#000', cursor: 'pointer' }} onClick={onEdit}>
         {thumb ? (
           <img src={thumb} alt={video.label || 'Video'} draggable={false} onContextMenu={(e) => e.preventDefault()} loading="lazy" decoding="async" style={{ width: '100%', height: '100%', objectFit: 'cover', filter: 'grayscale(0.3) brightness(0.85)' }} />
         ) : (
