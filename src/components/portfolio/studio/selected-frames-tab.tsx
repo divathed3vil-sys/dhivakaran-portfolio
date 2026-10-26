@@ -373,7 +373,7 @@ export function SelectedFramesTab() {
               </div>
             </div>
           )}
-          {uploadedUrl && (
+          {false && uploadedUrl && (
             <div>
               <div style={{ marginBottom: '1rem' }}>
                 <img src={uploadedUrl} alt="Uploaded preview" style={{ width: '100%', maxHeight: '200px', objectFit: 'cover', borderRadius: '4px' }} />
@@ -423,9 +423,13 @@ export function SelectedFramesTab() {
         </div>
       )}
 
-      {/* Images list — drag-and-drop reorder + multi-select */}
+      {/* Images list — drag-and-drop reorder + multi-select.
+          Phase 5b.7c: entire grid area is a drop zone for file uploads. */}
       {activeCat && (
-        <div>
+        <div
+          onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; }}
+          onDrop={(e) => { e.preventDefault(); handleFileSelect(e.dataTransfer.files?.[0] || null); }}
+        >
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem', flexWrap: 'wrap', gap: '0.5rem' }}>
             <div className="text-mono text-label" style={{ color: 'var(--night-muted)' }}>
               {(cats.find((c) => c.id === activeCat)?.name || '').toUpperCase()} ({catImages.length})
@@ -487,43 +491,53 @@ export function SelectedFramesTab() {
           Slides in from the right when a card's edit button is clicked.
           Contains all editable fields: label, description, priority, published,
           in_lab, process media, preview order. */}
-      {editingId && (() => {
-        const img = imgs.find((i) => i.id === editingId);
-        if (!img) return null;
+      {/* Phase 5b.7b — Detail Panel. Handles BOTH edit + upload modes.
+          - Edit mode: editingId is set → pre-filled fields from existing image
+          - Upload mode: uploadedUrl is set → empty fields for new image
+          Process media + preview order are shared state in both modes. */}
+      {(editingId || uploadedUrl) && (() => {
+        const isUpload = !!uploadedUrl && !editingId;
+        const img = isUpload ? null : imgs.find((i) => i.id === editingId);
+        if (!isUpload && !img) return null;
+        const title = isUpload ? 'New Image' : (img!.label || 'Untitled');
+        const previewSrc = isUpload ? uploadedUrl! : img!.public_url;
         return (
           <StudioDetailPanel
-            title={img.label || 'Untitled'}
+            title={title}
             isMobile={isMobile}
             preview={
               <div style={{ width: '100%', aspectRatio: '3/2', borderRadius: '3px', overflow: 'hidden', background: '#000' }}>
-                <img src={img.public_url} alt={img.label || ''} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                <img src={previewSrc} alt={title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
               </div>
             }
-            onSave={handleSaveEdit}
-            onClose={() => setEditingId(null)}
-            onDelete={async () => {
-              await handleDeleteImage(img.id);
+            onSave={isUpload ? handleSaveImage : handleSaveEdit}
+            onClose={isUpload
+              ? () => { setUploadedUrl(null); setLqipData(''); setProcessVideoUrl(''); setProcessImageUrl(''); setPreviewOrder(['description','video','image']); setUploadProgress(null); }
+              : () => setEditingId(null)
+            }
+            onDelete={isUpload ? undefined : async () => {
+              await handleDeleteImage(img!.id);
               setEditingId(null);
             }}
           >
             {/* Label */}
             <div style={{ marginBottom: '1rem' }}>
               <label className="text-mono text-label" style={{ color: 'var(--night-muted)', display: 'block', marginBottom: '0.25rem', fontSize: '0.65rem' }}>Label</label>
-              <input value={editLabel} onChange={(e) => setEditLabel(e.target.value)} placeholder="Cover 01" style={inputStyle} />
+              <input value={isUpload ? imgLabel : editLabel} onChange={(e) => isUpload ? setImgLabel(e.target.value) : setEditLabel(e.target.value)} placeholder="Cover 01" style={inputStyle} />
             </div>
             {/* Description */}
             <div style={{ marginBottom: '1rem' }}>
               <label className="text-mono text-label" style={{ color: 'var(--night-muted)', display: 'block', marginBottom: '0.25rem', fontSize: '0.65rem' }}>Description</label>
-              <textarea value={editDesc} onChange={(e) => setEditDesc(e.target.value)} placeholder="Shows on hover" rows={3} style={{ ...inputStyle, resize: 'vertical' }} />
+              <textarea value={isUpload ? imgDesc : editDesc} onChange={(e) => isUpload ? setImgDesc(e.target.value) : setEditDesc(e.target.value)} placeholder="Shows on hover" rows={3} style={{ ...inputStyle, resize: 'vertical' }} />
             </div>
             {/* Priority + Lab toggle */}
             <div style={{ display: 'flex', gap: '1rem', marginBottom: '1rem', alignItems: 'flex-end' }}>
               <div>
                 <label className="text-mono text-label" style={{ color: 'var(--night-muted)', display: 'block', marginBottom: '0.25rem', fontSize: '0.65rem' }}>Priority</label>
-                <input type="number" value={editPriority} onChange={(e) => setEditPriority(parseInt(e.target.value) || 0)} style={{ ...inputStyle, width: '80px' }} />
+                <input type="number" value={isUpload ? imgPriority : editPriority} onChange={(e) => isUpload ? setImgPriority(parseInt(e.target.value) || 0) : setEditPriority(parseInt(e.target.value) || 0)} style={{ ...inputStyle, width: '80px' }} />
               </div>
               <label style={{ color: 'var(--canvas)', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer' }}>
-                <input type="checkbox" checked={editInLab} onChange={(e) => setEditInLab(e.target.checked)} />
+                <input type="checkbox" checked={isUpload ? imgInLab : editInLab} onChange={(e) => isUpload ? setImgInLab(e.target.checked) : setEditInLab(e.target.checked)} />
                 In Lab
               </label>
             </div>
