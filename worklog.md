@@ -1409,3 +1409,42 @@ Stage Summary:
 - MediaViewer sidebar: shows same process media larger + with controls
 - Graceful fallback everywhere: works without SQL migration, just no process media for legacy images
 - Ready for Phase 5b.6 (Studio data layer optimization — React Query + compression + prefetch) upon user approval
+
+---
+Task ID: OPT-5b.8 (Phase 5b — Final verification + cumulative summary)
+Agent: main-orchestrator
+Task: End-to-end verification of all Phase 5b features. Production health check. Cumulative summary.
+
+Work Log:
+- Hover cards fix: always show label at top of hover card (even if no description/process media). Previously empty when cells had no data.
+- Video descriptions: added to public video section (below thumbnail, white bg, Fraunces serif)
+- Verified production: 15 cells in Selected Work (3 with descriptions, all 15 have labels → hover cards show for all), 1 video cell with 1 description showing
+- Studio fixes (from earlier in this session):
+  - data-lenis-prevent on Studio root (stops background scroll)
+  - Body scroll lock when Studio opens
+  - 3-pane layout (sidebar + main + status bar)
+  - DetailPanel slides in from right (for both images + videos)
+  - Upload flow: drag-drop on grid → compress → LQIP → upload → DetailPanel auto-opens
+  - Priority number removed (drag-drop handles it)
+  - File picker fixed (input inside label)
+  - Video editing added (updateVideo + DetailPanel)
+  - Duplicate Preview Site button removed
+  - Graceful fallbacks on updateImage + updateVideo (for missing columns)
+  - Glass panels + spring transitions throughout
+
+Phase 5b Cumulative Summary (5b.1 → 5b.8):
+- 5b.1: Spring easings (--ease-spring-soft/medium/settle/bounce) + Apple-style cursor (dot+ring+glow) + Nav magnetic hover + spring menu transitions
+- 5b.2: Hero name spring-stagger reveal (12 letters, 35ms stagger) + portrait parallax-with-resistance (max 12px/8px, lerp 0.08)
+- 5b.3: New MediaViewer system (slides in from right, full-screen, magazine layout, prev/next, ESC, mobile swipe, body scroll lock)
+- 5b.4: Hover preview system (process video + image + preview_order JSONB, Studio upload forms, public hover card)
+- 5b.5: LQIP optimization (3-tier: 16px base64 inline → 400px cell → 1920px viewer, Canvas API generation at upload time)
+- 5b.6: Studio data layer (React Query migration, client-side image compression, prefetching, scoped QueryClient)
+- 5b.7a: Studio 3-pane layout (sidebar + main + status bar, glass, body scroll lock, mobile responsive)
+- 5b.7b: DetailPanel (slides in from right, handles both upload+edit modes, process media + preview order)
+- 5b.7c: Upload flow overhaul (drag-drop on grid, auto-open DetailPanel, suppress inline form)
+- Fixes: scroll lock (data-lenis-prevent), priority removal, file picker, video editing, duplicate button removal, graceful fallbacks, hover card label, video descriptions
+
+Total commits in Phase 5b: ~20 commits across 5b.1-5b.8
+Production: https://dhivakaran-portfolio.vercel.app (live + verified)
+GitHub: https://github.com/divathed3vil-sys/dhivakaran-portfolio (all pushed)
+JS transfer: 229.5 KB (up from 214.1 KB at Phase 6 → +15.4 KB for React Query + browser-image-compression + DetailPanel + cursor + spring easings — all in lazy-loaded Studio chunks, public site only carries ~2 KB for cursor refs)
