@@ -26,6 +26,11 @@ const nextConfig: NextConfig = {
         hostname: '*.supabase.in',
         pathname: '/storage/**',
       },
+      // Phase 5b.8 — YouTube thumbnails for next/image optimizer
+      {
+        protocol: 'https',
+        hostname: 'img.youtube.com',
+      },
     ],
     // Aggressive default deviceSizes — we use <picture> + srcset directly for
     // the hero (finer control), but next/image still needs sane defaults for

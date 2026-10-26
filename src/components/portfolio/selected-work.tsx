@@ -10,6 +10,7 @@ import {
   type PortfolioImage,
 } from './lib/portfolio-images';
 import { MediaViewer, type MediaItem } from './media-viewer';
+import Image from 'next/image';
 
 const CATEGORY_ORDER: ImageCategory[] = ['book', 'poster', 'thumbnail'];
 
@@ -69,12 +70,11 @@ export function SelectedWork() {
   const useDb = dbCats && dbCats.length > 0;
   const displayCats = useDb
     ? dbCats!.map((c) => ({ key: c.id, name: c.name, blurb: c.blurb || '', cells: getImagesForCategory(dbImgs || [], c.id).map((img) => ({
-        src: lowResUrl(img.public_url),        // 400px medium for cell thumbnail
-        fullSrc: lowResUrl(img.public_url, 1920), // 1920px full for MediaViewer
-        lqipData: img.lqip_data || '',         // Phase 5b.5 — 16px base64 LQIP
+        src: img.public_url,                   // RAW URL — Vercel Image Optimizer handles transform + AVIF + CDN cache
+        fullSrc: img.public_url,               // RAW URL for MediaViewer (next/image handles 1920px)
+        lqipData: img.lqip_data || '',         // Phase 5b.5 — 16px base64 LQIP for blur placeholder
         label: img.label || '',
         desc: img.description || '',
-        // Phase 5b.4 — process media for hover preview + MediaViewer sidebar
         processVideoUrl: img.process_video_url || '',
         processImageUrl: img.process_image_url || '',
         previewOrder: img.preview_order || ['description', 'video', 'image'],
@@ -184,50 +184,43 @@ export function SelectedWork() {
                           (base64 inlined in JSON, zero HTTP requests). 16px wide,
                           scaled up + blurred to fill the cell as a placeholder.
                           Hidden once the main img finishes loading (faded in on top). */}
-                      {cell.lqipData && (
-                        <div
-                          aria-hidden="true"
-                          style={{
-                            position: 'absolute',
-                            inset: 0,
-                            backgroundImage: `url(${cell.lqipData})`,
-                            backgroundSize: 'cover',
-                            backgroundPosition: 'center',
-                            filter: 'blur(20px)',
-                            transform: 'scale(1.15)', // scale up to hide blur edges
-                            zIndex: 0,
-                          }}
-                        />
-                      )}
-                      <img
-                        src={cell.src}
-                        alt={cell.label || ''}
-                        draggable={false}
-                        onContextMenu={(e) => e.preventDefault()}
-                        loading="lazy"
-                        decoding="async"
-                        width={800}
-                        height={600}
+                      {/* Phase 5b.8 — next/image replaces raw <img>.
+                          Vercel Image Optimizer: AVIF format (10x smaller than PNG),
+                          responsive srcset, CDN edge cache (instant on repeat visits).
+                          priority for first 4 images (eager load). blurDataURL from
+                          lqip_data for blur-up placeholder (if available). */}
+                      <div
                         onClick={() => { setViewerCatKey(cat.key); setViewerIndex(i); }}
-                        onLoad={(e) => { e.currentTarget.style.opacity = '1'; }}
+                        onContextMenu={(e) => e.preventDefault()}
                         style={{
                           position: 'relative',
                           zIndex: 1,
-                          // Phase 5b.5 — start at opacity 0, fade in on onLoad (cross-fade with LQIP below).
-                          // If no LQIP (legacy image), the img still loads + fades in — just shows solid bg briefly.
-                          opacity: cell.lqipData ? 0 : 1,
-                          filter: 'saturate(0.95) contrast(1.05) brightness(0.96)',
-                          transition: 'filter 0.4s var(--ease-out-soft), opacity 0.4s var(--ease-out-soft)',
                           cursor: 'pointer',
                           width: '100%',
                           height: '100%',
-                          objectFit: 'contain',
-                          objectPosition: 'center',
-                          display: 'block',
-                          userSelect: 'none',
-                          WebkitUserDrag: 'none',
                         }}
-                      />
+                      >
+                        <Image
+                          src={cell.src}
+                          alt={cell.label || ''}
+                          width={800}
+                          height={600}
+                          priority={i < 4}
+                          loading={i < 4 ? undefined : 'lazy'}
+                          placeholder={cell.lqipData ? 'blur' : undefined}
+                          blurDataURL={cell.lqipData || undefined}
+                          style={{
+                            width: '100%',
+                            height: '100%',
+                            objectFit: 'contain',
+                            objectPosition: 'center',
+                            filter: 'saturate(0.95) contrast(1.05) brightness(0.96)',
+                            transition: 'filter 0.4s var(--ease-spring-soft)',
+                            userSelect: 'none',
+                            WebkitUserDrag: 'none',
+                          }}
+                        />
+                      </div>
                       <div className="scratch-overlay" />
                       <div
                         className="text-mono text-label"

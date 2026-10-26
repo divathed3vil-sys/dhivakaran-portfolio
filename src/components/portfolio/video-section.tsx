@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { getVideos } from '@/lib/supabase-data';
 import { useBloom, useHeadingRack } from './lib/use-bloom-rack';
 import { MediaViewer, type MediaItem } from './media-viewer';
+import Image from 'next/image';
 
 type Video = {
   id: string;
@@ -134,14 +135,13 @@ export function VideoSection() {
                 onMouseLeave={(e) => { e.currentTarget.style.transform = ''; }}
               >
                 {getThumbnail(v) ? (
-                  <img
+                  <Image
                     src={getThumbnail(v)}
                     alt={v.label || 'Video'}
-                    draggable={false}
-                    onContextMenu={(e) => e.preventDefault()}
+                    width={320}
+                    height={180}
                     loading="lazy"
-                    decoding="async"
-                    style={{ width: '100%', height: '100%', objectFit: 'cover', filter: 'saturate(0.95) contrast(1.05) brightness(0.9)', transition: 'filter 0.4s var(--ease-out-soft)' }}
+                    style={{ width: '100%', height: '100%', objectFit: 'cover', filter: 'saturate(0.95) contrast(1.05) brightness(0.9)', transition: 'filter 0.4s var(--ease-spring-soft)', userSelect: 'none', WebkitUserDrag: 'none' }}
                   />
                 ) : (
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'var(--canvas)', fontSize: '0.8rem', opacity: 0.5 }}>{v.platform}</div>
