@@ -1273,3 +1273,58 @@ Stage Summary:
   5. Visual Lab mobile 2-finger pinch-zoom: added touch event handlers (touchstart/move/end) on touch devices only. 2-finger pinch adjusts zoom state (0.5-4x range). Field gets transform: scale(zoom) + transform-origin: center center. Pan still works during pinch (pointer events fire for first finger).
 - Non-destructive: existing design + interactions preserved. The fixes are strictly improvements to user experience.
 - Ready for commit + deploy to Vercel production
+
+---
+Task ID: OPT-5b.3 (Phase 5b — New MediaViewer system)
+Agent: main-orchestrator
+Task: Scrap the old ImageLightbox + inline video lightbox. Build a unified MediaViewer that slides in from the right, full-screen, with magazine layout (main media + sidebar with process media + description + metadata). Prev/next navigation, ESC close, mobile swipe.
+
+Work Log:
+- Researched best-in-class viewer patterns: Linear (spring modal + keyboard nav), Apple (full-screen viewer + thumbnail strip), Vercel (side-slide panel — matches user's idea), Framer (spring + swipe gestures), Notion (centered modal + click-outside close), Stripe (side detail panel).
+- Created src/components/portfolio/media-viewer.tsx — unified viewer for images AND videos:
+  - Full-screen panel slides in from the RIGHT (transform: translateX(100%) -> 0) with --ease-spring-medium (pronounced overshoot, matches existing Nav menu slide-in direction + feel)
+  - Magazine layout on desktop: main media left (65%), sidebar right (35%) with process video + process image + description + metadata
+  - Stacked layout on mobile (main media on top, sidebar below)
+  - Prev/Next navigation: arrow keys + on-screen glass arrows (left/right edges, vertically centered) + mobile swipe (horizontal swipe > 50px)
+  - Body scroll lock while open (document.body.style.overflow = 'hidden')
+  - ESC closes (with 700ms slide-out animation before calling onClose)
+  - Backdrop blur (16px) on the page behind
+  - Content cross-fade on item change (key={currentIndex} forces remount + CSS animation media-viewer-content-in)
+  - Forward-compatible: process video/image sections render ONLY if the item has those URLs (they come in Phase 5b.4)
+  - MediaItem type exported for reuse in 5b.4 hover preview
+  - Shared helpers: isYouTubeOrVimeoUrl + toEmbedUrl (will be used by 5b.4 hover preview system)
+- src/app/globals.css — added 3 keyframes:
+  - media-viewer-slide-in: translateX(100%) -> 0
+  - media-viewer-slide-out: 0 -> translateX(100%)
+  - media-viewer-content-in: opacity 0 + translateY(10px) -> opacity 1 + translateY(0)
+- src/components/portfolio/selected-work.tsx — removed the old ImageLightbox component + ctrlBtnStyle constant. Replaced with MediaViewer:
+  - New state: viewerCatKey + viewerIndex (null = closed)
+  - Cell click sets viewerCatKey + viewerIndex
+  - Items list built from current category's cells (prev/next navigates within category)
+  - Old lightboxSrc/lightboxLabel/zoom/translate state removed
+- src/components/portfolio/video-section.tsx — replaced inline lightbox with MediaViewer:
+  - New state: viewerIndex (null = closed)
+  - Cell click sets viewerIndex to the video's index
+  - Items list built from all videos (prev/next navigates through all)
+- bun run lint: COMPLETELY CLEAN (0 errors, 0 warnings) — had to remove 2 unused eslint-disable comments
+- Agent Browser verification (production with real Supabase data):
+  - Page loads, MediaViewer not present initially
+  - Clicked first Selected Work cell -> MediaViewer opens with slide-in animation
+  - Main image present in left area, label in sidebar
+  - First item (index 0): no prev button, has next button (correct)
+  - Clicked next -> label changed from "Maths Grade 10" to "Maths Grade 11", prev button appeared (correct)
+  - ESC closes the viewer, body scroll restored
+  - Clicked video cell -> MediaViewer opens with YouTube iframe embed (all clean-player params: modestbranding=1, rel=0, iv_load_policy=3, playsinline=1, fs=1, cc_load_policy=0, vq=hd720)
+  - Video label in sidebar
+  - No console errors, dev.log clean
+  - Screenshots saved: audit/phase5b3-media-viewer-open.png, audit/phase5b3-media-viewer-video.png
+
+Stage Summary:
+- Phase 5b.3 complete: unified MediaViewer replaces both the old ImageLightbox + inline video lightbox
+- Slides in from the right with spring physics (matches existing Nav menu direction)
+- Magazine layout (main media + sidebar) on desktop, stacked on mobile
+- Prev/next navigation (arrow keys + on-screen buttons + mobile swipe)
+- ESC closes + body scroll lock + backdrop blur
+- Forward-compatible with 5b.4 (process media sections render only if URLs exist)
+- Verified on production with real Supabase data (images + video both work)
+- Ready for Phase 5b.5 (LQIP optimization) upon user approval
