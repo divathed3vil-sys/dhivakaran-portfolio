@@ -181,6 +181,22 @@ export async function updateImage(id: string, updates: Record<string, unknown>) 
     .eq('id', id)
     .select()
     .single();
+  // Graceful fallback: if any new columns don't exist (migrations not run),
+  // retry without them so the update still succeeds.
+  if (error && /lqip_data|process_video_url|process_image_url|preview_order/i.test(error.message || '')) {
+    const filtered = { ...updates };
+    delete filtered.lqip_data;
+    delete filtered.process_video_url;
+    delete filtered.process_image_url;
+    delete filtered.preview_order;
+    const { data: retryData, error: retryError } = await supabase
+      .from('images')
+      .update(filtered)
+      .eq('id', id)
+      .select()
+      .single();
+    return { data: retryData, error: retryError };
+  }
   return { data, error };
 }
 
@@ -284,6 +300,21 @@ export async function updateVideo(id: string, updates: Record<string, unknown>) 
     .eq('id', id)
     .select()
     .single();
+  // Graceful fallback: if process media columns don't exist (migration not run),
+  // retry without them so the update still succeeds.
+  if (error && /process_video_url|process_image_url|preview_order/i.test(error.message || '')) {
+    const filtered = { ...updates };
+    delete filtered.process_video_url;
+    delete filtered.process_image_url;
+    delete filtered.preview_order;
+    const { data: retryData, error: retryError } = await supabase
+      .from('videos')
+      .update(filtered)
+      .eq('id', id)
+      .select()
+      .single();
+    return { data: retryData, error: retryError };
+  }
   return { data, error };
 }
 
