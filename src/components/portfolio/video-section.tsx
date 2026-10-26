@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { getVideos } from '@/lib/supabase-data';
 import { useBloom, useHeadingRack } from './lib/use-bloom-rack';
+import { MediaViewer, type MediaItem } from './media-viewer';
 
 type Video = {
   id: string;
@@ -50,7 +51,9 @@ function getEmbedUrl(v: Video): string {
 
 export function VideoSection() {
   const [videos, setVideos] = useState<Video[]>([]);
-  const [playing, setPlaying] = useState<string | null>(null);
+  // Phase 5b.3 — MediaViewer replaces the inline lightbox. Manages the
+  // current viewer index (null = closed). Items list built from all videos.
+  const [viewerIndex, setViewerIndex] = useState<number | null>(null);
   const bloomRef = useBloom<HTMLDivElement>();
   const titleRef = useHeadingRack<HTMLHeadingElement>();
 
@@ -109,7 +112,7 @@ export function VideoSection() {
             {videos.map((v) => (
               <div
                 key={v.id}
-                onClick={() => setPlaying(v.id)}
+                onClick={() => setViewerIndex(videos.findIndex((x) => x.id === v.id))}
                 style={{
                   cursor: 'pointer',
                   position: 'relative',
@@ -166,30 +169,24 @@ export function VideoSection() {
         </div>
       </div>
 
-      {/* Lightbox */}
-      {playing && (() => {
-        const v = videos.find((x) => x.id === playing);
-        if (!v) return null;
+      {/* Phase 5b.3 — MediaViewer replaces the inline video lightbox.
+          Slides in from the right, full-screen, magazine layout. Prev/next
+          navigates through all videos in the section. */}
+      {viewerIndex !== null && viewerIndex >= 0 && viewerIndex < videos.length && (() => {
+        const items: MediaItem[] = videos.map((v) => ({
+          id: v.id,
+          type: 'video' as const,
+          src: getEmbedUrl(v),
+          label: v.label || 'Untitled',
+          description: v.description || undefined,
+        }));
         return (
-          <div
-            onClick={() => setPlaying(null)}
-            style={{
-              position: 'fixed', inset: 0, zIndex: 10002,
-              background: 'rgba(0,0,0,0.92)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              cursor: 'pointer',
-            }}
-          >
-            <div style={{ width: '90vw', maxWidth: '900px', aspectRatio: '16/9' }} onClick={(e) => e.stopPropagation()}>
-              <iframe
-                src={getEmbedUrl(v)}
-                style={{ width: '100%', height: '100%', border: 0 }}
-                allow="autoplay; fullscreen"
-                allowFullScreen
-                title={v.label || 'Video'}
-              />
-            </div>
-          </div>
+          <MediaViewer
+            items={items}
+            currentIndex={viewerIndex}
+            onClose={() => setViewerIndex(null)}
+            onNavigate={(i) => setViewerIndex(i)}
+          />
         );
       })()}
     </section>

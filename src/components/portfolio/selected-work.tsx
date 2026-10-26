@@ -9,6 +9,7 @@ import {
   type ImageCategory,
   type PortfolioImage,
 } from './lib/portfolio-images';
+import { MediaViewer, type MediaItem } from './media-viewer';
 
 const CATEGORY_ORDER: ImageCategory[] = ['book', 'poster', 'thumbnail'];
 
@@ -30,169 +31,6 @@ function getCellsForCategory(cat: ImageCategory, catLabel: string): PortfolioIma
   }));
 }
 
-/**
- * ImageLightbox — Phase 5b fix. A proper full-screen front layer with:
- *  - Body scroll lock (no background scrolling while open)
- *  - Image always centered (flexbox) with maxWidth/maxHeight 90vw/90vh
- *  - Zoom in/out via mouse wheel (1x to 5x range) — uses non-passive wheel
- *    listener so preventDefault actually works (React onWheel is passive by
- *    default in React 19 — can't block background scroll)
- *  - Drag-to-pan when zoomed in (mouse drag updates translate)
- *  - Click on background (not on image) closes
- *  - ESC closes, + / − zoom, 0 resets
- *  - Zoom controls: + / − / reset / close
- */
-function ImageLightbox({ src, label, onClose }: { src: string; label: string; onClose: () => void }) {
-  const [zoom, setZoom] = useState(1);
-  const [translate, setTranslate] = useState({ x: 0, y: 0 });
-  const [isDragging, setIsDragging] = useState(false);
-  const dragState = useRef<{ dragging: boolean; lastX: number; lastY: number }>({
-    dragging: false,
-    lastX: 0,
-    lastY: 0,
-  });
-
-  // Lock body scroll while lightbox is open
-  useEffect(() => {
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    return () => {
-      document.body.style.overflow = prev;
-    };
-  }, []);
-
-  // ESC closes, + / − zoom, 0 resets
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
-      else if (e.key === '+' || e.key === '=') setZoom((z) => Math.min(5, z + 0.5));
-      else if (e.key === '-' || e.key === '_') setZoom((z) => Math.max(1, z - 0.5));
-      else if (e.key === '0') { setZoom(1); setTranslate({ x: 0, y: 0 }); }
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [onClose]);
-
-  // Non-passive wheel listener so preventDefault actually blocks background scroll.
-  // React's onWheel is passive by default — can't preventDefault.
-  useEffect(() => {
-    const onWheel = (e: WheelEvent) => {
-      e.preventDefault();
-      const delta = e.deltaY < 0 ? 0.3 : -0.3;
-      setZoom((z) => Math.max(1, Math.min(5, z + delta)));
-    };
-    window.addEventListener('wheel', onWheel, { passive: false });
-    return () => window.removeEventListener('wheel', onWheel);
-  }, []);
-
-  // Reset translate when zoom returns to 1 — handled in the wheel/keyboard
-  // handlers directly (where setZoom is called) rather than via effect.
-
-  // Drag-to-pan when zoomed in
-  useEffect(() => {
-    const onMouseMove = (e: MouseEvent) => {
-      if (!dragState.current.dragging) return;
-      const dx = e.clientX - dragState.current.lastX;
-      const dy = e.clientY - dragState.current.lastY;
-      dragState.current.lastX = e.clientX;
-      dragState.current.lastY = e.clientY;
-      setTranslate((t) => ({ x: t.x + dx, y: t.y + dy }));
-    };
-    const onMouseUp = () => {
-      if (dragState.current.dragging) {
-        dragState.current.dragging = false;
-        setIsDragging(false);
-      }
-    };
-    window.addEventListener('mousemove', onMouseMove);
-    window.addEventListener('mouseup', onMouseUp);
-    return () => {
-      window.removeEventListener('mousemove', onMouseMove);
-      window.removeEventListener('mouseup', onMouseUp);
-    };
-  }, []);
-
-  const onBackgroundClick = (e: React.MouseEvent) => {
-    // Only close if click is on the overlay (not on the image)
-    if (e.target === e.currentTarget) onClose();
-  };
-
-  const onImageMouseDown = (e: React.MouseEvent) => {
-    if (zoom <= 1) return;
-    e.preventDefault();
-    e.stopPropagation();
-    dragState.current = { dragging: true, lastX: e.clientX, lastY: e.clientY };
-    setIsDragging(true);
-  };
-
-  return (
-    <div
-      onContextMenu={(e) => e.preventDefault()}
-      onClick={onBackgroundClick}
-      style={{
-        position: 'fixed',
-        inset: 0,
-        zIndex: 10002,
-        background: 'rgba(0,0,0,0.95)',
-        backdropFilter: 'blur(16px)',
-        WebkitBackdropFilter: 'blur(16px)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        cursor: 'zoom-out',
-      }}
-    >
-      <img
-        src={src}
-        alt={label}
-        draggable={false}
-        onContextMenu={(e) => e.preventDefault()}
-        onMouseDown={onImageMouseDown}
-        onClick={(e) => e.stopPropagation()}
-        style={{
-          maxWidth: '90vw',
-          maxHeight: '90vh',
-          objectFit: 'contain',
-          transform: `translate3d(${translate.x}px, ${translate.y}px, 0) scale(${zoom})`,
-          transition: zoom === 1 ? 'transform 0.3s var(--ease-spring-soft)' : 'none',
-          cursor: zoom > 1 ? (isDragging ? 'grabbing' : 'grab') : 'zoom-in',
-          boxShadow: '0 24px 80px rgba(0,0,0,0.8)',
-          userSelect: 'none',
-          WebkitUserDrag: 'none',
-        }}
-      />
-      {/* Top-right controls */}
-      <div style={{ position: 'absolute', top: '1.5rem', right: '1.5rem', display: 'flex', gap: '0.5rem', zIndex: 2 }}>
-        <button onClick={(e) => { e.stopPropagation(); setZoom((z) => Math.max(1, z - 0.5)); }} onContextMenu={(e) => e.preventDefault()} style={ctrlBtnStyle} title="Zoom out (-)">−</button>
-        <button onClick={(e) => { e.stopPropagation(); setZoom(1); setTranslate({ x: 0, y: 0 }); }} onContextMenu={(e) => e.preventDefault()} style={{ ...ctrlBtnStyle, minWidth: '50px' }} title="Reset (0)">{Math.round(zoom * 100)}%</button>
-        <button onClick={(e) => { e.stopPropagation(); setZoom((z) => Math.min(5, z + 0.5)); }} onContextMenu={(e) => e.preventDefault()} style={ctrlBtnStyle} title="Zoom in (+)">+</button>
-        <button onClick={(e) => { e.stopPropagation(); onClose(); }} onContextMenu={(e) => e.preventDefault()} style={{ ...ctrlBtnStyle, borderColor: 'var(--accent)', color: 'var(--accent)' }} title="Close (Esc)">✕</button>
-      </div>
-      {/* Bottom hint */}
-      <div style={{ position: 'absolute', bottom: '1.5rem', left: '50%', transform: 'translateX(-50%)', color: 'var(--canvas)', opacity: 0.4, fontSize: '0.75rem', fontFamily: 'var(--font-mono), monospace', letterSpacing: '0.1em', textTransform: 'uppercase', pointerEvents: 'none', textAlign: 'center' }}>
-        scroll or + / − to zoom · drag to pan when zoomed · esc to close
-      </div>
-    </div>
-  );
-}
-
-const ctrlBtnStyle: React.CSSProperties = {
-  width: '40px',
-  height: '40px',
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  background: 'rgba(10,10,10,0.6)',
-  backdropFilter: 'blur(8px)',
-  WebkitBackdropFilter: 'blur(8px)',
-  border: '1px solid rgba(255,255,255,0.15)',
-  borderRadius: '4px',
-  color: 'var(--canvas)',
-  fontFamily: 'var(--font-mono), monospace',
-  fontSize: '1rem',
-  cursor: 'pointer',
-  transition: 'background 0.2s, border-color 0.2s',
-};
 
 /**
  * SelectedWork — three category grids (Book Covers, Posters, Thumbnails).
@@ -206,8 +44,11 @@ export function SelectedWork() {
   const { categories: dbCats, images: dbImgs } = usePortfolioData();
   const [descText, setDescText] = useState<string | null>(null);
   const [descPos, setDescPos] = useState({ x: 0, y: 0 });
-  const [lightboxSrc, setLightboxSrc] = useState<string | null>(null);
-  const [lightboxLabel, setLightboxLabel] = useState<string>('');
+  // Phase 5b.3 — MediaViewer replaces the old ImageLightbox. Manages the
+  // current viewer index (null = closed). Items list built from the current
+  // category's cells, so prev/next navigates within the same category.
+  const [viewerCatKey, setViewerCatKey] = useState<string | null>(null);
+  const [viewerIndex, setViewerIndex] = useState<number | null>(null);
 
   // floating description card — follows cursor, shows on hover over cells with data-desc
   const handleMouseMove = (e: React.MouseEvent) => {
@@ -312,7 +153,7 @@ export function SelectedWork() {
                         decoding="async"
                         width={800}
                         height={600}
-                        onClick={() => { setLightboxSrc(cell.src); setLightboxLabel(cell.label || ''); }}
+                        onClick={() => { setViewerCatKey(cat.key); setViewerIndex(i); }}
                         style={{
                           filter: 'saturate(0.95) contrast(1.05) brightness(0.96)',
                           transition: 'filter 0.4s var(--ease-out-soft)',
@@ -393,14 +234,28 @@ export function SelectedWork() {
         </div>
       )}
 
-      {/* Phase 5b fix — proper ImageLightbox component (full overlay + zoom + drag + scroll lock) */}
-      {lightboxSrc && (
-        <ImageLightbox
-          src={lightboxSrc}
-          label={lightboxLabel}
-          onClose={() => { setLightboxSrc(null); setLightboxLabel(''); }}
-        />
-      )}
+      {/* Phase 5b.3 — MediaViewer replaces the old ImageLightbox. Slides in
+          from the right, full-screen, magazine layout. Prev/next navigates
+          within the current category. */}
+      {viewerIndex !== null && viewerCatKey && (() => {
+        const cat = displayCats.find((c) => c.key === viewerCatKey);
+        if (!cat) return null;
+        const items: MediaItem[] = cat.cells.map((cell) => ({
+          id: cell.src,
+          type: 'image' as const,
+          src: cell.src,
+          label: cell.label || '',
+          description: cell.desc || '',
+        }));
+        return (
+          <MediaViewer
+            items={items}
+            currentIndex={viewerIndex}
+            onClose={() => { setViewerIndex(null); setViewerCatKey(null); }}
+            onNavigate={(i) => setViewerIndex(i)}
+          />
+        );
+      })()}
     </section>
   );
 }

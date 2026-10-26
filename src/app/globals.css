@@ -415,6 +415,23 @@
     to   { transform: translateY(-60%); opacity: 0; }
   }
 
+  /* Phase 5b.3 — MediaViewer slide-in/out from the right + content cross-fade.
+     The panel slides in from translateX(100%) to 0 with --ease-spring-medium
+     (pronounced overshoot — matches the existing Nav menu slide-in direction + feel).
+     On close, slides out 0 to 100%. Content inside cross-fades on item change. */
+  @keyframes media-viewer-slide-in {
+    from { transform: translateX(100%); }
+    to   { transform: translateX(0); }
+  }
+  @keyframes media-viewer-slide-out {
+    from { transform: translateX(0); }
+    to   { transform: translateX(100%); }
+  }
+  @keyframes media-viewer-content-in {
+    from { opacity: 0; transform: translateY(10px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
   /* hero 3D rise — pre-load state set by data-loading */
   html[data-loading="true"] [data-hero-3d] {
     transform: perspective(calc(900 * var(--px))) rotateX(44deg)
