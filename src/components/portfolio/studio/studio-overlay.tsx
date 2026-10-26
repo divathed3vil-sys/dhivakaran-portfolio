@@ -79,19 +79,22 @@ export function StudioOverlay() {
         role="dialog"
         aria-modal="true"
         aria-label="Studio"
+        className="studio-glass-strong"
         style={{
           position: 'fixed',
           inset: 0,
           zIndex: 10001,
-          background: 'var(--night)',
+          background: 'rgba(10, 10, 10, 0.85)',
+          backdropFilter: 'blur(20px)',
+          WebkitBackdropFilter: 'blur(20px)',
           color: 'var(--canvas)',
           overflow: 'auto',
-          animation: 'studio-in 0.5s var(--ease-out-soft)',
+          animation: 'studio-in 0.5s var(--ease-spring-medium)',
         }}
       >
         <div className="canvas-max" style={{ paddingBlock: 'calc(32 * var(--px))', minHeight: '100%' }}>
-          {/* header */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 'calc(24 * var(--px))', paddingBottom: 'calc(16 * var(--px))', borderBottom: '1.5px solid var(--night-hr)' }}>
+          {/* header — glass + spring transition on Studio open */}
+          <div className="studio-glass" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 'calc(24 * var(--px))', padding: '1rem 1.25rem', borderRadius: '4px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
             <div>
               <div className="text-mono text-label" style={{ color: 'var(--accent)', marginBottom: '0.3rem' }}>◉ STUDIO</div>
               <h1 style={{ fontFamily: 'var(--font-fraunces), serif', fontWeight: 500, fontSize: 'clamp(1.75rem, 4vw, 2.75rem)', margin: 0, lineHeight: 0.9, letterSpacing: '-0.02em', color: 'var(--canvas)' }}>Control Room</h1>
@@ -100,19 +103,20 @@ export function StudioOverlay() {
               <button
                 type="button"
                 onClick={() => window.open('/', '_blank')}
-                style={{ padding: '0.5rem 1rem', border: '1.5px solid var(--night-hr)', color: 'var(--canvas)', background: 'transparent', cursor: 'pointer', fontFamily: 'var(--font-mono), monospace', fontSize: '0.75rem', letterSpacing: '0.12em', textTransform: 'uppercase', transition: 'border-color 0.3s var(--ease-out-soft)' }}
+                className="studio-glass"
+                style={{ padding: '0.5rem 1rem', borderRadius: '3px', color: 'var(--canvas)', background: 'rgba(22,22,22,0.6)', cursor: 'pointer', fontFamily: 'var(--font-mono), monospace', fontSize: '0.75rem', letterSpacing: '0.12em', textTransform: 'uppercase', transition: 'border-color 0.3s var(--ease-spring-soft), background 0.3s var(--ease-spring-soft)' }}
                 title="Open the live public site in a new tab"
               >
                 ↗ Preview Site
               </button>
-              <button type="button" onClick={closeStudio} style={{ padding: '0.5rem 1rem', border: '1.5px solid var(--accent)', color: 'var(--canvas)', background: 'transparent', cursor: 'pointer', fontFamily: 'var(--font-mono), monospace', fontSize: '0.75rem', letterSpacing: '0.12em', textTransform: 'uppercase', transition: 'background 0.3s var(--ease-out-soft)' }} onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--accent)'; }} onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}>Sign Out ↑</button>
+              <button type="button" onClick={closeStudio} className="studio-glass" style={{ padding: '0.5rem 1rem', borderRadius: '3px', border: '1px solid var(--accent)', color: 'var(--canvas)', background: 'rgba(214,41,41,0.15)', cursor: 'pointer', fontFamily: 'var(--font-mono), monospace', fontSize: '0.75rem', letterSpacing: '0.12em', textTransform: 'uppercase', transition: 'background 0.3s var(--ease-spring-soft)' }} onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--accent)'; }} onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(214,41,41,0.15)'; }}>Sign Out ↑</button>
             </div>
           </div>
 
-          {/* tabs */}
+          {/* tabs — spring-eased active state */}
           <div style={{ display: 'flex', gap: '0.5rem', marginBottom: 'calc(24 * var(--px))', flexWrap: 'wrap' }}>
             {TABS.map((t) => (
-              <button key={t.id} onClick={() => setTab(t.id)} style={{ padding: '0.45rem 0.9rem', border: '1.5px solid ' + (tab === t.id ? 'var(--accent)' : 'var(--night-hr)'), background: tab === t.id ? 'var(--accent)' : 'transparent', color: 'var(--canvas)', cursor: 'pointer', fontFamily: 'var(--font-mono), monospace', fontSize: '0.72rem', letterSpacing: '0.08em', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>{t.label}</button>
+              <button key={t.id} onClick={() => setTab(t.id)} className="studio-glass" style={{ padding: '0.45rem 0.9rem', borderRadius: '3px', border: '1px solid ' + (tab === t.id ? 'var(--accent)' : 'rgba(255,255,255,0.06)'), background: tab === t.id ? 'rgba(214,41,41,0.2)' : 'rgba(22,22,22,0.6)', color: 'var(--canvas)', cursor: 'pointer', fontFamily: 'var(--font-mono), monospace', fontSize: '0.72rem', letterSpacing: '0.08em', textTransform: 'uppercase', whiteSpace: 'nowrap', transition: 'background 0.3s var(--ease-spring-soft), border-color 0.3s var(--ease-spring-soft)' }}>{t.label}</button>
             ))}
           </div>
 

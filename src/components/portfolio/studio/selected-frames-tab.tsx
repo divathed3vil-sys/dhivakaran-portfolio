@@ -309,7 +309,7 @@ export function SelectedFramesTab() {
   return (
     <div>
       {/* Phase 5 — visual indicators (image count, published, lab, last-modified) */}
-      <div style={{ display: 'flex', gap: '1.5rem', marginBottom: '1.5rem', padding: '1rem 1.25rem', border: '1.5px solid var(--night-hr)', borderRadius: '4px', background: 'var(--night-soft)', flexWrap: 'wrap' }}>
+      <div style={{ display: 'flex', gap: '1.5rem', marginBottom: '1.5rem', padding: '1rem 1.25rem', border: '1.5px solid var(--night-hr)', borderRadius: '4px', background: 'rgba(22, 22, 22, 0.6)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', flexWrap: 'wrap' }}>
         <Stat label="TOTAL" value={totalImages} />
         <Stat label="PUBLISHED" value={publishedCount} />
         <Stat label="IN LAB" value={labCount} />
@@ -401,7 +401,7 @@ export function SelectedFramesTab() {
                     {previewOrder.map((item, i) => (
                       <div key={item} style={{ display: 'flex', alignItems: 'center', gap: '0.2rem' }}>
                         {i > 0 && <button onClick={() => movePreviewItem(i, i - 1)} style={{ ...miniBtn, padding: '0.1rem 0.3rem', fontSize: '0.65rem' }} title="Move left">←</button>}
-                        <span style={{ padding: '0.2rem 0.5rem', border: '1px solid var(--night-hr)', borderRadius: '2px', fontSize: '0.7rem', color: 'var(--canvas)', fontFamily: 'var(--font-mono), monospace', background: 'var(--night)' }}>{item}</span>
+                        <span style={{ padding: '0.2rem 0.5rem', border: '1px solid var(--night-hr)', borderRadius: '2px', fontSize: '0.7rem', color: 'var(--canvas)', fontFamily: 'var(--font-mono), monospace', background: 'rgba(10, 10, 10, 0.8)' }}>{item}</span>
                         {i < previewOrder.length - 1 && <button onClick={() => movePreviewItem(i, i + 1)} style={{ ...miniBtn, padding: '0.1rem 0.3rem', fontSize: '0.65rem' }} title="Move right">→</button>}
                       </div>
                     ))}
@@ -471,7 +471,7 @@ export function SelectedFramesTab() {
         </div>
       )}
 
-      {msg && <div style={{ marginTop: '1rem', color: 'var(--accent-soft)', fontSize: '0.85rem' }}>{msg}</div>}
+      {msg && <div className="studio-glass" style={{ position: 'fixed', bottom: '1.5rem', right: '1.5rem', padding: '0.75rem 1.25rem', borderRadius: '4px', color: 'var(--canvas)', fontFamily: 'var(--font-mono), monospace', fontSize: '0.8rem', zIndex: 10010, animation: 'studio-toast-in 0.4s var(--ease-spring-soft) both', boxShadow: '0 8px 24px -6px rgba(0,0,0,0.5)' }}>{msg}</div>}
     </div>
   );
 }
@@ -502,15 +502,15 @@ function SortableImageCard({
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: img.id });
   return (
     <div
-      ref={setNodeRef}
+      ref={setNodeRef} className="studio-card"
       style={{
         transform: CSS.Transform.toString(transform),
         transition,
         opacity: isDragging ? 0.3 : 1,
-        border: selected ? '1.5px solid var(--accent)' : '1.5px solid var(--night-hr)',
+        border: selected ? '1px solid var(--accent)' : '1px solid rgba(255,255,255,0.06)',
         borderRadius: '4px',
         overflow: 'hidden',
-        background: 'var(--night-soft)',
+        background: 'rgba(22, 22, 22, 0.6)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)',
       }}
     >
       <div style={{ position: 'relative' }}>
@@ -580,7 +580,7 @@ function SortableImageCard({
 function DragPreview({ img }: { img: Image | undefined }) {
   if (!img) return null;
   return (
-    <div style={{ width: '180px', border: '1.5px solid var(--accent)', borderRadius: '4px', overflow: 'hidden', background: 'var(--night-soft)', boxShadow: '0 12px 32px rgba(0,0,0,0.6)' }}>
+    <div style={{ width: '180px', border: '1.5px solid var(--accent)', borderRadius: '4px', overflow: 'hidden', background: 'rgba(22, 22, 22, 0.6)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', boxShadow: '0 12px 32px rgba(0,0,0,0.6)' }}>
       <div style={{ width: '100%', aspectRatio: '3/2', backgroundImage: `url(${img.public_url})`, backgroundSize: 'cover', backgroundPosition: 'center' }} />
       <div style={{ padding: '0.5rem', fontSize: '0.8rem', color: 'var(--canvas)' }}>{img.label || 'Untitled'}</div>
     </div>
@@ -597,10 +597,10 @@ function Stat({ label, value }: { label: string; value: string | number }) {
   );
 }
 
-const panelStyle: React.CSSProperties = { marginBottom: '1.5rem', padding: '1.25rem', border: '1.5px solid var(--night-hr)', borderRadius: '4px', background: 'var(--night-soft)' };
+const panelStyle: React.CSSProperties = { marginBottom: '1.5rem', padding: '1.25rem', border: '1.5px solid var(--night-hr)', borderRadius: '4px', background: 'rgba(22, 22, 22, 0.6)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)' };
 const labelStyle: React.CSSProperties = { color: 'var(--accent)', marginBottom: '0.75rem' };
 const rowStyle: React.CSSProperties = { display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'flex-end' };
 const fieldLabelStyle: React.CSSProperties = { color: 'var(--night-muted)', display: 'block', marginBottom: '0.25rem', fontSize: '0.7rem', fontFamily: 'var(--font-mono), monospace', textTransform: 'uppercase', letterSpacing: '0.08em' };
-const inputStyle: React.CSSProperties = { background: 'var(--night)', border: '1.5px solid var(--night-hr)', borderRadius: '3px', color: 'var(--canvas)', padding: '0.4rem 0.6rem', fontFamily: 'var(--font-mono), monospace', fontSize: '0.85rem', outline: 'none', width: '100%' };
+const inputStyle: React.CSSProperties = { background: 'rgba(10, 10, 10, 0.8)', border: '1.5px solid var(--night-hr)', borderRadius: '3px', color: 'var(--canvas)', padding: '0.4rem 0.6rem', fontFamily: 'var(--font-mono), monospace', fontSize: '0.85rem', outline: 'none', width: '100%' };
 const btnStyle: React.CSSProperties = { padding: '0.4rem 0.9rem', border: '1.5px solid var(--accent)', borderRadius: '3px', background: 'transparent', color: 'var(--canvas)', fontFamily: 'var(--font-mono), monospace', fontSize: '0.75rem', letterSpacing: '0.08em', textTransform: 'uppercase', cursor: 'pointer', whiteSpace: 'nowrap' };
 const miniBtn: React.CSSProperties = { ...btnStyle, padding: '0.15rem 0.4rem', fontSize: '0.7rem', border: '1px solid var(--night-hr)', lineHeight: 1, borderRadius: '2px' };

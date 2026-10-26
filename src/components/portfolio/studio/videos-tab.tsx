@@ -170,7 +170,7 @@ export function VideosTab() {
   return (
     <div>
       {/* Phase 5 — visual indicators */}
-      <div style={{ display: 'flex', gap: '1.5rem', marginBottom: '1.5rem', padding: '1rem 1.25rem', border: '1.5px solid var(--night-hr)', borderRadius: '4px', background: 'var(--night-soft)', flexWrap: 'wrap' }}>
+      <div style={{ display: 'flex', gap: '1.5rem', marginBottom: '1.5rem', padding: '1rem 1.25rem', border: '1.5px solid var(--night-hr)', borderRadius: '4px', background: 'rgba(22, 22, 22, 0.6)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', flexWrap: 'wrap' }}>
         <Stat label="VIDEOS" value={sortedVideos.length} />
         <Stat label="SELECTED" value={selected.size} />
         <Stat label="PUBLISHED" value={sortedVideos.filter((v) => v.published).length} />
@@ -182,7 +182,7 @@ export function VideosTab() {
       </div>
 
       {/* Add video form */}
-      <div style={{ marginBottom: '2rem', padding: '1.25rem', border: '1.5px solid var(--night-hr)', background: 'var(--night-soft)' }}>
+      <div style={{ marginBottom: '2rem', padding: '1.25rem', border: '1.5px solid var(--night-hr)', background: 'rgba(22, 22, 22, 0.6)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)' }}>
         <div className="text-mono text-label" style={{ color: 'var(--accent)', marginBottom: '0.75rem' }}>ADD VIDEO</div>
         <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'flex-end' }}>
           <div style={{ flex: 1, minWidth: '250px' }}>
@@ -268,7 +268,7 @@ export function VideosTab() {
         );
       })()}
 
-      {msg && <div style={{ marginTop: '1rem', color: 'var(--accent-soft)', fontSize: '0.85rem' }}>{msg}</div>}
+      {msg && <div className="studio-glass" style={{ position: 'fixed', bottom: '1.5rem', right: '1.5rem', padding: '0.75rem 1.25rem', borderRadius: '4px', color: 'var(--canvas)', fontFamily: 'var(--font-mono), monospace', fontSize: '0.8rem', zIndex: 10010, animation: 'studio-toast-in 0.4s var(--ease-spring-soft) both', boxShadow: '0 8px 24px -6px rgba(0,0,0,0.5)' }}>{msg}</div>}
     </div>
   );
 }
@@ -284,15 +284,15 @@ function SortableVideoCard({ video, selected, onToggleSelect, onPlay, onDelete }
   const thumb = getThumbnail(video);
   return (
     <div
-      ref={setNodeRef}
+      ref={setNodeRef} className="studio-card"
       style={{
         transform: CSS.Transform.toString(transform),
         transition,
         opacity: isDragging ? 0.3 : 1,
-        border: selected ? '1.5px solid var(--accent)' : '1.5px solid var(--night-hr)',
+        border: selected ? '1px solid var(--accent)' : '1px solid rgba(255,255,255,0.06)',
         borderRadius: '4px',
         overflow: 'hidden',
-        background: 'var(--night-soft)',
+        background: 'rgba(22, 22, 22, 0.6)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)',
       }}
     >
       <div style={{ position: 'relative', aspectRatio: '16/9', background: '#000', cursor: 'pointer' }} onClick={onPlay}>
@@ -345,7 +345,7 @@ function DragPreview({ video }: { video: Video | undefined }) {
   if (!video) return null;
   const thumb = getThumbnail(video);
   return (
-    <div style={{ width: '280px', border: '1.5px solid var(--accent)', borderRadius: '4px', overflow: 'hidden', background: 'var(--night-soft)', boxShadow: '0 12px 32px rgba(0,0,0,0.6)' }}>
+    <div style={{ width: '280px', border: '1.5px solid var(--accent)', borderRadius: '4px', overflow: 'hidden', background: 'rgba(22, 22, 22, 0.6)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', boxShadow: '0 12px 32px rgba(0,0,0,0.6)' }}>
       <div style={{ width: '100%', aspectRatio: '16/9', background: '#000' }}>
         {thumb && <img src={thumb} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
       </div>
@@ -364,7 +364,7 @@ function Stat({ label, value }: { label: string; value: string | number }) {
 }
 
 const inputStyle: React.CSSProperties = {
-  background: 'var(--night)',
+  background: 'rgba(10, 10, 10, 0.8)',
   border: '1.5px solid var(--night-hr)',
   color: 'var(--canvas)',
   padding: '0.4rem 0.6rem',

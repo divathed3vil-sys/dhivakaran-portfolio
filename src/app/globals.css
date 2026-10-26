@@ -995,3 +995,59 @@ body[data-vf-active="true"] { cursor: none; }
   .auth-card-in, .auth-shake, .studio-in { animation: none !important; }
 }
 
+/* ============================================================================
+   Phase 5b.7 — Studio UI remaster: glass panels + spring-stagger + hover-reveal
+   ============================================================================ */
+
+/* Glass panel — used on Studio cards, panels, buttons */
+.studio-glass {
+  background: rgba(22, 22, 22, 0.6);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+.studio-glass-strong {
+  background: rgba(10, 10, 10, 0.75);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* Spring-stagger reveal — cards spring in sequence when tab loads.
+   Apply to a grid/list container. Each child gets --i index variable. */
+.studio-stagger > * {
+  opacity: 0;
+  animation: studio-card-in 0.5s var(--ease-spring-soft) both;
+  animation-delay: calc(var(--i, 0) * 35ms);
+}
+@keyframes studio-card-in {
+  from { opacity: 0; transform: translateY(12px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* Hover-revealed actions — hidden by default, shown on card hover.
+   Apply to the action buttons container inside a card. */
+.studio-hover-reveal {
+  opacity: 0;
+  transition: opacity 0.3s var(--ease-out-soft);
+}
+.studio-card:hover .studio-hover-reveal,
+.studio-card:focus-within .studio-hover-reveal {
+  opacity: 1;
+}
+
+/* Toast notification — slides in from bottom-right with spring */
+@keyframes studio-toast-in {
+  from { opacity: 0; transform: translateX(100%) scale(0.9); }
+  to   { opacity: 1; transform: translateX(0) scale(1); }
+}
+@keyframes studio-toast-out {
+  from { opacity: 1; transform: translateX(0) scale(1); }
+  to   { opacity: 0; transform: translateX(100%) scale(0.9); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .studio-stagger > * { animation: none !important; opacity: 1 !important; }
+  .studio-hover-reveal { opacity: 1 !important; }
+}
+

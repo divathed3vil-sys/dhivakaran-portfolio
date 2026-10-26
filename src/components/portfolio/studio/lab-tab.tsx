@@ -136,7 +136,7 @@ export function LabTab() {
   return (
     <div>
       {/* Phase 5 — visual indicators */}
-      <div style={{ display: 'flex', gap: '1.5rem', marginBottom: '1.5rem', padding: '1rem 1.25rem', border: '1.5px solid var(--night-hr)', borderRadius: '4px', background: 'var(--night-soft)', flexWrap: 'wrap' }}>
+      <div style={{ display: 'flex', gap: '1.5rem', marginBottom: '1.5rem', padding: '1rem 1.25rem', border: '1.5px solid var(--night-hr)', borderRadius: '4px', background: 'rgba(22, 22, 22, 0.6)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', flexWrap: 'wrap' }}>
         <Stat label="LAB IMAGES" value={labImages.length} />
         <Stat label="SELECTED" value={selected.size} />
         <Stat label="PUBLISHED" value={labImages.filter((i) => i.published).length} />
@@ -148,7 +148,7 @@ export function LabTab() {
       </div>
 
       {/* Bulk upload */}
-      <div style={{ marginBottom: '1.5rem', padding: '1.25rem', border: '1.5px solid var(--night-hr)', borderRadius: '4px', background: 'var(--night-soft)' }}>
+      <div style={{ marginBottom: '1.5rem', padding: '1.25rem', border: '1.5px solid var(--night-hr)', borderRadius: '4px', background: 'rgba(22, 22, 22, 0.6)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)' }}>
         <div className="text-mono text-label" style={{ color: 'var(--accent)', marginBottom: '0.75rem' }}>BULK UPLOAD TO LAB</div>
         <label
           style={{ display: 'block', padding: '2rem', border: '2px dashed var(--night-hr)', borderRadius: '4px', textAlign: 'center', cursor: 'pointer', transition: 'border-color 0.3s', color: 'var(--night-muted)', fontSize: '0.9rem' }}
@@ -216,7 +216,7 @@ export function LabTab() {
         {labImages.length === 0 && <div style={{ color: 'var(--night-muted)', fontStyle: 'italic' }}>No lab imgs yet. Upload above.</div>}
       </div>
 
-      {msg && <div style={{ marginTop: '1rem', color: 'var(--accent-soft)', fontSize: '0.85rem' }}>{msg}</div>}
+      {msg && <div className="studio-glass" style={{ position: 'fixed', bottom: '1.5rem', right: '1.5rem', padding: '0.75rem 1.25rem', borderRadius: '4px', color: 'var(--canvas)', fontFamily: 'var(--font-mono), monospace', fontSize: '0.8rem', zIndex: 10010, animation: 'studio-toast-in 0.4s var(--ease-spring-soft) both', boxShadow: '0 8px 24px -6px rgba(0,0,0,0.5)' }}>{msg}</div>}
     </div>
   );
 }
@@ -231,15 +231,15 @@ function SortableLabCard({ img, selected, onToggleSelect, onToggleLab, onDelete 
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: img.id });
   return (
     <div
-      ref={setNodeRef}
+      ref={setNodeRef} className="studio-card"
       style={{
         transform: CSS.Transform.toString(transform),
         transition,
         opacity: isDragging ? 0.3 : 1,
-        border: selected ? '1.5px solid var(--accent)' : '1.5px solid var(--night-hr)',
+        border: selected ? '1px solid var(--accent)' : '1px solid rgba(255,255,255,0.06)',
         borderRadius: '3px',
         overflow: 'hidden',
-        background: 'var(--night-soft)',
+        background: 'rgba(22, 22, 22, 0.6)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)',
       }}
     >
       <div style={{ position: 'relative' }}>
@@ -282,7 +282,7 @@ function SortableLabCard({ img, selected, onToggleSelect, onToggleLab, onDelete 
 function DragPreview({ img }: { img: Image | undefined }) {
   if (!img) return null;
   return (
-    <div style={{ width: '140px', border: '1.5px solid var(--accent)', borderRadius: '3px', overflow: 'hidden', background: 'var(--night-soft)', boxShadow: '0 12px 32px rgba(0,0,0,0.6)' }}>
+    <div style={{ width: '140px', border: '1.5px solid var(--accent)', borderRadius: '3px', overflow: 'hidden', background: 'rgba(22, 22, 22, 0.6)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', boxShadow: '0 12px 32px rgba(0,0,0,0.6)' }}>
       <div style={{ width: '100%', aspectRatio: '3/2', backgroundImage: `url(${img.public_url})`, backgroundSize: 'cover', backgroundPosition: 'center' }} />
       <div style={{ padding: '0.4rem', fontSize: '0.7rem', color: 'var(--canvas)' }}>{img.label || 'Untitled'}</div>
     </div>
