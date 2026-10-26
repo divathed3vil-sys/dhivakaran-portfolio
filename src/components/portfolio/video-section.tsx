@@ -73,6 +73,7 @@ export function VideoSection() {
   if (videos.length === 0) return null;
 
   return (
+    <>
     <section
       id="videos"
       data-canvas="home"
@@ -172,6 +173,7 @@ export function VideoSection() {
           </div>
         </div>
       </div>
+    </section>
 
       {/* Phase 5b.3 — MediaViewer replaces the inline video lightbox.
           Slides in from the right, full-screen, magazine layout. Prev/next
@@ -196,6 +198,6 @@ export function VideoSection() {
           />
         );
       })()}
-    </section>
+    </>
   );
 }

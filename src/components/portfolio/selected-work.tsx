@@ -103,6 +103,7 @@ export function SelectedWork() {
   };
 
   return (
+    <>
     <section
       id="work"
       data-canvas="home"
@@ -267,6 +268,7 @@ export function SelectedWork() {
           })}
         </div>
       </div>
+    </section>
 
       {/* Phase 5b.4 — hover preview card. Follows cursor, shows description +
           process video (autoplay muted loop) + process image, in the
@@ -369,6 +371,6 @@ export function SelectedWork() {
           />
         );
       })()}
-    </section>
+    </>
   );
 }
