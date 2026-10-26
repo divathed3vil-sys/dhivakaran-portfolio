@@ -168,6 +168,20 @@ export function VideoSection() {
                     {v.label}
                   </div>
                 )}
+                {/* description — shown below the thumbnail */}
+                {v.description && (
+                  <div style={{
+                    padding: '0.5rem 0.75rem',
+                    fontSize: '0.8rem',
+                    color: 'var(--ink)',
+                    fontFamily: 'var(--font-fraunces), serif',
+                    lineHeight: 1.4,
+                    background: 'var(--canvas)',
+                    borderTop: '1px solid var(--rule)',
+                  }}>
+                    {v.description}
+                  </div>
+                )}
               </div>
             ))}
           </div>

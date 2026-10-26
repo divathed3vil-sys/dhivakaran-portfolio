@@ -299,9 +299,13 @@ export function SelectedWork() {
             gap: '0.5rem',
           }}
         >
+          {/* Always show the label — even if no description or process media */}
+          <div key="label" style={{ fontFamily: 'var(--font-fraunces), serif', fontWeight: 500, fontSize: '0.95rem', color: 'var(--canvas)', marginBottom: '0.25rem' }}>
+            {hoverCell.label || 'Untitled'}
+          </div>
           {hoverCell.previewOrder.map((item) => {
             if (item === 'description' && hoverCell.desc) {
-              return <div key="desc" style={{ fontSize: '0.85rem' }}>{hoverCell.desc}</div>;
+              return <div key="desc" style={{ fontSize: '0.8rem', opacity: 0.85 }}>{hoverCell.desc}</div>;
             }
             if (item === 'video' && hoverCell.processVideoUrl) {
               // Render the process video. If it's a YouTube/Vimeo URL, use iframe.
