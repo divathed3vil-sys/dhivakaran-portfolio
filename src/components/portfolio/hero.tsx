@@ -338,9 +338,9 @@ export function Hero() {
             fontFamily: 'var(--font-fraunces), serif',
             fontWeight: 700,
             fontSize: 'clamp(3.5rem, 12vw, 12rem)',
-            letterSpacing: '-0.03em',
+            letterSpacing: isMobile ? '-0.05em' : '-0.03em',
             transition: 'transform 0.95s var(--ease-reveal) 0.14s, opacity 0.7s var(--ease-opacity) 0.14s',
-            textShadow: '0 2px 40px rgba(10, 10, 10, 0.6)',
+            textShadow: '0 2px 40px rgba(10, 10, 10, 0.8)',
             textAlign: isMobile ? 'left' : 'center',
           }}
         >
@@ -353,8 +353,9 @@ export function Hero() {
           className="text-body-lg"
           style={{
             color: 'var(--canvas)',
-            opacity: 0.8,
+            opacity: 1,
             marginBlock: '1.5rem 0 0',
+            textShadow: '0 1px 20px rgba(10, 10, 10, 0.8)',
             textAlign: isMobile ? 'left' : 'center',
             marginInline: isMobile ? '0' : 'auto',
           }}

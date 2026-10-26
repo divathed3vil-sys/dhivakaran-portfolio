@@ -468,8 +468,8 @@
     opacity: 0;
   }
   html:not([data-loading]) [data-hero-3d] .hero-letter {
-    animation: hero-letter-stagger var(--dur-spring-medium) var(--ease-spring-medium) both;
-    animation-delay: calc(0.14s + var(--i, 0) * 35ms);
+    animation: hero-letter-stagger 0.3s var(--ease-spring-medium) both;
+    animation-delay: calc(0.05s + var(--i, 0) * 15ms);
   }
   @keyframes hero-letter-stagger {
     from { transform: translateY(110%); opacity: 0; }

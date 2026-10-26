@@ -1,9 +1,9 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
+import Image from 'next/image';
 import { LAB_IMAGE_SRCS } from './lib/portfolio-images';
 import { getLabImageUrls } from '@/lib/supabase-data';
-import { lowResUrl } from './lib/use-portfolio-data';
 
 // Sources: empty by default — the Visual Lab fetches lab image URLs from Supabase on open
 const SOURCES = LAB_IMAGE_SRCS;
@@ -57,14 +57,17 @@ export function VisualLab({ onClose }: { onClose: () => void }) {
     return () => window.removeEventListener('resize', update);
   }, []);
 
-  // Responsive tile grid — uniform 280px tiles (cellW = tileW = 280, touching)
+  // Responsive tile grid — 240px spacing, 260px tiles (20px overlap for denser fill).
+  // +2 buffer cols/rows (was +1) to ensure full viewport coverage (fixes left-side gap).
   const { tiles, fieldW, fieldH } = useMemo(() => {
-    const cellW = 280;
-    const cellH = 280;
-    const cols = Math.max(3, Math.ceil(viewport.w / cellW) + 1);
-    const rows = Math.max(3, Math.ceil(viewport.h / cellH) + 1);
+    const cellW = 240;
+    const cellH = 240;
+    const tileW = 260;  // 20px larger than cell = slight overlap
+    const tileH = 260;
+    const cols = Math.max(3, Math.ceil(viewport.w / cellW) + 2);
+    const rows = Math.max(3, Math.ceil(viewport.h / cellH) + 2);
     const arr = [];
-    const sources = (dbLabUrls && dbLabUrls.length > 0) ? dbLabUrls.map(u => lowResUrl(u, 400)) : SOURCES;
+    const sources = (dbLabUrls && dbLabUrls.length > 0) ? dbLabUrls : SOURCES;
     if (sources.length === 0) return { tiles: arr, fieldW: 1, fieldH: 1 };
     for (let r = 0; r < rows; r++) {
       for (let c = 0; c < cols; c++) {
@@ -72,8 +75,8 @@ export function VisualLab({ onClose }: { onClose: () => void }) {
         arr.push({
           lx: c * cellW + (((idx * 53) % 30) - 15),
           ly: r * cellH + (((idx * 71) % 30) - 15),
-          w: 280,
-          h: 280,
+          w: tileW,
+          h: tileH,
           src: sources[idx % sources.length],
           bgPos: BG_POSITIONS[idx % BG_POSITIONS.length],
           rot: ((idx * 37) % 100) / 100 * 6 - 3,
@@ -361,11 +364,10 @@ export function VisualLab({ onClose }: { onClose: () => void }) {
         animation: closing ? 'iris-close 0.7s var(--ease-curtain) both' : 'iris-open 0.7s var(--ease-curtain) both',
       }}
     >
-      {/* tiles — low-res WebP/AVIF via real <img>, NO per-tile filters (just transforms + opacity).
-          loading=lazy + decoding=async so offscreen tiles don't block first paint.
-          Phase 5b fix — field gets transform: scale(zoom) for mobile 2-finger pinch.
-          Tile <img> elements have draggable=false + onContextMenu preventDefault
-          so they can't be picked up + dragged (browser default on <img>). */}
+      {/* Phase 5b.8 — tiles via next/image (Vercel optimizer: AVIF + CDN cache).
+          240px spacing, 260px tiles (20px overlap for denser fill).
+          No boxShadow, no backgroundColor (tiles blend into bg).
+          +2 buffer cols/rows for full viewport coverage. */}
       <div ref={fieldRef} style={{
         position: 'absolute',
         inset: 0,
@@ -388,28 +390,22 @@ export function VisualLab({ onClose }: { onClose: () => void }) {
               left: 0,
               width: `${t.w}px`,
               height: `${t.h}px`,
-              backgroundColor: 'var(--night)',
               willChange: 'transform, opacity',
-              border: '0',
-              boxShadow: '0 8px 20px -6px rgba(0,0,0,0.5)',
               overflow: 'hidden',
             }}
           >
-            <img
+            <Image
               src={t.src}
               alt=""
-              draggable={false}
-              onContextMenu={(e) => e.preventDefault()}
+              width={260}
+              height={260}
               loading="lazy"
-              decoding="async"
-              width={400}
-              height={400}
+              onContextMenu={(e) => e.preventDefault()}
               style={{
                 width: '100%',
                 height: '100%',
                 objectFit: 'contain',
                 objectPosition: 'center',
-                display: 'block',
                 userSelect: 'none',
                 WebkitUserDrag: 'none',
               }}
