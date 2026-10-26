@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { getSiteSettings, updateSiteSettings } from '@/lib/supabase-data';
 
 type Settings = {
@@ -12,29 +13,33 @@ type Settings = {
 };
 
 export function SiteSettingsTab() {
-  const [settings, setSettings] = useState<Settings | null>(null);
+  // Phase 5b.6 — React Query replaces raw useEffect+setState.
+  // Draft/merge pattern: server data is the source of truth, user edits are
+  // stored as overrides in `draft`. No useEffect → no cascading renders.
+  const queryClient = useQueryClient();
+  const { data: serverSettings, isLoading } = useQuery({
+    queryKey: ['siteSettings'],
+    queryFn: getSiteSettings,
+  });
+
+  const [draft, setDraft] = useState<Partial<Settings>>({});
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState('');
 
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      const s = await getSiteSettings();
-      if (!cancelled && s) {
-        setSettings({
-          name: s.name,
-          tagline: s.tagline,
-          about: s.about,
-          whatsapp: s.whatsapp,
-          email: s.email,
-        });
-      }
-    })();
-    return () => { cancelled = true; };
-  }, []);
+  // Merged settings: server data + draft overrides
+  const settings: Settings = {
+    name: draft.name ?? (serverSettings as Settings | null)?.name ?? '',
+    tagline: draft.tagline ?? (serverSettings as Settings | null)?.tagline ?? '',
+    about: draft.about ?? (serverSettings as Settings | null)?.about ?? null,
+    whatsapp: draft.whatsapp ?? (serverSettings as Settings | null)?.whatsapp ?? null,
+    email: draft.email ?? (serverSettings as Settings | null)?.email ?? null,
+  };
+
+  const update = (field: keyof Settings, value: string | null) => {
+    setDraft((d) => ({ ...d, [field]: value }));
+  };
 
   const handleSave = async () => {
-    if (!settings) return;
     setSaving(true);
     setMsg('Saving…');
     const { error } = await updateSiteSettings({
@@ -48,11 +53,14 @@ export function SiteSettingsTab() {
       setMsg(`Error: ${error.message}`);
     } else {
       setMsg('Saved. Changes appear on the public site.');
+      setDraft({}); // clear overrides — server data is now up to date
+      queryClient.invalidateQueries({ queryKey: ['siteSettings'] });
     }
     setSaving(false);
   };
 
-  if (!settings) return <div style={{ color: 'var(--night-muted)' }}>Loading…</div>;
+  if (isLoading) return <div style={{ color: 'var(--night-muted)' }}>Loading…</div>;
+  if (!serverSettings) return <div style={{ color: 'var(--night-muted)' }}>No settings found.</div>;
 
   return (
     <div style={{ maxWidth: '600px' }}>
@@ -61,27 +69,27 @@ export function SiteSettingsTab() {
 
         <div style={{ marginBottom: '1rem' }}>
           <label className="text-mono text-label" style={{ color: 'var(--night-muted)', display: 'block', marginBottom: '0.25rem' }}>Name</label>
-          <input value={settings.name} onChange={(e) => setSettings({ ...settings, name: e.target.value })} style={inputStyle} />
+          <input value={settings.name} onChange={(e) => update('name', e.target.value)} style={inputStyle} />
         </div>
 
         <div style={{ marginBottom: '1rem' }}>
           <label className="text-mono text-label" style={{ color: 'var(--night-muted)', display: 'block', marginBottom: '0.25rem' }}>Tagline</label>
-          <input value={settings.tagline} onChange={(e) => setSettings({ ...settings, tagline: e.target.value })} style={inputStyle} />
+          <input value={settings.tagline} onChange={(e) => update('tagline', e.target.value)} style={inputStyle} />
         </div>
 
         <div style={{ marginBottom: '1rem' }}>
           <label className="text-mono text-label" style={{ color: 'var(--night-muted)', display: 'block', marginBottom: '0.25rem' }}>About</label>
-          <textarea value={settings.about || ''} onChange={(e) => setSettings({ ...settings, about: e.target.value })} rows={6} style={{ ...inputStyle, resize: 'vertical', fontFamily: 'var(--font-fraunces), serif' }} />
+          <textarea value={settings.about || ''} onChange={(e) => update('about', e.target.value)} rows={6} style={{ ...inputStyle, resize: 'vertical', fontFamily: 'var(--font-fraunces), serif' }} />
         </div>
 
         <div style={{ marginBottom: '1rem' }}>
           <label className="text-mono text-label" style={{ color: 'var(--night-muted)', display: 'block', marginBottom: '0.25rem' }}>WhatsApp</label>
-          <input value={settings.whatsapp || ''} onChange={(e) => setSettings({ ...settings, whatsapp: e.target.value })} placeholder="+94 77 089 5006" style={inputStyle} />
+          <input value={settings.whatsapp || ''} onChange={(e) => update('whatsapp', e.target.value)} placeholder="+94 77 089 5006" style={inputStyle} />
         </div>
 
         <div style={{ marginBottom: '1.5rem' }}>
           <label className="text-mono text-label" style={{ color: 'var(--night-muted)', display: 'block', marginBottom: '0.25rem' }}>Email</label>
-          <input value={settings.email || ''} onChange={(e) => setSettings({ ...settings, email: e.target.value })} placeholder="dhivakaranmohanraj@gmail.com" style={inputStyle} />
+          <input value={settings.email || ''} onChange={(e) => update('email', e.target.value)} placeholder="dhivakaranmohanraj@gmail.com" style={inputStyle} />
         </div>
 
         <button onClick={handleSave} disabled={saving} style={{ ...btnStyle, opacity: saving ? 0.5 : 1 }}>

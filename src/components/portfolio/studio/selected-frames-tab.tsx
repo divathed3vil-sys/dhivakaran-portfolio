@@ -1,6 +1,8 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import imageCompression from 'browser-image-compression';
 import {
   DndContext,
   DragOverlay,
@@ -43,22 +45,38 @@ type Image = {
 };
 
 export function SelectedFramesTab() {
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [images, setImages] = useState<Image[]>([]);
-  const [loading, setLoading] = useState(true);
+  // Phase 5b.6 — React Query replaces raw useEffect+setState.
+  // Data is cached across tab switches (no refetch), prefetched on Studio open,
+  // and mutations automatically invalidate the cache. Query keys match the
+  // prefetchQuery calls in studio-overlay.tsx so data is instantly available.
+  const queryClient = useQueryClient();
+  const { data: cats = [], isLoading: catLoading } = useQuery({
+    queryKey: ['cats'],
+    queryFn: getCategories,
+  });
+  const { data: imgs = [], isLoading: imgLoading } = useQuery({
+    queryKey: ['allImages'],
+    queryFn: getAllImages,
+  });
+  const loading = catLoading || imgLoading;
+
+  // Helper to invalidate both queries after any mutation
+  const invalidateAll = () => {
+    queryClient.invalidateQueries({ queryKey: ['cats'] });
+    queryClient.invalidateQueries({ queryKey: ['allImages'] });
+  };
+
   const [activeCat, setActiveCat] = useState<string | null>(null);
   const [newCatName, setNewCatName] = useState('');
   const [newCatType, setNewCatType] = useState<'book' | 'poster' | 'thumbnail'>('book');
   const [newCatBlurb, setNewCatBlurb] = useState('');
   const [uploadProgress, setUploadProgress] = useState<number | null>(null);
   const [uploadedUrl, setUploadedUrl] = useState<string | null>(null);
-  // Phase 5b.5 — LQIP base64 generated client-side at upload time (Canvas API)
   const [lqipData, setLqipData] = useState<string>('');
   const [imgLabel, setImgLabel] = useState('');
   const [imgDesc, setImgDesc] = useState('');
   const [imgPriority, setImgPriority] = useState(0);
   const [imgInLab, setImgInLab] = useState(true);
-  // Phase 5b.4 — process media for hover preview
   const [processVideoUrl, setProcessVideoUrl] = useState<string>('');
   const [processImageUrl, setProcessImageUrl] = useState<string>('');
   const [previewOrder, setPreviewOrder] = useState<string[]>(['description', 'video', 'image']);
@@ -67,31 +85,24 @@ export function SelectedFramesTab() {
   const [editDesc, setEditDesc] = useState('');
   const [editPriority, setEditPriority] = useState(0);
   const [editInLab, setEditInLab] = useState(true);
-  // Phase 5 — multi-select for bulk ops
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [activeDragId, setActiveDragId] = useState<string | null>(null);
   const [msg, setMsg] = useState('');
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    const [cats, imgs] = await Promise.all([getCategories(), getAllImages()]);
-    setCategories(cats as Category[]);
-    setImages((imgs as Image[]) || []);
-    if (cats.length > 0 && !activeCat) setActiveCat((cats[0] as Category).id);
-    setLoading(false);
-  }, [activeCat]);
-
-  useEffect(() => { const t = setTimeout(() => load(), 0); return () => clearTimeout(t); }, [load]);
+  // Auto-select first category when data loads
+  const cats = cats as Category[];
+  const imgs = imgs as Image[];
+  if (cats.length > 0 && !activeCat) setActiveCat(cats[0].id);
 
   const slugify = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
 
   const handleAddCategory = async () => {
     if (!newCatName.trim()) return;
-    const { error } = await addCategory({ name: newCatName.trim(), slug: slugify(newCatName), type: newCatType, blurb: newCatBlurb || null, priority: categories.length + 1 });
+    const { error } = await addCategory({ name: newCatName.trim(), slug: slugify(newCatName), type: newCatType, blurb: newCatBlurb || null, priority: cats.length + 1 });
     if (error) { setMsg(`Error: ${error.message}`); return; }
     setNewCatName(''); setNewCatBlurb('');
     setMsg('Category added.');
-    load();
+    invalidateAll();
   };
 
   const handleFileSelect = async (file: File | null) => {
@@ -102,15 +113,26 @@ export function SelectedFramesTab() {
     setProcessVideoUrl('');
     setProcessImageUrl('');
     setPreviewOrder(['description', 'video', 'image']);
+    setMsg('Compressing image…');
+    // Phase 5b.6 — compress client-side before upload (browser-image-compression).
+    // Target: max 800KB, max 1920px. Uses Web Worker so main thread doesn't freeze.
+    let compressedFile = file;
+    try {
+      compressedFile = await imageCompression(file, {
+        maxSizeMB: 0.8,
+        maxWidthOrHeight: 1920,
+        useWebWorker: true,
+      });
+    } catch { /* keep original if compression fails */ }
     setMsg('Uploading image…');
     const progInterval = setInterval(() => setUploadProgress((p) => Math.min(p + 15, 90)), 100);
-    const { publicUrl, error: upErr } = await uploadImageFile(file);
+    const { publicUrl, error: upErr } = await uploadImageFile(compressedFile);
     clearInterval(progInterval);
     setUploadProgress(100);
     if (upErr || !publicUrl) { setMsg(`Upload error: ${upErr}`); setUploadProgress(null); return; }
     setUploadedUrl(publicUrl);
-    // Phase 5b.5 — generate LQIP base64 client-side (Canvas API → 16px wide).
-    const lqip = await generateLQIP(file);
+    // Phase 5b.5 — generate LQIP base64 from the compressed file (Canvas API → 16px wide).
+    const lqip = await generateLQIP(compressedFile);
     setLqipData(lqip);
     setMsg('Upload complete — fill in the details below, then click Save.');
   };
@@ -164,7 +186,7 @@ export function SelectedFramesTab() {
     setUploadedUrl(null); setLqipData(''); setImgLabel(''); setImgDesc(''); setImgPriority(0); setImgInLab(true); setUploadProgress(null);
     setProcessVideoUrl(''); setProcessImageUrl(''); setPreviewOrder(['description', 'video', 'image']);
     setMsg('Image saved + published.');
-    load();
+    invalidateAll();
   };
 
   const handleStartEdit = (img: Image) => {
@@ -181,26 +203,26 @@ export function SelectedFramesTab() {
     if (error) { setMsg(`Error: ${error.message}`); return; }
     setEditingId(null);
     setMsg('Image updated.');
-    load();
+    invalidateAll();
   };
 
   const handleDeleteImage = async (id: string) => {
     if (!confirm('Delete this image?')) return;
     await deleteImage(id);
     setSelected((prev) => { const n = new Set(prev); n.delete(id); return n; });
-    load();
+    invalidateAll();
   };
 
   const handleDeleteCategory = async (id: string) => {
     if (!confirm('Delete this category?')) return;
     await deleteCategory(id);
-    load();
+    invalidateAll();
   };
 
   // Phase 5 — catImages sorted by priority DESC (matches the public site's ordering)
   const catImages = useMemo(
-    () => images.filter((i) => i.category_id === activeCat).sort((a, b) => b.priority - a.priority),
-    [images, activeCat]
+    () => imgs.filter((i) => i.category_id === activeCat).sort((a, b) => b.priority - a.priority),
+    [imgs, activeCat]
   );
 
   // Local-state drag-reorder (optimistic) + persist on drop
@@ -230,7 +252,7 @@ export function SelectedFramesTab() {
     setMsg('Saving new order…');
     const { error } = await reorderImages(newOrder.map((i) => i.id));
     if (error) setMsg(`Reorder error: ${error.message}`);
-    else { setMsg('Order saved.'); setLocalOrder(null); load(); }
+    else { setMsg('Order saved.'); setLocalOrder(null); invalidateAll(); }
   };
 
   // Phase 5 — bulk ops
@@ -245,32 +267,32 @@ export function SelectedFramesTab() {
   const clearSelection = () => setSelected(new Set());
   const handleBulkPublish = async (publish: boolean) => {
     if (selected.size === 0) return;
-    setMsg(`${publish ? 'Publishing' : 'Unpublishing'} ${selected.size} images…`);
+    setMsg(`${publish ? 'Publishing' : 'Unpublishing'} ${selected.size} imgs…`);
     const { error } = await bulkUpdateImages([...selected], { published: publish });
     if (error) setMsg(`Error: ${error.message}`);
-    else { setMsg(`${selected.size} images ${publish ? 'published' : 'unpublished'}.`); setSelected(new Set()); load(); }
+    else { setMsg(`${selected.size} imgs ${publish ? 'published' : 'unpublished'}.`); setSelected(new Set()); invalidateAll(); }
   };
   const handleBulkToggleLab = async (inLab: boolean) => {
     if (selected.size === 0) return;
-    setMsg(`${inLab ? 'Adding' : 'Removing'} ${selected.size} images ${inLab ? 'to' : 'from'} Lab…`);
+    setMsg(`${inLab ? 'Adding' : 'Removing'} ${selected.size} imgs ${inLab ? 'to' : 'from'} Lab…`);
     const { error } = await bulkUpdateImages([...selected], { in_lab: inLab });
     if (error) setMsg(`Error: ${error.message}`);
-    else { setMsg(`${selected.size} images ${inLab ? 'added to' : 'removed from'} Lab.`); setSelected(new Set()); load(); }
+    else { setMsg(`${selected.size} imgs ${inLab ? 'added to' : 'removed from'} Lab.`); setSelected(new Set()); invalidateAll(); }
   };
   const handleBulkDelete = async () => {
     if (selected.size === 0) return;
-    if (!confirm(`Delete ${selected.size} selected images?`)) return;
-    setMsg(`Deleting ${selected.size} images…`);
+    if (!confirm(`Delete ${selected.size} selected imgs?`)) return;
+    setMsg(`Deleting ${selected.size} imgs…`);
     const { error } = await bulkDeleteImages([...selected]);
     if (error) setMsg(`Error: ${error.message}`);
-    else { setMsg(`${selected.size} images deleted.`); setSelected(new Set()); load(); }
+    else { setMsg(`${selected.size} imgs deleted.`); setSelected(new Set()); invalidateAll(); }
   };
 
   // Phase 5 — visual indicators
-  const totalImages = images.length;
-  const publishedCount = images.filter((i) => i.published).length;
-  const labCount = images.filter((i) => i.in_lab).length;
-  const lastModified = images
+  const totalImages = imgs.length;
+  const publishedCount = imgs.filter((i) => i.published).length;
+  const labCount = imgs.filter((i) => i.in_lab).length;
+  const lastModified = imgs
     .map((i) => i.created_at)
     .filter((t): t is string => !!t)
     .sort()
@@ -288,7 +310,7 @@ export function SelectedFramesTab() {
         <Stat label="TOTAL" value={totalImages} />
         <Stat label="PUBLISHED" value={publishedCount} />
         <Stat label="IN LAB" value={labCount} />
-        <Stat label="CATEGORIES" value={categories.length} />
+        <Stat label="CATEGORIES" value={cats.length} />
         <Stat label="LAST MODIFIED" value={lastModifiedLabel} />
         <div style={{ marginLeft: 'auto', display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
           <button onClick={() => window.open('/', '_blank')} style={{ ...btnStyle, borderColor: 'var(--accent)', display: 'flex', alignItems: 'center', gap: '0.4rem' }} title="Open the live public site in a new tab">
@@ -310,7 +332,7 @@ export function SelectedFramesTab() {
 
       {/* Category tabs */}
       <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '1.5rem' }}>
-        {categories.map((cat) => (
+        {cats.map((cat) => (
           <button key={cat.id} onClick={() => { setActiveCat(cat.id); setUploadedUrl(null); setUploadProgress(null); setSelected(new Set()); setLocalOrder(null); }} style={{ ...btnStyle, background: activeCat === cat.id ? 'var(--accent)' : 'transparent', borderColor: activeCat === cat.id ? 'var(--accent)' : 'var(--night-hr)' }}>
             {cat.name}<span onClick={(e) => { e.stopPropagation(); handleDeleteCategory(cat.id); }} style={{ marginLeft: '0.5rem', opacity: 0.6 }}> ✕</span>
           </button>
@@ -393,7 +415,7 @@ export function SelectedFramesTab() {
         <div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem', flexWrap: 'wrap', gap: '0.5rem' }}>
             <div className="text-mono text-label" style={{ color: 'var(--night-muted)' }}>
-              {(categories.find((c) => c.id === activeCat)?.name || '').toUpperCase()} ({catImages.length})
+              {(cats.find((c) => c.id === activeCat)?.name || '').toUpperCase()} ({catImages.length})
               <span style={{ marginLeft: '0.5rem', color: 'var(--accent)' }}>· DRAG ⠿ TO REORDER</span>
             </div>
             {catImages.length > 0 && (
@@ -442,7 +464,7 @@ export function SelectedFramesTab() {
             </SortableContext>
             <DragOverlay>{activeDragId ? <DragPreview img={displayedImages.find((i) => i.id === activeDragId)} /> : null}</DragOverlay>
           </DndContext>
-          {catImages.length === 0 && <div style={{ color: 'var(--night-muted)', fontStyle: 'italic' }}>No images yet.</div>}
+          {catImages.length === 0 && <div style={{ color: 'var(--night-muted)', fontStyle: 'italic' }}>No imgs yet.</div>}
         </div>
       )}
 

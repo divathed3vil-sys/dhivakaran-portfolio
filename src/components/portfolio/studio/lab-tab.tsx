@@ -1,6 +1,8 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import imageCompression from 'browser-image-compression';
 import {
   DndContext,
   DragOverlay,
@@ -24,29 +26,26 @@ import { generateLQIP } from '../lib/generate-lqip';
 type Image = { id: string; public_url: string; label: string | null; priority: number; in_lab: boolean; published: boolean; created_at?: string | null; lqip_data?: string | null; };
 
 export function LabTab() {
-  const [images, setImages] = useState<Image[]>([]);
-  const [loading, setLoading] = useState(true);
+  // Phase 5b.6 — React Query replaces raw useEffect+setState.
+  const queryClient = useQueryClient();
+  const { data: imgs = [], isLoading: loading } = useQuery({
+    queryKey: ['allImages'],
+    queryFn: getAllImages,
+  });
+  const imgs = imgs as Image[];
+  const invalidateImages = () => queryClient.invalidateQueries({ queryKey: ['allImages'] });
+
   const [bulkProgress, setBulkProgress] = useState<{ current: number; total: number } | null>(null);
   const [msg, setMsg] = useState('');
-  // Phase 5 — drag-drop + multi-select
   const [activeDragId, setActiveDragId] = useState<string | null>(null);
   const [localOrder, setLocalOrder] = useState<string[] | null>(null);
   const [selected, setSelected] = useState<Set<string>>(new Set());
-
-  const load = useCallback(async () => {
-    setLoading(true);
-    const imgs = await getAllImages();
-    setImages((imgs as Image[]) || []);
-    setLoading(false);
-  }, []);
-
-  useEffect(() => { const t = setTimeout(() => load(), 0); return () => clearTimeout(t); }, [load]);
 
   const handleBulkUpload = async (files: FileList | null) => {
     if (!files || files.length === 0) return;
     const fileArr = Array.from(files);
     setBulkProgress({ current: 0, total: fileArr.length });
-    setMsg(`Uploading ${fileArr.length} images…`);
+    setMsg(`Uploading ${fileArr.length} imgs…`);
 
     for (let i = 0; i < fileArr.length; i++) {
       setBulkProgress({ current: i, total: fileArr.length });
@@ -59,18 +58,18 @@ export function LabTab() {
     }
 
     setBulkProgress({ current: fileArr.length, total: fileArr.length });
-    setMsg(`${fileArr.length} images uploaded to the Lab.`);
+    setMsg(`${fileArr.length} imgs uploaded to the Lab.`);
     setTimeout(() => setBulkProgress(null), 1500);
-    load();
+    invalidateImages();
   };
 
-  const handleToggle = async (img: Image) => { await updateImage(img.id, { in_lab: !img.in_lab }); load(); };
-  const handleDelete = async (id: string) => { if (!confirm('Delete?')) return; await deleteImage(id); setSelected((prev) => { const n = new Set(prev); n.delete(id); return n; }); load(); };
+  const handleToggle = async (img: Image) => { await updateImage(img.id, { in_lab: !img.in_lab }); invalidateImages(); };
+  const handleDelete = async (id: string) => { if (!confirm('Delete?')) return; await deleteImage(id); setSelected((prev) => { const n = new Set(prev); n.delete(id); return n; }); invalidateImages(); };
 
-  // Phase 5 — lab images sorted by priority DESC (matches public Visual Lab fetch order)
+  // Phase 5 — lab imgs sorted by priority DESC (matches public Visual Lab fetch order)
   const labImages = useMemo(
-    () => images.filter((i) => i.in_lab).sort((a, b) => b.priority - a.priority),
-    [images]
+    () => imgs.filter((i) => i.in_lab).sort((a, b) => b.priority - a.priority),
+    [imgs]
   );
 
   const displayedImages = useMemo(() => {
@@ -97,7 +96,7 @@ export function LabTab() {
     setMsg('Saving new order…');
     const { error } = await reorderImages(newOrder.map((i) => i.id));
     if (error) setMsg(`Reorder error: ${error.message}`);
-    else { setMsg('Order saved.'); setLocalOrder(null); load(); }
+    else { setMsg('Order saved.'); setLocalOrder(null); invalidateImages(); }
   };
 
   const toggleSelect = (id: string) => {
@@ -111,25 +110,25 @@ export function LabTab() {
   const clearSelection = () => setSelected(new Set());
   const handleBulkPublish = async (publish: boolean) => {
     if (selected.size === 0) return;
-    setMsg(`${publish ? 'Publishing' : 'Hiding'} ${selected.size} images…`);
+    setMsg(`${publish ? 'Publishing' : 'Hiding'} ${selected.size} imgs…`);
     const { error } = await bulkUpdateImages([...selected], { published: publish });
     if (error) setMsg(`Error: ${error.message}`);
-    else { setMsg(`${selected.size} images ${publish ? 'published' : 'hidden'}.`); setSelected(new Set()); load(); }
+    else { setMsg(`${selected.size} imgs ${publish ? 'published' : 'hidden'}.`); setSelected(new Set()); invalidateImages(); }
   };
   const handleBulkRemoveFromLab = async () => {
     if (selected.size === 0) return;
-    setMsg(`Removing ${selected.size} images from Lab…`);
+    setMsg(`Removing ${selected.size} imgs from Lab…`);
     const { error } = await bulkUpdateImages([...selected], { in_lab: false });
     if (error) setMsg(`Error: ${error.message}`);
-    else { setMsg(`${selected.size} images removed from Lab.`); setSelected(new Set()); load(); }
+    else { setMsg(`${selected.size} imgs removed from Lab.`); setSelected(new Set()); invalidateImages(); }
   };
   const handleBulkDelete = async () => {
     if (selected.size === 0) return;
-    if (!confirm(`Delete ${selected.size} selected images?`)) return;
-    setMsg(`Deleting ${selected.size} images…`);
+    if (!confirm(`Delete ${selected.size} selected imgs?`)) return;
+    setMsg(`Deleting ${selected.size} imgs…`);
     const { error } = await bulkDeleteImages([...selected]);
     if (error) setMsg(`Error: ${error.message}`);
-    else { setMsg(`${selected.size} images deleted.`); setSelected(new Set()); load(); }
+    else { setMsg(`${selected.size} imgs deleted.`); setSelected(new Set()); invalidateImages(); }
   };
 
   if (loading) return <div style={{ color: 'var(--night-muted)' }}>Loading…</div>;
@@ -158,7 +157,7 @@ export function LabTab() {
           onDrop={(e) => { e.preventDefault(); e.currentTarget.style.borderColor = 'var(--night-hr)'; handleBulkUpload(e.dataTransfer.files); }}
         >
           <span style={{ fontSize: '2rem', display: 'block', marginBottom: '0.5rem' }}>📁</span>
-          Drag multiple images here or click to select
+          Drag multiple imgs here or click to select
           <input type="file" accept="image/*" multiple style={{ display: 'none' }} onChange={(e) => handleBulkUpload(e.target.files)} />
         </label>
         {bulkProgress && (
@@ -173,7 +172,7 @@ export function LabTab() {
         )}
       </div>
 
-      {/* Lab images list — drag-reorder + multi-select */}
+      {/* Lab imgs list — drag-reorder + multi-select */}
       <div>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem', flexWrap: 'wrap', gap: '0.5rem' }}>
           <div className="text-mono text-label" style={{ color: 'var(--night-muted)' }}>
@@ -214,7 +213,7 @@ export function LabTab() {
           </SortableContext>
           <DragOverlay>{activeDragId ? <DragPreview img={displayedImages.find((i) => i.id === activeDragId)} /> : null}</DragOverlay>
         </DndContext>
-        {labImages.length === 0 && <div style={{ color: 'var(--night-muted)', fontStyle: 'italic' }}>No lab images yet. Upload above.</div>}
+        {labImages.length === 0 && <div style={{ color: 'var(--night-muted)', fontStyle: 'italic' }}>No lab imgs yet. Upload above.</div>}
       </div>
 
       {msg && <div style={{ marginTop: '1rem', color: 'var(--accent-soft)', fontSize: '0.85rem' }}>{msg}</div>}

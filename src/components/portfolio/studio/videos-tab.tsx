@@ -1,6 +1,7 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   DndContext,
   DragOverlay,
@@ -58,27 +59,24 @@ function getEmbedUrl(video: Video): string {
 }
 
 export function VideosTab() {
-  const [videos, setVideos] = useState<Video[]>([]);
-  const [loading, setLoading] = useState(true);
+  // Phase 5b.6 — React Query replaces raw useEffect+setState.
+  const queryClient = useQueryClient();
+  const { data: vids = [], isLoading: loading } = useQuery({
+    queryKey: ['allVideos'],
+    queryFn: getAllVideos,
+  });
+  const vids = vids as Video[];
+  const invalidateVideos = () => queryClient.invalidateQueries({ queryKey: ['allVideos'] });
+
   const [url, setUrl] = useState('');
   const [platform, setPlatform] = useState<'youtube' | 'vimeo'>('youtube');
   const [label, setLabel] = useState('');
   const [priority, setPriority] = useState(0);
   const [msg, setMsg] = useState('');
   const [playing, setPlaying] = useState<string | null>(null);
-  // Phase 5 — drag-drop + multi-select
   const [activeDragId, setActiveDragId] = useState<string | null>(null);
   const [localOrder, setLocalOrder] = useState<string[] | null>(null);
   const [selected, setSelected] = useState<Set<string>>(new Set());
-
-  const load = useCallback(async () => {
-    setLoading(true);
-    const v = await getAllVideos();
-    setVideos((v as Video[]) || []);
-    setLoading(false);
-  }, []);
-
-  useEffect(() => { const t = setTimeout(() => load(), 0); return () => clearTimeout(t); }, [load]);
 
   const handleUrlChange = (val: string) => {
     setUrl(val);
@@ -98,19 +96,19 @@ export function VideosTab() {
     if (error) { setMsg(`Error: ${error.message}`); return; }
     setUrl(''); setLabel(''); setPriority(0);
     setMsg('Video added + published.');
-    load();
+    invalidateVideos();
   };
 
   const handleDelete = async (id: string) => {
     if (!confirm('Delete this video?')) return;
     await deleteVideo(id);
     setSelected((prev) => { const n = new Set(prev); n.delete(id); return n; });
-    load();
+    invalidateVideos();
   };
 
   const sortedVideos = useMemo(
-    () => [...videos].sort((a, b) => b.priority - a.priority),
-    [videos]
+    () => [...vids].sort((a, b) => b.priority - a.priority),
+    [vids]
   );
 
   const displayedVideos = useMemo(() => {
@@ -135,11 +133,11 @@ export function VideosTab() {
     const newOrder = arrayMove(displayedVideos, oldIndex, newIndex);
     setLocalOrder(newOrder.map((v) => v.id));
     setMsg('Saving new order…');
-    // Note: uses reorderImages since the videos table has the same priority column structure.
+    // Note: uses reorderImages since the vids table has the same priority column structure.
     // (rename to reorderVideos when the helper is added; for now, the API is identical)
     const { error } = await reorderImages(newOrder.map((v) => v.id));
     if (error) setMsg(`Reorder error: ${error.message}`);
-    else { setMsg('Order saved.'); setLocalOrder(null); load(); }
+    else { setMsg('Order saved.'); setLocalOrder(null); invalidateVideos(); }
   };
 
   const toggleSelect = (id: string) => {
@@ -153,18 +151,18 @@ export function VideosTab() {
   const clearSelection = () => setSelected(new Set());
   const handleBulkPublish = async (publish: boolean) => {
     if (selected.size === 0) return;
-    setMsg(`${publish ? 'Publishing' : 'Hiding'} ${selected.size} videos…`);
+    setMsg(`${publish ? 'Publishing' : 'Hiding'} ${selected.size} vids…`);
     const { error } = await bulkUpdateImages([...selected], { published: publish });
     if (error) setMsg(`Error: ${error.message}`);
-    else { setMsg(`${selected.size} videos ${publish ? 'published' : 'hidden'}.`); setSelected(new Set()); load(); }
+    else { setMsg(`${selected.size} vids ${publish ? 'published' : 'hidden'}.`); setSelected(new Set()); invalidateVideos(); }
   };
   const handleBulkDelete = async () => {
     if (selected.size === 0) return;
-    if (!confirm(`Delete ${selected.size} selected videos?`)) return;
-    setMsg(`Deleting ${selected.size} videos…`);
+    if (!confirm(`Delete ${selected.size} selected vids?`)) return;
+    setMsg(`Deleting ${selected.size} vids…`);
     const { error } = await bulkDeleteImages([...selected]);
     if (error) setMsg(`Error: ${error.message}`);
-    else { setMsg(`${selected.size} videos deleted.`); setSelected(new Set()); load(); }
+    else { setMsg(`${selected.size} vids deleted.`); setSelected(new Set()); invalidateVideos(); }
   };
 
   if (loading) return <div style={{ color: 'var(--night-muted)' }}>Loading…</div>;
@@ -250,12 +248,12 @@ export function VideosTab() {
           </SortableContext>
           <DragOverlay>{activeDragId ? <DragPreview video={displayedVideos.find((v) => v.id === activeDragId)} /> : null}</DragOverlay>
         </DndContext>
-        {sortedVideos.length === 0 && <div style={{ color: 'var(--night-muted)', fontStyle: 'italic' }}>No videos yet.</div>}
+        {sortedVideos.length === 0 && <div style={{ color: 'var(--night-muted)', fontStyle: 'italic' }}>No vids yet.</div>}
       </div>
 
       {/* Lightbox player — clean YouTube/Vimeo embed */}
       {playing && (() => {
-        const v = videos.find((x) => x.id === playing);
+        const v = vids.find((x) => x.id === playing);
         if (!v) return null;
         return (
           <div
