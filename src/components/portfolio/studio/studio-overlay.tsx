@@ -54,11 +54,18 @@ export function StudioOverlay() {
 
   useEffect(() => {
     if (!authed) return;
+    // Critical fix: lock body scroll so the background page doesn't scroll
+    // when the user scrolls inside the Studio.
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') closeStudio();
     };
     window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
+    return () => {
+      document.body.style.overflow = prev;
+      window.removeEventListener('keydown', onKey);
+    };
   }, [authed, closeStudio]);
 
   // Phase 5b.6 — prefetch all tabs' data when Studio opens, so tab switching
