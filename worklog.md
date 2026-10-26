@@ -1362,3 +1362,50 @@ Stage Summary:
 - MediaViewer: uses 1920px full-quality variant (upgraded from 400px cell thumbnail)
 - Graceful fallback everywhere: works without the SQL migration, just no LQIP for legacy images
 - Ready for Phase 5b.4 (hover preview system) upon user approval
+
+---
+Task ID: OPT-5b.4 (Phase 5b — Hover preview system with process video + image)
+Agent: main-orchestrator
+Task: When hovering over an image/video cell, show a floating card with description + process video ("how I did it") + process image (PS layers timeline), in user-defined order. Forward-compatible with MediaViewer sidebar.
+
+Work Log:
+- supabase/migrations/add_process_media.sql — adds 3 columns to images + videos tables: process_video_url (TEXT), process_image_url (TEXT), preview_order (JSONB default '["description","video","image"]')
+- src/components/portfolio/lib/use-portfolio-data.ts — Image type extended with process_video_url, process_image_url, preview_order
+- src/lib/supabase-data.ts:
+  - New uploadProcessFile(file) helper — uploads to /process/ path in Supabase Storage (same bucket, different prefix)
+  - addImage accepts process_video_url, process_image_url, preview_order. Graceful fallback retries without them if columns don't exist.
+  - addVideo accepts same fields. Same graceful fallback.
+- src/components/portfolio/studio/selected-frames-tab.tsx:
+  - New state: processVideoUrl, processImageUrl, previewOrder
+  - handleFileSelect resets process media state on new upload
+  - New handlers: handleProcessVideoUpload, handleProcessImageUpload (use uploadProcessFile)
+  - New handler: movePreviewItem(from, to) — reorders preview items via arrow buttons
+  - handleSaveImage includes process_video_url, process_image_url, preview_order in addImage payload
+  - Cancel button resets all process media state
+  - New UI section: "PROCESS MEDIA (HOVER PREVIEW)" with 2 file pickers (video + image) + preview_order reorderable list (arrow buttons to move items left/right)
+- src/components/portfolio/selected-work.tsx:
+  - New CellData type with processVideoUrl, processImageUrl, previewOrder fields
+  - displayCats mapping now includes process media fields from Supabase data
+  - hoverCell state replaces old descText — stores full cell data
+  - handleMouseMove rewritten: finds closest [data-cell-idx] + [data-cat-key], looks up cell from displayCats, sets hoverCell
+  - Cell article gets data-cell-idx + data-cat-key attributes
+  - Hover card rewritten: renders items in previewOrder, showing only items that have data:
+    - "description" → text
+    - "video" → iframe (YouTube/Vimeo) OR <video> (self-hosted .mp4/.webm), autoplay muted loop
+    - "image" → <img>
+  - MediaViewer items now pass processVideoUrl + processImageUrl from cell data
+- src/components/portfolio/video-section.tsx:
+  - Video type extended with process_video_url, process_image_url, preview_order
+  - MediaViewer items pass processVideoUrl + processImageUrl from video data
+- bun run lint: COMPLETELY CLEAN (0 errors, 0 warnings)
+- Public site is safe to deploy before SQL migration — all process media fields are optional, hover card only renders items with data (no process media = just description, same as before)
+
+Stage Summary:
+- Phase 5b.4 complete: hover preview system with process video + image
+- 3 new Supabase columns: process_video_url, process_image_url, preview_order (JSONB)
+- Studio: optional process video + image upload, preview_order reorderable via arrow buttons
+- Public hover card: shows description + process video + process image in user-defined order
+- Process video: supports both YouTube/Vimeo (iframe) and self-hosted (.mp4/.webm via <video>)
+- MediaViewer sidebar: shows same process media larger + with controls
+- Graceful fallback everywhere: works without SQL migration, just no process media for legacy images
+- Ready for Phase 5b.6 (Studio data layer optimization — React Query + compression + prefetch) upon user approval

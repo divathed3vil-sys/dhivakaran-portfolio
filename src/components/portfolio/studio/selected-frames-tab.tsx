@@ -20,13 +20,27 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import {
   getCategories, getAllImages, addCategory, deleteCategory,
-  uploadImageFile, addImage, deleteImage, updateImage,
+  uploadImageFile, uploadProcessFile, addImage, deleteImage, updateImage,
   reorderImages, bulkUpdateImages, bulkDeleteImages,
 } from '@/lib/supabase-data';
 import { generateLQIP } from '../lib/generate-lqip';
 
 type Category = { id: string; name: string; slug: string; type: string; blurb: string | null; priority: number; };
-type Image = { id: string; category_id: string | null; public_url: string; label: string | null; description: string | null; priority: number; published: boolean; in_lab: boolean; created_at?: string | null; lqip_data?: string | null; };
+type Image = {
+  id: string;
+  category_id: string | null;
+  public_url: string;
+  label: string | null;
+  description: string | null;
+  priority: number;
+  published: boolean;
+  in_lab: boolean;
+  created_at?: string | null;
+  lqip_data?: string | null;
+  process_video_url?: string | null;
+  process_image_url?: string | null;
+  preview_order?: string[] | null;
+};
 
 export function SelectedFramesTab() {
   const [categories, setCategories] = useState<Category[]>([]);
@@ -44,6 +58,10 @@ export function SelectedFramesTab() {
   const [imgDesc, setImgDesc] = useState('');
   const [imgPriority, setImgPriority] = useState(0);
   const [imgInLab, setImgInLab] = useState(true);
+  // Phase 5b.4 — process media for hover preview
+  const [processVideoUrl, setProcessVideoUrl] = useState<string>('');
+  const [processImageUrl, setProcessImageUrl] = useState<string>('');
+  const [previewOrder, setPreviewOrder] = useState<string[]>(['description', 'video', 'image']);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editLabel, setEditLabel] = useState('');
   const [editDesc, setEditDesc] = useState('');
@@ -81,6 +99,9 @@ export function SelectedFramesTab() {
     setUploadProgress(0);
     setUploadedUrl(null);
     setLqipData('');
+    setProcessVideoUrl('');
+    setProcessImageUrl('');
+    setPreviewOrder(['description', 'video', 'image']);
     setMsg('Uploading image…');
     const progInterval = setInterval(() => setUploadProgress((p) => Math.min(p + 15, 90)), 100);
     const { publicUrl, error: upErr } = await uploadImageFile(file);
@@ -89,11 +110,38 @@ export function SelectedFramesTab() {
     if (upErr || !publicUrl) { setMsg(`Upload error: ${upErr}`); setUploadProgress(null); return; }
     setUploadedUrl(publicUrl);
     // Phase 5b.5 — generate LQIP base64 client-side (Canvas API → 16px wide).
-    // Stored in the images table, inlined in the JSON response for instant
-    // blurred placeholder on the public site (zero extra HTTP requests).
     const lqip = await generateLQIP(file);
     setLqipData(lqip);
     setMsg('Upload complete — fill in the details below, then click Save.');
+  };
+
+  // Phase 5b.4 — upload process video/image for the hover preview
+  const handleProcessVideoUpload = async (file: File | null) => {
+    if (!file) return;
+    setMsg('Uploading process video…');
+    const { publicUrl, error } = await uploadProcessFile(file);
+    if (error || !publicUrl) { setMsg(`Process video upload error: ${error}`); return; }
+    setProcessVideoUrl(publicUrl);
+    setMsg('Process video uploaded.');
+  };
+
+  const handleProcessImageUpload = async (file: File | null) => {
+    if (!file) return;
+    setMsg('Uploading process image…');
+    const { publicUrl, error } = await uploadProcessFile(file);
+    if (error || !publicUrl) { setMsg(`Process image upload error: ${error}`); return; }
+    setProcessImageUrl(publicUrl);
+    setMsg('Process image uploaded.');
+  };
+
+  // Phase 5b.4 — reorder the preview items via drag-drop
+  const movePreviewItem = (from: number, to: number) => {
+    setPreviewOrder((prev) => {
+      const next = [...prev];
+      const [item] = next.splice(from, 1);
+      next.splice(to, 0, item);
+      return next;
+    });
   };
 
   const handleSaveImage = async () => {
@@ -107,9 +155,14 @@ export function SelectedFramesTab() {
       published: true,
       in_lab: imgInLab,
       lqip_data: lqipData || null,
+      // Phase 5b.4 — process media for hover preview
+      process_video_url: processVideoUrl || null,
+      process_image_url: processImageUrl || null,
+      preview_order: previewOrder,
     });
     if (error) { setMsg(`Error: ${error.message}`); return; }
     setUploadedUrl(null); setLqipData(''); setImgLabel(''); setImgDesc(''); setImgPriority(0); setImgInLab(true); setUploadProgress(null);
+    setProcessVideoUrl(''); setProcessImageUrl(''); setPreviewOrder(['description', 'video', 'image']);
     setMsg('Image saved + published.');
     load();
   };
@@ -296,7 +349,39 @@ export function SelectedFramesTab() {
                 <div><label style={fieldLabelStyle}>Priority</label><input type="number" value={imgPriority} onChange={(e) => setImgPriority(parseInt(e.target.value) || 0)} style={{ ...inputStyle, width: '80px' }} /></div>
                 <label style={{ color: 'var(--canvas)', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}><input type="checkbox" checked={imgInLab} onChange={(e) => setImgInLab(e.target.checked)} /> Lab</label>
                 <button onClick={handleSaveImage} style={btnStyle}>Save</button>
-                <button onClick={() => { setUploadedUrl(null); setUploadProgress(null); setLqipData(''); }} style={{ ...btnStyle, borderColor: 'var(--night-hr)' }}>Cancel</button>
+                <button onClick={() => { setUploadedUrl(null); setUploadProgress(null); setLqipData(''); setProcessVideoUrl(''); setProcessImageUrl(''); setPreviewOrder(['description', 'video', 'image']); }} style={{ ...btnStyle, borderColor: 'var(--night-hr)' }}>Cancel</button>
+              </div>
+
+              {/* Phase 5b.4 — Process media for hover preview.
+                  Optional: a "how I did it" video + image. Shown when user hovers
+                  over the cell on the public site, in the user-defined order below. */}
+              <div style={{ marginTop: '1rem', padding: '0.75rem', border: '1px dashed var(--night-hr)', borderRadius: '4px' }}>
+                <div className="text-mono text-label" style={{ color: 'var(--accent)', marginBottom: '0.5rem' }}>PROCESS MEDIA (HOVER PREVIEW)</div>
+                <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'flex-end' }}>
+                  <div>
+                    <label style={fieldLabelStyle}>Process Video (≤1MB)</label>
+                    <input type="file" accept="video/*" style={{ ...inputStyle, padding: '0.3rem', fontSize: '0.75rem' }} onChange={(e) => handleProcessVideoUpload(e.target.files?.[0] || null)} />
+                  </div>
+                  <div>
+                    <label style={fieldLabelStyle}>Process Image (PS layers)</label>
+                    <input type="file" accept="image/*" style={{ ...inputStyle, padding: '0.3rem', fontSize: '0.75rem' }} onChange={(e) => handleProcessImageUpload(e.target.files?.[0] || null)} />
+                  </div>
+                </div>
+                {processVideoUrl && <div style={{ marginTop: '0.4rem', fontSize: '0.7rem', color: 'var(--accent-soft)' }}>✓ Process video uploaded</div>}
+                {processImageUrl && <div style={{ marginTop: '0.2rem', fontSize: '0.7rem', color: 'var(--accent-soft)' }}>✓ Process image uploaded</div>}
+                {/* Preview order — drag-drop reorderable list (up/down buttons for simplicity) */}
+                <div style={{ marginTop: '0.75rem' }}>
+                  <div className="text-mono text-label" style={{ color: 'var(--night-muted)', marginBottom: '0.3rem' }}>PREVIEW ORDER (drag to reorder)</div>
+                  <div style={{ display: 'flex', gap: '0.3rem', flexWrap: 'wrap' }}>
+                    {previewOrder.map((item, i) => (
+                      <div key={item} style={{ display: 'flex', alignItems: 'center', gap: '0.2rem' }}>
+                        {i > 0 && <button onClick={() => movePreviewItem(i, i - 1)} style={{ ...miniBtn, padding: '0.1rem 0.3rem', fontSize: '0.65rem' }} title="Move left">←</button>}
+                        <span style={{ padding: '0.2rem 0.5rem', border: '1px solid var(--night-hr)', borderRadius: '2px', fontSize: '0.7rem', color: 'var(--canvas)', fontFamily: 'var(--font-mono), monospace', background: 'var(--night)' }}>{item}</span>
+                        {i < previewOrder.length - 1 && <button onClick={() => movePreviewItem(i, i + 1)} style={{ ...miniBtn, padding: '0.1rem 0.3rem', fontSize: '0.65rem' }} title="Move right">→</button>}
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </div>
             </div>
           )}

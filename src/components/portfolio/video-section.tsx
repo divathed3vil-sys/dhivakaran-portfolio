@@ -12,6 +12,10 @@ type Video = {
   label: string | null;
   description: string | null;
   priority: number;
+  // Phase 5b.4 — process media for hover preview + MediaViewer sidebar
+  process_video_url?: string | null;
+  process_image_url?: string | null;
+  preview_order?: string[] | null;
 };
 
 function extractYouTubeId(url: string): string | null {
@@ -179,6 +183,9 @@ export function VideoSection() {
           src: getEmbedUrl(v),
           label: v.label || 'Untitled',
           description: v.description || undefined,
+          // Phase 5b.4 — pass process media to the MediaViewer sidebar
+          processVideoUrl: v.process_video_url || undefined,
+          processImageUrl: v.process_image_url || undefined,
         }));
         return (
           <MediaViewer

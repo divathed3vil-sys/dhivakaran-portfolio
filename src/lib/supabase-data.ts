@@ -110,6 +110,22 @@ export async function uploadImageFile(file: File): Promise<{ publicUrl?: string;
   return { publicUrl };
 }
 
+// Phase 5b.4 — upload process media (video or image) for the hover preview.
+// Stored in the same 'portfolio' bucket under a 'process/' prefix for organization.
+// Returns the public URL to store in process_video_url / process_image_url.
+export async function uploadProcessFile(file: File): Promise<{ publicUrl?: string; error?: string }> {
+  if (!supabase) return { error: 'No Supabase client' };
+  const ext = file.name.split('.').pop() || 'bin';
+  const path = `process/${crypto.randomUUID()}.${ext}`;
+  const { error: upErr } = await supabase.storage.from('portfolio').upload(path, file, {
+    cacheControl: '3600',
+    upsert: false,
+  });
+  if (upErr) return { error: upErr.message };
+  const publicUrl = supabase.storage.from('portfolio').getPublicUrl(path).data.publicUrl;
+  return { publicUrl };
+}
+
 export async function addImage(input: {
   category_id?: string | null;
   public_url: string;
@@ -125,6 +141,10 @@ export async function addImage(input: {
   // Phase 5b.5 — LQIP base64 data (16px wide, ~200-500 bytes). Generated at
   // upload time via Canvas API in the Studio. Stored in the images table.
   lqip_data?: string | null;
+  // Phase 5b.4 — process media for the hover preview card.
+  process_video_url?: string | null;
+  process_image_url?: string | null;
+  preview_order?: string[] | null;
 }) {
   if (!supabase) return { error: 'No Supabase client' };
   const { data, error } = await supabase
@@ -132,12 +152,17 @@ export async function addImage(input: {
     .insert(input)
     .select()
     .single();
-  // Phase 5b.5 — graceful fallback: if the lqip_data column doesn't exist
-  // (user hasn't run the SQL migration yet), retry without it so the upload
-  // still succeeds. The public site just won't show LQIP placeholders for
-  // that image until the migration is run + image is re-uploaded.
-  if (error && input.lqip_data !== undefined && /lqip_data/i.test(error.message || '')) {
-    const { lqip_data: _omit, ...rest } = input;
+  // Phase 5b.5 + 5b.4 — graceful fallback: if any of the new columns don't
+  // exist (user hasn't run the SQL migrations yet), retry without them so the
+  // upload still succeeds. The public site just won't show LQIP / process
+  // media for that image until the migrations are run + image is re-uploaded.
+  if (error && (
+    (input.lqip_data !== undefined && /lqip_data/i.test(error.message || '')) ||
+    (input.process_video_url !== undefined && /process_video_url/i.test(error.message || '')) ||
+    (input.process_image_url !== undefined && /process_image_url/i.test(error.message || '')) ||
+    (input.preview_order !== undefined && /preview_order/i.test(error.message || ''))
+  )) {
+    const { lqip_data: _l, process_video_url: _v, process_image_url: _i, preview_order: _p, ...rest } = input;
     const { data: retryData, error: retryError } = await supabase
       .from('images')
       .insert(rest)
@@ -219,6 +244,10 @@ export async function addVideo(input: {
   description?: string;
   priority?: number;
   published?: boolean;
+  // Phase 5b.4 — process media for the hover preview card.
+  process_video_url?: string | null;
+  process_image_url?: string | null;
+  preview_order?: string[] | null;
 }) {
   if (!supabase) return { error: 'No Supabase client' };
   const { data, error } = await supabase
@@ -226,6 +255,17 @@ export async function addVideo(input: {
     .insert(input)
     .select()
     .single();
+  // Graceful fallback: if process media columns don't exist (migration not run),
+  // retry without them so the upload still succeeds.
+  if (error && (input.process_video_url !== undefined || input.process_image_url !== undefined || input.preview_order !== undefined) && /process_video_url|process_image_url|preview_order/i.test(error.message || '')) {
+    const { process_video_url: _v, process_image_url: _i, preview_order: _p, ...rest } = input;
+    const { data: retryData, error: retryError } = await supabase
+      .from('videos')
+      .insert(rest)
+      .select()
+      .single();
+    return { data: retryData, error: retryError };
+  }
   return { data, error };
 }
 

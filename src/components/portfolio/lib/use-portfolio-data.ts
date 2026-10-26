@@ -26,6 +26,14 @@ type Image = {
   // Work cells can render a blurred placeholder instantly (zero HTTP requests).
   // Null for images uploaded before Phase 5b.5 — cells fall back to solid bg.
   lqip_data?: string | null;
+  // Phase 5b.4 — process media for the hover preview card.
+  // process_video_url: "how I did it" video (heavily compressed, autoplay muted loop)
+  // process_image_url: "how I did it" image (e.g., Photoshop layers timeline)
+  // preview_order: JSON array like ["description","video","image"] — user-defined
+  //   order for the hover card. Items without data are skipped.
+  process_video_url?: string | null;
+  process_image_url?: string | null;
+  preview_order?: string[] | null;
 };
 
 /**

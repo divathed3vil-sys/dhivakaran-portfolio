@@ -31,6 +31,18 @@ function getCellsForCategory(cat: ImageCategory, catLabel: string): PortfolioIma
   }));
 }
 
+// Phase 5b.4 — cell data type for the hover preview card.
+type CellData = {
+  src: string;
+  fullSrc: string;
+  lqipData: string;
+  label: string;
+  desc: string;
+  processVideoUrl: string;
+  processImageUrl: string;
+  previewOrder: string[];
+};
+
 
 /**
  * SelectedWork — three category grids (Book Covers, Posters, Thumbnails).
@@ -42,25 +54,16 @@ export function SelectedWork() {
   const bloomRef = useBloom<HTMLDivElement>();
   const titleRef = useHeadingRack<HTMLHeadingElement>();
   const { categories: dbCats, images: dbImgs } = usePortfolioData();
-  const [descText, setDescText] = useState<string | null>(null);
-  const [descPos, setDescPos] = useState({ x: 0, y: 0 });
+  // Phase 5b.4 — hover preview state. Stores the full cell data (desc + process
+  // video + process image + preview_order) so the hover card can render all
+  // items in the user-defined order. Null when not hovering over a cell.
+  const [hoverCell, setHoverCell] = useState<CellData | null>(null);
+  const [hoverPos, setHoverPos] = useState({ x: 0, y: 0 });
   // Phase 5b.3 — MediaViewer replaces the old ImageLightbox. Manages the
   // current viewer index (null = closed). Items list built from the current
   // category's cells, so prev/next navigates within the same category.
   const [viewerCatKey, setViewerCatKey] = useState<string | null>(null);
   const [viewerIndex, setViewerIndex] = useState<number | null>(null);
-
-  // floating description card — follows cursor, shows on hover over cells with data-desc
-  const handleMouseMove = (e: React.MouseEvent) => {
-    const el = (e.target as HTMLElement)?.closest('[data-desc]') as HTMLElement | null;
-    const desc = el?.dataset.desc;
-    if (desc) {
-      setDescText(desc);
-      setDescPos({ x: e.clientX, y: e.clientY });
-    } else if (descText !== null) {
-      setDescText(null);
-    }
-  };
 
   // Use Supabase data if available; fall back to hardcoded placeholders
   const useDb = dbCats && dbCats.length > 0;
@@ -71,18 +74,40 @@ export function SelectedWork() {
         lqipData: img.lqip_data || '',         // Phase 5b.5 — 16px base64 LQIP
         label: img.label || '',
         desc: img.description || '',
+        // Phase 5b.4 — process media for hover preview + MediaViewer sidebar
+        processVideoUrl: img.process_video_url || '',
+        processImageUrl: img.process_image_url || '',
+        previewOrder: img.preview_order || ['description', 'video', 'image'],
       })) }))
     : CATEGORY_ORDER.map((cat) => {
         const cells = getCellsForCategory(cat, CATEGORY_LABELS[cat]);
-        return { key: cat, name: CATEGORY_LABELS[cat], blurb: CATEGORY_BLURBS[cat], cells: cells.map((c) => ({ src: c.src, fullSrc: c.src, lqipData: '', label: c.label, desc: '' })) };
+        return { key: cat, name: CATEGORY_LABELS[cat], blurb: CATEGORY_BLURBS[cat], cells: cells.map((c) => ({ src: c.src, fullSrc: c.src, lqipData: '', label: c.label, desc: '', processVideoUrl: '', processImageUrl: '', previewOrder: ['description', 'video', 'image'] })) };
       });
+
+  // Phase 5b.4 — hover preview: when cursor moves over a cell, look up the full
+  // cell data (desc + process video + process image + preview_order) + set as
+  // the hover state. The hover card renders items in the user-defined order.
+  const handleMouseMove = (e: React.MouseEvent) => {
+    const el = (e.target as HTMLElement)?.closest('[data-cell-idx]') as HTMLElement | null;
+    if (el) {
+      const idx = parseInt(el.dataset.cellIdx || '-1', 10);
+      const catKey = el.dataset.catKey || '';
+      const cat = displayCats.find((c) => c.key === catKey);
+      if (cat && idx >= 0 && idx < cat.cells.length) {
+        setHoverCell(cat.cells[idx]);
+        setHoverPos({ x: e.clientX, y: e.clientY });
+        return;
+      }
+    }
+    if (hoverCell !== null) setHoverCell(null);
+  };
 
   return (
     <section
       id="work"
       data-canvas="home"
       onMouseMove={handleMouseMove}
-      onMouseLeave={() => setDescText(null)}
+      onMouseLeave={() => setHoverCell(null)}
       aria-label="Selected work"
       style={{
         background: 'var(--canvas)',
@@ -145,6 +170,8 @@ export function SelectedWork() {
                       className="contact-sheet-cell halftone scratch-host"
                       tabIndex={0}
                       data-desc={cell.desc || ''}
+                      data-cell-idx={i}
+                      data-cat-key={cat.key}
                       style={{
                         position: 'relative',
                         background: 'var(--night-soft)',
@@ -241,29 +268,79 @@ export function SelectedWork() {
         </div>
       </div>
 
-      {/* floating description card — follows cursor, semi-transparent */}
-      {descText && (
+      {/* Phase 5b.4 — hover preview card. Follows cursor, shows description +
+          process video (autoplay muted loop) + process image, in the
+          user-defined preview_order. Items without data are skipped. */}
+      {hoverCell && (
         <div
           style={{
             position: 'fixed',
-            left: `${descPos.x + 16}px`,
-            top: `${descPos.y + 16}px`,
+            left: `${Math.min(hoverPos.x + 16, window.innerWidth - 280)}px`,
+            top: `${Math.min(hoverPos.y + 16, window.innerHeight - 200)}px`,
             maxWidth: '260px',
-            padding: '0.75rem 1rem',
-            background: 'rgba(10, 10, 10, 0.85)',
-            backdropFilter: 'blur(8px)',
-            WebkitBackdropFilter: 'blur(8px)',
+            maxHeight: '320px',
+            overflow: 'hidden',
+            padding: '0.75rem',
+            background: 'rgba(10, 10, 10, 0.88)',
+            backdropFilter: 'blur(12px)',
+            WebkitBackdropFilter: 'blur(12px)',
             border: '1px solid rgba(214, 41, 41, 0.3)',
             color: 'var(--canvas)',
             fontFamily: 'var(--font-fraunces), serif',
-            fontSize: '0.9rem',
+            fontSize: '0.85rem',
             lineHeight: 1.4,
             zIndex: 9999,
             pointerEvents: 'none',
             boxShadow: '0 8px 24px -6px rgba(0,0,0,0.5)',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '0.5rem',
           }}
         >
-          {descText}
+          {hoverCell.previewOrder.map((item) => {
+            if (item === 'description' && hoverCell.desc) {
+              return <div key="desc" style={{ fontSize: '0.85rem' }}>{hoverCell.desc}</div>;
+            }
+            if (item === 'video' && hoverCell.processVideoUrl) {
+              // Render the process video. If it's a YouTube/Vimeo URL, use iframe.
+              // Otherwise, use a <video> element (for self-hosted .mp4/.webm).
+              const isYT = /(?:youtube\.com|youtu\.be|vimeo\.com)/.test(hoverCell.processVideoUrl);
+              return (
+                <div key="video" style={{ position: 'relative', width: '100%', aspectRatio: '16/9', overflow: 'hidden', borderRadius: '2px' }}>
+                  {isYT ? (
+                    <iframe
+                      src={hoverCell.processVideoUrl.replace('watch?v=', 'embed/').replace('youtu.be/', 'youtube.com/embed/') + (hoverCell.processVideoUrl.includes('?') ? '&' : '?') + 'autoplay=1&mute=1&loop=1&modestbranding=1&rel=0'}
+                      style={{ width: '100%', height: '100%', border: 0 }}
+                      allow="autoplay; encrypted-media"
+                      title="Process video"
+                    />
+                  ) : (
+                    <video
+                      src={hoverCell.processVideoUrl}
+                      autoPlay
+                      muted
+                      loop
+                      playsInline
+                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                    />
+                  )}
+                </div>
+              );
+            }
+            if (item === 'image' && hoverCell.processImageUrl) {
+              return (
+                <div key="image" style={{ width: '100%', borderRadius: '2px', overflow: 'hidden' }}>
+                  <img
+                    src={hoverCell.processImageUrl}
+                    alt="Process — Photoshop layers"
+                    draggable={false}
+                    style={{ width: '100%', display: 'block', userSelect: 'none', WebkitUserDrag: 'none' }}
+                  />
+                </div>
+              );
+            }
+            return null;
+          })}
         </div>
       )}
 
@@ -276,11 +353,12 @@ export function SelectedWork() {
         const items: MediaItem[] = cat.cells.map((cell) => ({
           id: cell.src,
           type: 'image' as const,
-          // Phase 5b.5 — use full-quality URL (1920px) in the viewer, not the
-          // 400px cell thumbnail. Falls back to cell.src if fullSrc missing.
           src: cell.fullSrc || cell.src,
           label: cell.label || '',
           description: cell.desc || '',
+          // Phase 5b.4 — pass process media to the MediaViewer sidebar
+          processVideoUrl: cell.processVideoUrl || undefined,
+          processImageUrl: cell.processImageUrl || undefined,
         }));
         return (
           <MediaViewer
