@@ -28,11 +28,11 @@ type Image = { id: string; public_url: string; label: string | null; priority: n
 export function LabTab() {
   // Phase 5b.6 — React Query replaces raw useEffect+setState.
   const queryClient = useQueryClient();
-  const { data: imgs = [], isLoading: loading } = useQuery({
+  const { data: imgs = [], isLoading: loading } = useQuery<Image[]>({
     queryKey: ['allImages'],
-    queryFn: getAllImages,
+    queryFn: getAllImages as () => Promise<Image[]>,
   });
-  const imgs = imgs as Image[];
+  
   const invalidateImages = () => queryClient.invalidateQueries({ queryKey: ['allImages'] });
 
   const [bulkProgress, setBulkProgress] = useState<{ current: number; total: number } | null>(null);

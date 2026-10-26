@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import imageCompression from 'browser-image-compression';
 import {
@@ -50,19 +50,19 @@ export function SelectedFramesTab() {
   // and mutations automatically invalidate the cache. Query keys match the
   // prefetchQuery calls in studio-overlay.tsx so data is instantly available.
   const queryClient = useQueryClient();
-  const { data: cats = [], isLoading: catLoading } = useQuery({
-    queryKey: ['cats'],
-    queryFn: getCategories,
+  const { data: cats = [], isLoading: catLoading } = useQuery<Category[]>({
+    queryKey: ['categories'],
+    queryFn: getCategories as () => Promise<Category[]>,
   });
-  const { data: imgs = [], isLoading: imgLoading } = useQuery({
+  const { data: imgs = [], isLoading: imgLoading } = useQuery<Image[]>({
     queryKey: ['allImages'],
-    queryFn: getAllImages,
+    queryFn: getAllImages as () => Promise<Image[]>,
   });
   const loading = catLoading || imgLoading;
 
   // Helper to invalidate both queries after any mutation
   const invalidateAll = () => {
-    queryClient.invalidateQueries({ queryKey: ['cats'] });
+    queryClient.invalidateQueries({ queryKey: ['categories'] });
     queryClient.invalidateQueries({ queryKey: ['allImages'] });
   };
 
@@ -90,9 +90,12 @@ export function SelectedFramesTab() {
   const [msg, setMsg] = useState('');
 
   // Auto-select first category when data loads
-  const cats = cats as Category[];
-  const imgs = imgs as Image[];
-  if (cats.length > 0 && !activeCat) setActiveCat(cats[0].id);
+  useEffect(() => {
+    if (cats.length > 0 && !activeCat) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setActiveCat(cats[0].id);
+    }
+  }, [cats.length, activeCat]);
 
   const slugify = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
 

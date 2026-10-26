@@ -61,11 +61,11 @@ function getEmbedUrl(video: Video): string {
 export function VideosTab() {
   // Phase 5b.6 — React Query replaces raw useEffect+setState.
   const queryClient = useQueryClient();
-  const { data: vids = [], isLoading: loading } = useQuery({
+  const { data: vids = [], isLoading: loading } = useQuery<Video[]>({
     queryKey: ['allVideos'],
-    queryFn: getAllVideos,
+    queryFn: getAllVideos as () => Promise<Video[]>,
   });
-  const vids = vids as Video[];
+  
   const invalidateVideos = () => queryClient.invalidateQueries({ queryKey: ['allVideos'] });
 
   const [url, setUrl] = useState('');
