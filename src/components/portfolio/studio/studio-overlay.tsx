@@ -139,6 +139,7 @@ function StudioShell({
       role="dialog"
       aria-modal="true"
       aria-label="Studio"
+      data-lenis-prevent=""
       style={{
         position: 'fixed',
         inset: 0,
