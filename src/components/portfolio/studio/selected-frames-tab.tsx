@@ -26,6 +26,7 @@ import {
   reorderImages, bulkUpdateImages, bulkDeleteImages,
 } from '@/lib/supabase-data';
 import { generateLQIP } from '../lib/generate-lqip';
+import { StudioDetailPanel } from './studio-detail-panel';
 
 type Category = { id: string; name: string; slug: string; type: string; blurb: string | null; priority: number; };
 type Image = {
@@ -88,6 +89,15 @@ export function SelectedFramesTab() {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [activeDragId, setActiveDragId] = useState<string | null>(null);
   const [msg, setMsg] = useState('');
+  const [isMobile, setIsMobile] = useState(false);
+
+  // Detect mobile for DetailPanel layout
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth <= 768);
+    check();
+    window.addEventListener('resize', check);
+    return () => window.removeEventListener('resize', check);
+  }, []);
 
   // Auto-select first category when data loads
   useEffect(() => {
@@ -448,7 +458,7 @@ export function SelectedFramesTab() {
                     img={img}
                     selected={selected.has(img.id)}
                     onToggleSelect={() => toggleSelect(img.id)}
-                    editing={editingId === img.id}
+                    editing={false}
                     onStartEdit={() => handleStartEdit(img)}
                     onCancelEdit={() => setEditingId(null)}
                     onSaveEdit={handleSaveEdit}
@@ -472,6 +482,83 @@ export function SelectedFramesTab() {
       )}
 
       {msg && <div className="studio-glass" style={{ position: 'fixed', bottom: '1.5rem', right: '1.5rem', padding: '0.75rem 1.25rem', borderRadius: '4px', color: 'var(--canvas)', fontFamily: 'var(--font-mono), monospace', fontSize: '0.8rem', zIndex: 10010, animation: 'studio-toast-in 0.4s var(--ease-spring-soft) both', boxShadow: '0 8px 24px -6px rgba(0,0,0,0.5)' }}>{msg}</div>}
+
+      {/* Phase 5b.7b — Detail Panel (replaces inline edit form).
+          Slides in from the right when a card's edit button is clicked.
+          Contains all editable fields: label, description, priority, published,
+          in_lab, process media, preview order. */}
+      {editingId && (() => {
+        const img = imgs.find((i) => i.id === editingId);
+        if (!img) return null;
+        return (
+          <StudioDetailPanel
+            title={img.label || 'Untitled'}
+            isMobile={isMobile}
+            preview={
+              <div style={{ width: '100%', aspectRatio: '3/2', borderRadius: '3px', overflow: 'hidden', background: '#000' }}>
+                <img src={img.public_url} alt={img.label || ''} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              </div>
+            }
+            onSave={handleSaveEdit}
+            onClose={() => setEditingId(null)}
+            onDelete={async () => {
+              await handleDeleteImage(img.id);
+              setEditingId(null);
+            }}
+          >
+            {/* Label */}
+            <div style={{ marginBottom: '1rem' }}>
+              <label className="text-mono text-label" style={{ color: 'var(--night-muted)', display: 'block', marginBottom: '0.25rem', fontSize: '0.65rem' }}>Label</label>
+              <input value={editLabel} onChange={(e) => setEditLabel(e.target.value)} placeholder="Cover 01" style={inputStyle} />
+            </div>
+            {/* Description */}
+            <div style={{ marginBottom: '1rem' }}>
+              <label className="text-mono text-label" style={{ color: 'var(--night-muted)', display: 'block', marginBottom: '0.25rem', fontSize: '0.65rem' }}>Description</label>
+              <textarea value={editDesc} onChange={(e) => setEditDesc(e.target.value)} placeholder="Shows on hover" rows={3} style={{ ...inputStyle, resize: 'vertical' }} />
+            </div>
+            {/* Priority + Lab toggle */}
+            <div style={{ display: 'flex', gap: '1rem', marginBottom: '1rem', alignItems: 'flex-end' }}>
+              <div>
+                <label className="text-mono text-label" style={{ color: 'var(--night-muted)', display: 'block', marginBottom: '0.25rem', fontSize: '0.65rem' }}>Priority</label>
+                <input type="number" value={editPriority} onChange={(e) => setEditPriority(parseInt(e.target.value) || 0)} style={{ ...inputStyle, width: '80px' }} />
+              </div>
+              <label style={{ color: 'var(--canvas)', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer' }}>
+                <input type="checkbox" checked={editInLab} onChange={(e) => setEditInLab(e.target.checked)} />
+                In Lab
+              </label>
+            </div>
+            {/* Process media (Phase 5b.4) */}
+            <div style={{ marginTop: '1.5rem', padding: '0.75rem', border: '1px dashed rgba(255,255,255,0.08)', borderRadius: '3px' }}>
+              <div className="text-mono text-label" style={{ color: 'var(--accent)', marginBottom: '0.5rem', fontSize: '0.65rem' }}>PROCESS MEDIA</div>
+              <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'flex-end' }}>
+                <div>
+                  <label className="text-mono text-label" style={{ color: 'var(--night-muted)', display: 'block', marginBottom: '0.25rem', fontSize: '0.6rem' }}>Process Video</label>
+                  <input type="file" accept="video/*" style={{ ...inputStyle, padding: '0.3rem', fontSize: '0.7rem' }} onChange={(e) => handleProcessVideoUpload(e.target.files?.[0] || null)} />
+                </div>
+                <div>
+                  <label className="text-mono text-label" style={{ color: 'var(--night-muted)', display: 'block', marginBottom: '0.25rem', fontSize: '0.6rem' }}>Process Image</label>
+                  <input type="file" accept="image/*" style={{ ...inputStyle, padding: '0.3rem', fontSize: '0.7rem' }} onChange={(e) => handleProcessImageUpload(e.target.files?.[0] || null)} />
+                </div>
+              </div>
+              {processVideoUrl && <div style={{ marginTop: '0.4rem', fontSize: '0.65rem', color: 'var(--accent-soft)' }}>✓ Process video set</div>}
+              {processImageUrl && <div style={{ marginTop: '0.2rem', fontSize: '0.65rem', color: 'var(--accent-soft)' }}>✓ Process image set</div>}
+              {/* Preview order */}
+              <div style={{ marginTop: '0.75rem' }}>
+                <div className="text-mono text-label" style={{ color: 'var(--night-muted)', marginBottom: '0.3rem', fontSize: '0.6rem' }}>PREVIEW ORDER</div>
+                <div style={{ display: 'flex', gap: '0.3rem', flexWrap: 'wrap' }}>
+                  {previewOrder.map((item, i) => (
+                    <div key={item} style={{ display: 'flex', alignItems: 'center', gap: '0.2rem' }}>
+                      {i > 0 && <button onClick={() => movePreviewItem(i, i - 1)} style={{ ...miniBtn, padding: '0.1rem 0.3rem', fontSize: '0.6rem' }}>←</button>}
+                      <span style={{ padding: '0.2rem 0.5rem', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '2px', fontSize: '0.65rem', color: 'var(--canvas)', fontFamily: 'var(--font-mono), monospace', background: 'rgba(10,10,10,0.5)' }}>{item}</span>
+                      {i < previewOrder.length - 1 && <button onClick={() => movePreviewItem(i, i + 1)} style={{ ...miniBtn, padding: '0.1rem 0.3rem', fontSize: '0.6rem' }}>→</button>}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </StudioDetailPanel>
+        );
+      })()}
     </div>
   );
 }
@@ -534,7 +621,7 @@ function SortableImageCard({
           type="checkbox"
           checked={selected}
           onChange={onToggleSelect}
-          style={{ position: 'absolute', top: '6px', right: '6px', width: '16px', height: '16px', cursor: 'pointer' }}
+          className="studio-hover-reveal" style={{ position: 'absolute', top: '6px', right: '6px', width: '16px', height: '16px', cursor: 'pointer' }}
           aria-label="Select image"
         />
         {/* published + lab indicators */}

@@ -268,7 +268,7 @@ export function VideosTab() {
         );
       })()}
 
-      {msg && <div className="studio-glass" style={{ position: 'fixed', bottom: '1.5rem', right: '1.5rem', padding: '0.75rem 1.25rem', borderRadius: '4px', color: 'var(--canvas)', fontFamily: 'var(--font-mono), monospace', fontSize: '0.8rem', zIndex: 10010, animation: 'studio-toast-in 0.4s var(--ease-spring-soft) both', boxShadow: '0 8px 24px -6px rgba(0,0,0,0.5)' }}>{msg}</div>}
+      {msg && <div className="studio-glass studio-hover-reveal" style={{ position: 'fixed', bottom: '1.5rem', right: '1.5rem', padding: '0.75rem 1.25rem', borderRadius: '4px', color: 'var(--canvas)', fontFamily: 'var(--font-mono), monospace', fontSize: '0.8rem', zIndex: 10010, animation: 'studio-toast-in 0.4s var(--ease-spring-soft) both', boxShadow: '0 8px 24px -6px rgba(0,0,0,0.5)' }}>{msg}</div>}
     </div>
   );
 }
@@ -322,7 +322,7 @@ function SortableVideoCard({ video, selected, onToggleSelect, onPlay, onDelete }
           checked={selected}
           onChange={onToggleSelect}
           onClick={(e) => e.stopPropagation()}
-          style={{ position: 'absolute', top: '6px', right: '6px', width: '16px', height: '16px', cursor: 'pointer' }}
+          className="studio-hover-reveal" style={{ position: 'absolute', top: '6px', right: '6px', width: '16px', height: '16px', cursor: 'pointer' }}
           aria-label="Select video"
         />
         <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2rem', color: 'var(--canvas)', opacity: 0.7, pointerEvents: 'none' }}>▶</div>

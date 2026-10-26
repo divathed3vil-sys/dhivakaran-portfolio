@@ -216,7 +216,7 @@ export function LabTab() {
         {labImages.length === 0 && <div style={{ color: 'var(--night-muted)', fontStyle: 'italic' }}>No lab imgs yet. Upload above.</div>}
       </div>
 
-      {msg && <div className="studio-glass" style={{ position: 'fixed', bottom: '1.5rem', right: '1.5rem', padding: '0.75rem 1.25rem', borderRadius: '4px', color: 'var(--canvas)', fontFamily: 'var(--font-mono), monospace', fontSize: '0.8rem', zIndex: 10010, animation: 'studio-toast-in 0.4s var(--ease-spring-soft) both', boxShadow: '0 8px 24px -6px rgba(0,0,0,0.5)' }}>{msg}</div>}
+      {msg && <div className="studio-glass studio-hover-reveal" style={{ position: 'fixed', bottom: '1.5rem', right: '1.5rem', padding: '0.75rem 1.25rem', borderRadius: '4px', color: 'var(--canvas)', fontFamily: 'var(--font-mono), monospace', fontSize: '0.8rem', zIndex: 10010, animation: 'studio-toast-in 0.4s var(--ease-spring-soft) both', boxShadow: '0 8px 24px -6px rgba(0,0,0,0.5)' }}>{msg}</div>}
     </div>
   );
 }
@@ -261,7 +261,7 @@ function SortableLabCard({ img, selected, onToggleSelect, onToggleLab, onDelete 
           type="checkbox"
           checked={selected}
           onChange={onToggleSelect}
-          style={{ position: 'absolute', top: '6px', right: '6px', width: '16px', height: '16px', cursor: 'pointer' }}
+          className="studio-hover-reveal" style={{ position: 'absolute', top: '6px', right: '6px', width: '16px', height: '16px', cursor: 'pointer' }}
           aria-label="Select image"
         />
         <span style={{ position: 'absolute', bottom: '4px', left: '4px', background: 'rgba(10,10,10,0.7)', color: img.published ? 'var(--accent)' : 'var(--night-muted)', padding: '1px 5px', borderRadius: '2px', fontSize: '0.6rem', fontFamily: 'var(--font-mono), monospace' }} title={img.published ? 'Published' : 'Hidden'}>

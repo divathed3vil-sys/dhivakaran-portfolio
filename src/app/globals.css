@@ -1051,3 +1051,13 @@ body[data-vf-active="true"] { cursor: none; }
   .studio-hover-reveal { opacity: 1 !important; }
 }
 
+/* Phase 5b.7b — Detail panel slide-in/out from right (matches MediaViewer + Nav menu) */
+@keyframes detail-panel-slide-in {
+  from { transform: translateX(100%); }
+  to   { transform: translateX(0); }
+}
+@keyframes detail-panel-slide-out {
+  from { transform: translateX(0); }
+  to   { transform: translateX(100%); }
+}
+
