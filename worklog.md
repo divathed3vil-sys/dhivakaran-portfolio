@@ -1328,3 +1328,37 @@ Stage Summary:
 - Forward-compatible with 5b.4 (process media sections render only if URLs exist)
 - Verified on production with real Supabase data (images + video both work)
 - Ready for Phase 5b.5 (LQIP optimization) upon user approval
+
+---
+Task ID: OPT-5b.5 (Phase 5b — LQIP optimization for Selected Frames)
+Agent: main-orchestrator
+Task: 3-tier image delivery (LQIP base64 inline + medium cell img + full viewer img). Generate LQIP client-side at upload time via Canvas API. Cross-fade img over LQIP on onLoad. MediaViewer uses full-quality 1920px variant.
+
+Work Log:
+- supabase/migrations/add_lqip_data.sql — SQL migration to add lqip_data TEXT column to images table. User needs to run this in the Supabase SQL Editor.
+- src/components/portfolio/lib/use-portfolio-data.ts — added lqip_data?: string | null to Image type. Optional — null for images uploaded before Phase 5b.5.
+- src/lib/supabase-data.ts — addImage mutation now accepts lqip_data field. Graceful fallback: if the lqip_data column doesn't exist (migration not run yet), retries without it so uploads still succeed.
+- src/components/portfolio/lib/generate-lqip.ts — new helper. generateLQIP(file) reads the file via blob URL, draws to a 16px-wide canvas, exports as base64 WebP (quality 0.4) or PNG fallback. Returns a data URL string (~200-500 bytes). No CORS issues (same-origin blob).
+- src/components/portfolio/studio/selected-frames-tab.tsx — added lqipData state. handleFileSelect now generates LQIP after upload + stores in state. handleSaveImage includes lqip_data in the addImage payload. Cancel button resets lqipData. Image type updated to include lqip_data + created_at.
+- src/components/portfolio/studio/lab-tab.tsx — bulk upload now generates LQIP for each file + includes lqip_data in addImage. Image type updated.
+- src/components/portfolio/selected-work.tsx — cell rendering updated:
+  - New cell data fields: fullSrc (1920px) + lqipData (base64)
+  - Cell article now has position:relative + overflow:hidden (for LQIP layer)
+  - LQIP blurred background div: position:absolute inset:0, backgroundImage: url(lqipData), backgroundSize:cover, filter:blur(20px), transform:scale(1.15) to hide blur edges, zIndex:0
+  - Main img: position:relative zIndex:1, opacity starts at 0 (if LQIP exists) or 1 (legacy), onLoad sets opacity to 1 (cross-fade over 0.4s)
+  - Transition includes opacity 0.4s var(--ease-out-soft)
+- src/components/portfolio/selected-work.tsx — MediaViewer items now use cell.fullSrc (1920px) instead of cell.src (400px) for the main media. Falls back to cell.src if fullSrc missing.
+- bun run lint: COMPLETELY CLEAN (0 errors, 0 warnings)
+- Agent Browser (dev): page loads, 15 imgs, no errors
+- Public site is safe to deploy before SQL migration — lqip_data is optional in the type, cells fall back to solid background (no LQIP) for existing images
+- Studio uploads are also safe — graceful fallback in addImage retries without lqip_data if the column doesn't exist
+
+Stage Summary:
+- Phase 5b.5 complete: 3-tier image delivery system
+- LQIP (16px base64, ~200-500 bytes) generated client-side at upload time via Canvas API
+- Stored in images.lqip_data column (SQL migration provided — user runs in Supabase SQL Editor)
+- Inlined in JSON response → zero extra HTTP requests → true instant placeholder
+- Cell: blurred LQIP background + img cross-fades in on onLoad (0.4s ease-out-soft)
+- MediaViewer: uses 1920px full-quality variant (upgraded from 400px cell thumbnail)
+- Graceful fallback everywhere: works without the SQL migration, just no LQIP for legacy images
+- Ready for Phase 5b.4 (hover preview system) upon user approval

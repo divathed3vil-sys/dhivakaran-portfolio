@@ -65,10 +65,16 @@ export function SelectedWork() {
   // Use Supabase data if available; fall back to hardcoded placeholders
   const useDb = dbCats && dbCats.length > 0;
   const displayCats = useDb
-    ? dbCats!.map((c) => ({ key: c.id, name: c.name, blurb: c.blurb || '', cells: getImagesForCategory(dbImgs || [], c.id).map((img) => ({ src: lowResUrl(img.public_url), label: img.label || '', desc: img.description || '' })) }))
+    ? dbCats!.map((c) => ({ key: c.id, name: c.name, blurb: c.blurb || '', cells: getImagesForCategory(dbImgs || [], c.id).map((img) => ({
+        src: lowResUrl(img.public_url),        // 400px medium for cell thumbnail
+        fullSrc: lowResUrl(img.public_url, 1920), // 1920px full for MediaViewer
+        lqipData: img.lqip_data || '',         // Phase 5b.5 — 16px base64 LQIP
+        label: img.label || '',
+        desc: img.description || '',
+      })) }))
     : CATEGORY_ORDER.map((cat) => {
         const cells = getCellsForCategory(cat, CATEGORY_LABELS[cat]);
-        return { key: cat, name: CATEGORY_LABELS[cat], blurb: CATEGORY_BLURBS[cat], cells: cells.map((c) => ({ src: c.src, label: c.label })) };
+        return { key: cat, name: CATEGORY_LABELS[cat], blurb: CATEGORY_BLURBS[cat], cells: cells.map((c) => ({ src: c.src, fullSrc: c.src, lqipData: '', label: c.label, desc: '' })) };
       });
 
   return (
@@ -140,10 +146,31 @@ export function SelectedWork() {
                       tabIndex={0}
                       data-desc={cell.desc || ''}
                       style={{
+                        position: 'relative',
                         background: 'var(--night-soft)',
                         contain: 'layout paint',
+                        overflow: 'hidden',
                       }}
                     >
+                      {/* Phase 5b.5 — LQIP blurred background. Renders instantly
+                          (base64 inlined in JSON, zero HTTP requests). 16px wide,
+                          scaled up + blurred to fill the cell as a placeholder.
+                          Hidden once the main img finishes loading (faded in on top). */}
+                      {cell.lqipData && (
+                        <div
+                          aria-hidden="true"
+                          style={{
+                            position: 'absolute',
+                            inset: 0,
+                            backgroundImage: `url(${cell.lqipData})`,
+                            backgroundSize: 'cover',
+                            backgroundPosition: 'center',
+                            filter: 'blur(20px)',
+                            transform: 'scale(1.15)', // scale up to hide blur edges
+                            zIndex: 0,
+                          }}
+                        />
+                      )}
                       <img
                         src={cell.src}
                         alt={cell.label || ''}
@@ -154,9 +181,15 @@ export function SelectedWork() {
                         width={800}
                         height={600}
                         onClick={() => { setViewerCatKey(cat.key); setViewerIndex(i); }}
+                        onLoad={(e) => { e.currentTarget.style.opacity = '1'; }}
                         style={{
+                          position: 'relative',
+                          zIndex: 1,
+                          // Phase 5b.5 — start at opacity 0, fade in on onLoad (cross-fade with LQIP below).
+                          // If no LQIP (legacy image), the img still loads + fades in — just shows solid bg briefly.
+                          opacity: cell.lqipData ? 0 : 1,
                           filter: 'saturate(0.95) contrast(1.05) brightness(0.96)',
-                          transition: 'filter 0.4s var(--ease-out-soft)',
+                          transition: 'filter 0.4s var(--ease-out-soft), opacity 0.4s var(--ease-out-soft)',
                           cursor: 'pointer',
                           width: '100%',
                           height: '100%',
@@ -243,7 +276,9 @@ export function SelectedWork() {
         const items: MediaItem[] = cat.cells.map((cell) => ({
           id: cell.src,
           type: 'image' as const,
-          src: cell.src,
+          // Phase 5b.5 — use full-quality URL (1920px) in the viewer, not the
+          // 400px cell thumbnail. Falls back to cell.src if fullSrc missing.
+          src: cell.fullSrc || cell.src,
           label: cell.label || '',
           description: cell.desc || '',
         }));

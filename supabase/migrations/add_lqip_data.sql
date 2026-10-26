@@ -1,0 +1,14 @@
+-- Phase 5b.5 — Add lqip_data column to images table for LQIP optimization.
+-- LQIP = Low Quality Image Placeholder. A 16px-wide base64-encoded image
+-- (WebP or PNG, ~200-500 bytes) generated at upload time via the browser's
+-- Canvas API. Stored as a TEXT field. Inlined in the JSON response from
+-- getPublishedImages() so the Selected Work cells can render a blurred
+-- placeholder instantly — zero extra HTTP requests.
+--
+-- The main medium-quality image (800px AVIF, ~10-30 KB) loads on top with
+-- loading=lazy + decoding=async + fades in on onLoad (cross-fade with LQIP).
+-- The full-quality image (1920px AVIF, ~50-100 KB) loads only when the
+-- MediaViewer is opened.
+--
+-- Run this in the Supabase SQL Editor (Dashboard > SQL > New Query).
+ALTER TABLE images ADD COLUMN IF NOT EXISTS lqip_data TEXT;

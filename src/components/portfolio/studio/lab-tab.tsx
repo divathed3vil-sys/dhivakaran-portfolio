@@ -19,8 +19,9 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { getAllImages, uploadImageFile, addImage, deleteImage, updateImage, reorderImages, bulkUpdateImages, bulkDeleteImages } from '@/lib/supabase-data';
+import { generateLQIP } from '../lib/generate-lqip';
 
-type Image = { id: string; public_url: string; label: string | null; priority: number; in_lab: boolean; published: boolean; created_at?: string | null; };
+type Image = { id: string; public_url: string; label: string | null; priority: number; in_lab: boolean; published: boolean; created_at?: string | null; lqip_data?: string | null; };
 
 export function LabTab() {
   const [images, setImages] = useState<Image[]>([]);
@@ -51,7 +52,10 @@ export function LabTab() {
       setBulkProgress({ current: i, total: fileArr.length });
       const { publicUrl, error } = await uploadImageFile(fileArr[i]);
       if (error || !publicUrl) { setMsg(`Error on file ${i + 1}: ${error}`); continue; }
-      await addImage({ category_id: null, public_url, label: fileArr[i].name.replace(/\.[^.]+$/, ''), priority: 0, published: true, in_lab: true });
+      // Phase 5b.5 — generate LQIP for each lab image too (so the public site
+      // Visual Lab tiles also get instant blurred placeholders if we extend LQIP there)
+      const lqip = await generateLQIP(fileArr[i]);
+      await addImage({ category_id: null, public_url, label: fileArr[i].name.replace(/\.[^.]+$/, ''), priority: 0, published: true, in_lab: true, lqip_data: lqip || null });
     }
 
     setBulkProgress({ current: fileArr.length, total: fileArr.length });

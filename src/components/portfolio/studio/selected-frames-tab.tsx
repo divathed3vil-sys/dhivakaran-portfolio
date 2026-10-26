@@ -23,9 +23,10 @@ import {
   uploadImageFile, addImage, deleteImage, updateImage,
   reorderImages, bulkUpdateImages, bulkDeleteImages,
 } from '@/lib/supabase-data';
+import { generateLQIP } from '../lib/generate-lqip';
 
 type Category = { id: string; name: string; slug: string; type: string; blurb: string | null; priority: number; };
-type Image = { id: string; category_id: string | null; public_url: string; label: string | null; description: string | null; priority: number; published: boolean; in_lab: boolean; created_at?: string | null; };
+type Image = { id: string; category_id: string | null; public_url: string; label: string | null; description: string | null; priority: number; published: boolean; in_lab: boolean; created_at?: string | null; lqip_data?: string | null; };
 
 export function SelectedFramesTab() {
   const [categories, setCategories] = useState<Category[]>([]);
@@ -37,6 +38,8 @@ export function SelectedFramesTab() {
   const [newCatBlurb, setNewCatBlurb] = useState('');
   const [uploadProgress, setUploadProgress] = useState<number | null>(null);
   const [uploadedUrl, setUploadedUrl] = useState<string | null>(null);
+  // Phase 5b.5 — LQIP base64 generated client-side at upload time (Canvas API)
+  const [lqipData, setLqipData] = useState<string>('');
   const [imgLabel, setImgLabel] = useState('');
   const [imgDesc, setImgDesc] = useState('');
   const [imgPriority, setImgPriority] = useState(0);
@@ -77,6 +80,7 @@ export function SelectedFramesTab() {
     if (!file || !activeCat) return;
     setUploadProgress(0);
     setUploadedUrl(null);
+    setLqipData('');
     setMsg('Uploading image…');
     const progInterval = setInterval(() => setUploadProgress((p) => Math.min(p + 15, 90)), 100);
     const { publicUrl, error: upErr } = await uploadImageFile(file);
@@ -84,14 +88,28 @@ export function SelectedFramesTab() {
     setUploadProgress(100);
     if (upErr || !publicUrl) { setMsg(`Upload error: ${upErr}`); setUploadProgress(null); return; }
     setUploadedUrl(publicUrl);
+    // Phase 5b.5 — generate LQIP base64 client-side (Canvas API → 16px wide).
+    // Stored in the images table, inlined in the JSON response for instant
+    // blurred placeholder on the public site (zero extra HTTP requests).
+    const lqip = await generateLQIP(file);
+    setLqipData(lqip);
     setMsg('Upload complete — fill in the details below, then click Save.');
   };
 
   const handleSaveImage = async () => {
     if (!uploadedUrl || !activeCat) return;
-    const { error } = await addImage({ category_id: activeCat, public_url: uploadedUrl, label: imgLabel || null, description: imgDesc || null, priority: imgPriority, published: true, in_lab: imgInLab });
+    const { error } = await addImage({
+      category_id: activeCat,
+      public_url: uploadedUrl,
+      label: imgLabel || null,
+      description: imgDesc || null,
+      priority: imgPriority,
+      published: true,
+      in_lab: imgInLab,
+      lqip_data: lqipData || null,
+    });
     if (error) { setMsg(`Error: ${error.message}`); return; }
-    setUploadedUrl(null); setImgLabel(''); setImgDesc(''); setImgPriority(0); setImgInLab(true); setUploadProgress(null);
+    setUploadedUrl(null); setLqipData(''); setImgLabel(''); setImgDesc(''); setImgPriority(0); setImgInLab(true); setUploadProgress(null);
     setMsg('Image saved + published.');
     load();
   };
@@ -278,7 +296,7 @@ export function SelectedFramesTab() {
                 <div><label style={fieldLabelStyle}>Priority</label><input type="number" value={imgPriority} onChange={(e) => setImgPriority(parseInt(e.target.value) || 0)} style={{ ...inputStyle, width: '80px' }} /></div>
                 <label style={{ color: 'var(--canvas)', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}><input type="checkbox" checked={imgInLab} onChange={(e) => setImgInLab(e.target.checked)} /> Lab</label>
                 <button onClick={handleSaveImage} style={btnStyle}>Save</button>
-                <button onClick={() => { setUploadedUrl(null); setUploadProgress(null); }} style={{ ...btnStyle, borderColor: 'var(--night-hr)' }}>Cancel</button>
+                <button onClick={() => { setUploadedUrl(null); setUploadProgress(null); setLqipData(''); }} style={{ ...btnStyle, borderColor: 'var(--night-hr)' }}>Cancel</button>
               </div>
             </div>
           )}

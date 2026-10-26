@@ -21,6 +21,11 @@ type Image = {
   priority: number;
   published: boolean;
   in_lab: boolean;
+  // Phase 5b.5 — LQIP base64 data (16px wide, ~200-500 bytes). Generated at
+  // upload time via Canvas API. Inlined in the JSON response so the Selected
+  // Work cells can render a blurred placeholder instantly (zero HTTP requests).
+  // Null for images uploaded before Phase 5b.5 — cells fall back to solid bg.
+  lqip_data?: string | null;
 };
 
 /**

@@ -122,6 +122,9 @@ export async function addImage(input: {
   priority?: number;
   published?: boolean;
   in_lab?: boolean;
+  // Phase 5b.5 — LQIP base64 data (16px wide, ~200-500 bytes). Generated at
+  // upload time via Canvas API in the Studio. Stored in the images table.
+  lqip_data?: string | null;
 }) {
   if (!supabase) return { error: 'No Supabase client' };
   const { data, error } = await supabase
@@ -129,6 +132,19 @@ export async function addImage(input: {
     .insert(input)
     .select()
     .single();
+  // Phase 5b.5 — graceful fallback: if the lqip_data column doesn't exist
+  // (user hasn't run the SQL migration yet), retry without it so the upload
+  // still succeeds. The public site just won't show LQIP placeholders for
+  // that image until the migration is run + image is re-uploaded.
+  if (error && input.lqip_data !== undefined && /lqip_data/i.test(error.message || '')) {
+    const { lqip_data: _omit, ...rest } = input;
+    const { data: retryData, error: retryError } = await supabase
+      .from('images')
+      .insert(rest)
+      .select()
+      .single();
+    return { data: retryData, error: retryError };
+  }
   return { data, error };
 }
 
