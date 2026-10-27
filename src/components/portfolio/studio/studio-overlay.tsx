@@ -21,17 +21,22 @@ const VideosTab = dynamic(
   () => import('./videos-tab').then((m) => ({ default: m.VideosTab })),
   { ssr: false }
 );
+const ExperiencesTab = dynamic(
+  () => import('./experiences-tab').then((m) => ({ default: m.ExperiencesTab })),
+  { ssr: false }
+);
 const SiteSettingsTab = dynamic(
   () => import('./site-settings-tab').then((m) => ({ default: m.SiteSettingsTab })),
   { ssr: false }
 );
 
-type Tab = 'frames' | 'lab' | 'videos' | 'settings';
+type Tab = 'frames' | 'lab' | 'videos' | 'experiences' | 'settings';
 
 const TABS: { id: Tab; label: string; icon: string }[] = [
   { id: 'frames', label: 'Selected Frames', icon: '▣' },
   { id: 'lab', label: 'Visual Lab', icon: '◉' },
   { id: 'videos', label: 'Videos', icon: '►' },
+  { id: 'experiences', label: 'Experiences', icon: '✦' },
   { id: 'settings', label: 'Site Settings', icon: '⚙' },
 ];
 
@@ -81,6 +86,14 @@ export function StudioOverlay() {
     queryClient.prefetchQuery({ queryKey: ['allImages'], queryFn: getAllImages });
     queryClient.prefetchQuery({ queryKey: ['allVideos'], queryFn: getAllVideos });
     queryClient.prefetchQuery({ queryKey: ['siteSettings'], queryFn: getSiteSettings });
+    // Experiences are fetched from /api/experiences (no Supabase involvement)
+    queryClient.prefetchQuery({
+      queryKey: ['experiences'],
+      queryFn: async () => {
+        const res = await fetch('/api/experiences', { cache: 'no-store' });
+        return res.json();
+      },
+    });
   }, [authed]);
 
   if (!authed) return null;
@@ -119,11 +132,19 @@ function StudioShell({
   // Read stats from React Query cache (instantly available — prefetched on Studio open)
   const { data: imgs = [] } = useQuery({ queryKey: ['allImages'], queryFn: getAllImages });
   const { data: vids = [] } = useQuery({ queryKey: ['allVideos'], queryFn: getAllVideos });
+  const { data: experiencesData } = useQuery({
+    queryKey: ['experiences'],
+    queryFn: async () => {
+      const res = await fetch('/api/experiences', { cache: 'no-store' });
+      return res.json();
+    },
+  });
 
   const totalImgs = (imgs as any[]).length;
   const publishedImgs = (imgs as any[]).filter((i) => i.published).length;
   const labImgs = (imgs as any[]).filter((i) => i.in_lab).length;
   const totalVids = (vids as any[]).length;
+  const totalExperiences = (experiencesData as any)?.experiences?.length ?? 0;
 
   const activeTab = TABS.find((t) => t.id === tab);
 
@@ -131,6 +152,7 @@ function StudioShell({
     frames: totalImgs,
     lab: labImgs,
     videos: totalVids,
+    experiences: totalExperiences,
     settings: 0,
   };
 
@@ -367,6 +389,7 @@ function StudioShell({
           {tab === 'frames' && <SelectedFramesTab />}
           {tab === 'lab' && <LabTab />}
           {tab === 'videos' && <VideosTab />}
+          {tab === 'experiences' && <ExperiencesTab />}
           {tab === 'settings' && <SiteSettingsTab />}
         </div>
       </div>
@@ -396,6 +419,7 @@ function StudioShell({
           <span>Published: {publishedImgs}</span>
           <span>Lab: {labImgs}</span>
           {totalVids > 0 && <span>Videos: {totalVids}</span>}
+          {totalExperiences > 0 && <span>Experiences: {totalExperiences}</span>}
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
           <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'var(--accent)', opacity: 0.6 }} />
