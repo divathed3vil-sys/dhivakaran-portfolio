@@ -1448,3 +1448,48 @@ Total commits in Phase 5b: ~20 commits across 5b.1-5b.8
 Production: https://dhivakaran-portfolio.vercel.app (live + verified)
 GitHub: https://github.com/divathed3vil-sys/dhivakaran-portfolio (all pushed)
 JS transfer: 229.5 KB (up from 214.1 KB at Phase 6 → +15.4 KB for React Query + browser-image-compression + DetailPanel + cursor + spring easings — all in lazy-loaded Studio chunks, public site only carries ~2 KB for cursor refs)
+
+---
+Task ID: DEPLOY-FINAL (Phase 2 cache fix + production deploy + end-to-end verification)
+Agent: main-orchestrator
+Task: Apply remaining minimumCacheTTL fix, push to GitHub, deploy to Vercel, verify end-to-end.
+
+Work Log:
+- Confirmed 2-change cache fix state:
+  - Change 1 (cacheControl format): ALREADY APPLIED in commit b4bbb99 (src/lib/supabase-data.ts lines 105 + 121 both use cacheControl: '31536000'). Summary was stale — this fix shipped before this session.
+  - Change 2 (minimumCacheTTL): NOT YET APPLIED. Added `minimumCacheTTL: 86400` to next.config.ts images block (with 14-line comment explaining rationale + safety).
+- bun run lint: 0 errors, 0 warnings.
+- Committed: 8c0a1e9 "Phase 2 cache fix — minimumCacheTTL: 86400 in next.config.ts"
+- Pushed 7 commits (Phase 1 cache fix + Phase 7 cleanup + Phase 8 docs + Phase 2 cache fix + 3 uuid-stub commits) to GitHub main: 796d1a9..8c0a1e9.
+- Discovered Vercel project is NOT GitHub-linked (gitRepository: null). All past deploys were CLI-driven (vercel --prod from local checkout, not GitHub webhook).
+- Triggered production deploy via `vercel deploy --prod --yes --token <VERCEL_TOKEN>`.
+  - Build: Next.js 16.1.3 + Turbopack, compiled in 6.8s, static 4/4 pages in 159.8ms, total 25s.
+  - Aliased: https://dhivakaran-portfolio.vercel.app (production).
+  - Deployment URL: https://dhivakaran-portfolio-mffzft3zl-diva-61da.vercel.app
+
+End-to-End Verification (Agent Browser + curl):
+- HTTP 200 on / in 729ms.
+- Page title: "Dhivakaran M — Brands, products & the art in between."
+- All 7 regions present (Hero, About, Selected Work, Video Work, Visual Lab button, Experiences, Contact).
+- Zero runtime errors, zero console errors on both desktop + mobile.
+- Network: 14 /_next/image requests all 200, plus 10 direct Supabase ?width=400 LQIP cell-tier requests.
+- Cache behavior (using real URL pattern w=256&q=75 from the live <Image> components):
+  - HIT 1 (cold cache): x-vercel-cache: MISS, cache-control: public, max-age=86400, must-revalidate (24h — was 4h before fix), age: 0, content-length: 21263 (1.2 MB PNG → 21 KB variant = 98.3% reduction).
+  - HIT 2 (2s later): x-vercel-cache: HIT, age: 2.
+  - HIT 3 (4s later): x-vercel-cache: HIT, age: 4.
+- Sticky footer verified: footer at y=8799-9296, body height 9296px, position:relative — natural push-down with mt-auto flex layout, no overlap, no floating gap.
+- Mobile responsive verified (iPhone 14, 390×844): no horizontal scrollbar, mobile menu button opens + reveals 7 nav links, ESC closes cleanly.
+- Visual Lab interaction: button opens modal (no errors), ESC closes it, body scroll lock works (overflow: clip visible while open).
+
+Cache Fix #1 (Supabase cacheControl '31536000') — DEFERRED VERIFICATION:
+- Code inspection confirms the fix is live at src/lib/supabase-data.ts lines 105 + 121.
+- Existing Supabase objects STILL respond with `cache-control: private, no-cache` because cacheControl is set at upload time — unfixable for existing objects per user constraint (do not delete/overwrite/re-upload existing Storage objects).
+- End-to-end verification of the fix requires uploading a NEW image via the Studio (admin auth — not available without user credentials). The fix will be exercised the next time the user uploads new work via the Studio. New uploads will set `Cache-Control: max-age=31536000` at Supabase origin, eliminating the `private, no-cache` fallback.
+
+Stage Summary:
+- Production deploy succeeded in 25s on Vercel Turbopack.
+- 2-change cache fix complete: cacheControl format (commit b4bbb99) + minimumCacheTTL: 86400 (commit 8c0a1e9). 7 total commits pushed.
+- Vercel Image Optimizer cache verified end-to-end: MISS → HIT → HIT with 24h TTL on optimized variants (98.3% byte reduction on real production images).
+- Sticky footer + mobile responsive + Visual Lab interaction all verified clean.
+- All 6-file compression + sizes fix from previous session is live in production.
+- Site is production-healthy at https://dhivakaran-portfolio.vercel.app.
