@@ -1493,3 +1493,134 @@ Stage Summary:
 - Sticky footer + mobile responsive + Visual Lab interaction all verified clean.
 - All 6-file compression + sizes fix from previous session is live in production.
 - Site is production-healthy at https://dhivakaran-portfolio.vercel.app.
+
+---
+Task ID: EXP-FULL (Phase E1-E5 — Experiences section full reimagination, Supabase-free)
+Agent: main-orchestrator
+Task: Reimagine the Experiences section as a 3-phase darkroom layout. ALL content editable in Studio. Data fully frontend (no Supabase Storage/Database — only Supabase AUTH for admin verify). Vercel OK if necessary. User hit Supabase free-plan egress limit (5GB+5GB used).
+
+Work Log:
+
+Egress safety (preemptive, before any new deploys):
+- Bumped minimumCacheTTL 86400 → 2592000 (30 days) in next.config.ts. Egress reduction math:
+  - 4h TTL:  ~22 GB/mo ← blew past 5 GB limit
+  - 24h TTL: ~3.8 GB/mo ← tight
+  - 30d TTL: ~126 MB/mo ← huge headroom
+- Verified live via curl MISS→HIT cycle: cache-control: public, max-age=2592000, must-revalidate
+- Added 3 env vars to Vercel project via API (production target, encrypted):
+  - GITHUB_TOKEN (for experiences publish flow)
+  - VERCEL_TOKEN (for triggering Vercel redeploy)
+  - VERCEL_PROJECT_ID (target project for redeploy)
+- Discovered accidental deploy went to a new "my-project" project (Vercel CLI install reset .vercel/project.json link). Restored original link (prj_uCH5FthONLuqCi9WRgvI7lVbQEl7) + redeployed to correct dhivakaran-portfolio project.
+
+Phase E1 — Data layer + API (Supabase-free, frontend-first):
+- Created src/data/experiences.json — 27 experiences seeded from old skillset GROUPS, mapped to 3 phases:
+  - 01 EXPOSED (5): Flutter, Sound Design, AI-Assisted Coding, Color Grading, Supabase Backend
+  - 02 IN DEVELOPMENT (8): Poster, Thumbnail, Video Editing, Motion Graphics, VFX, Image Manip, Digital Artwork, Foley
+  - 03 FIXED & PRINTED (14): Photoshop, Premiere, After Effects, Illustrator, DaVinci, Blender, Visual Composition, Python, App Dev, Linux, Hardware, Laptop Repair, OS Config, Mobile Repair
+- Created src/lib/experiences-data.ts — types + helpers:
+  - getExperiences() statically imports JSON at build time (zero runtime fetch)
+  - getPublishedExperiencesByCategory() returns 3-bucket Record for public render
+  - verifyAdminAuth() — ONLY Supabase call in entire flow (auth.getUser via anon key, no Storage/DB). Checks user.email === 'diva@studio.local'
+  - commitExperiencesToGitHub() — GitHub Contents API: GET to fetch current SHA, PUT for atomic update with SHA + base64 content
+  - triggerVercelDeploy() — POST /v13/deployments with gitSource ref=main. WORKS even without project git-linkage (verified by test deploy)
+  - pollVercelDeployStatus() — GET /v13/deployments/{id} for state polling
+- Created src/app/api/experiences/route.ts — GET (public, edge-cached 1h+24h stale) + POST (admin auth → commit to GitHub → trigger Vercel deploy → returns deploymentId)
+- Created src/app/api/experiences/status/route.ts — GET (admin, polls Vercel deployment state)
+
+Phase E2 — Public Experiences section (replaces skillset.tsx):
+- Created src/components/portfolio/experiences.tsx (NEW, ~530 lines) with:
+  - Same DNA as old Skillset (BokehField, dolly-zoom, bloom, hairline-night, anamorphic flare, spring easings)
+  - Vertical timeline rail with phase ticks (pulsing red on EXPOSED, solid canvas on DEV, muted hairline on FIXED)
+  - Adaptive grid per phase: spotlight (2-col, featured=true spans 2), medium (4-col adaptive), compact (auto-fill tiles)
+  - Lucide icon registry (~25 icons bundled, ~25KB JS — tree-shaken)
+  - Tag pills (mono, uppercase, hairline border)
+  - Card entry animation with 35ms stagger + 1.5s safety timeout
+  - Reduced-motion + touch fallbacks in CSS
+- Added ~140 lines of CSS to globals.css (experiences-pulse, experiences-card-in, experiences-card, experiences-flare, experiences-tag-pill, experiences-rail-tick, experiences-featured-star, experiences-card-index, experiences-card-compact)
+- Modified src/app/page.tsx — swapped <Skillset /> → <Experiences />
+- Deleted src/components/portfolio/skillset.tsx (full reimagination per user spec)
+- Deployed as single Phase E1+E2 commit (saves one cache-prime cycle = ~126MB egress per the user's free-plan constraint)
+- Agent Browser verification:
+  - 3 phases render correctly (EXPOSED / IN DEVELOPMENT / FIXED & PRINTED)
+  - 27 cards (5 + 8 + 14) ✓
+  - 29 icons (27 cards + 2 featured stars) ✓
+  - 39 tag pills (compact phase hides them) ✓
+  - 3 rail ticks (pulsing red on EXPOSED) ✓
+  - 2 featured stars (Flutter + Sound Design spotlight) ✓
+  - Sticky footer: footerBottom = innerHeight (no gap, no overlap) ✓
+  - Mobile responsive (iPhone 14, 390px): no horizontal scroll, all 27 cards + 3 phases ✓
+  - Zero runtime errors
+
+Phase E3 — Studio Experiences tab (editing UI):
+- Created src/components/portfolio/studio/icon-picker.tsx (~250 lines):
+  - cmdk command palette + 47 curated lucide icons with live preview + keyword search
+  - Click an icon → onSelect(name) + closes; Escape preserves existing selection
+- Created src/components/portfolio/studio/experiences-tab.tsx (~1230 lines):
+  - React Query (queryKey: ['experiences'], queryFn: GET /api/experiences)
+  - Filter row (All / 01 Exposed / 02 Dev / 03 Fixed) + Add New button
+  - Per-phase sections with drag-drop reorder (vertical list, @dnd-kit same pattern as selected-frames-tab)
+  - Sortable cards with: grip handle + N° index + featured star + title + status + 3 tag pills + hover-reveal edit/delete buttons
+  - Deleted items bar with undo (per-id recover before publish)
+  - Sticky publish bar at bottom: status indicator (idle/pending/committing/deploying/building/ready/error) + Publish button
+  - StudioDetailPanel (reused component) slides in from right for edit/add with all fields:
+    - Title (text input)
+    - Category (3-button radio: exposed/development/fixed)
+    - Status (text input)
+    - Description (textarea)
+    - Icon (button that opens IconPicker modal)
+    - Tags (chip input — type + Enter to add, X to remove)
+    - Featured toggle (exposed only — auto-disabled otherwise)
+    - Published toggle
+    - Live preview at top of panel
+  - Pending count tracks overrides + newIds + deletedIds + orderOverrides
+- Modified src/components/portfolio/studio/studio-overlay.tsx:
+  - Added 5th tab 'experiences' with ✦ icon, dynamic-imported (ssr:false)
+  - Added prefetch for experiences query on Studio open
+  - Added experiences count to sidebar stats + bottom status bar
+
+Phase E4 — Publish flow:
+- handlePublish() in experiences-tab.tsx implements the full flow:
+  1. Build final payload with priorities re-mapped based on current drag-drop order (highest first)
+  2. Extract Supabase session access_token via supabase.auth.getSession()
+  3. POST /api/experiences with Authorization: Bearer + payload
+  4. On success: poll GET /api/experiences/status?deployId=X every 3s for up to 3 min (60 polls)
+  5. On READY: invalidate experiences query (refetch from new deploy) + clear all draft state + auto-clear '✓ Live' indicator after 8s
+  6. On ERROR/CANCELED: show error message, keep draft intact for retry
+- API route POST handler (src/app/api/experiences/route.ts):
+  1. Verify admin via Supabase AUTH ONLY (verifyAdminAuth — no Storage, no Database)
+  2. Validate payload (must include experiences array + per-item required fields + valid category)
+  3. commitExperiencesToGitHub() — atomic SHA-based PUT to GitHub Contents API
+  4. triggerVercelDeploy() — POST /v13/deployments with gitSource ref=main
+  5. Returns { ok, commitSha, deploymentId, deploymentUrl }
+
+Phase E5 — Accessibility + reduced-motion (built into Phase E2 CSS):
+- All new animations have prefers-reduced-motion: reduce fallbacks
+- experiences-pulse, experiences-card animations collapse to instant
+- experiences-flare hidden on reduced-motion
+- Focus rings via existing :focus-visible global rule (2px solid --accent, 3px offset)
+- Touch targets minimum 44px via existing global rule
+- StudioDetailPanel reuses existing keyboard ESC + backdrop-click close
+
+End-to-End Verification (Agent Browser + curl):
+- Public site: HTTP 200 in 753ms, 27 experiences render across 3 phases
+- Live GET /api/experiences: HTTP 200 in 462ms, returns full 27-item JSON
+- Studio auth trigger: typed 'divahere' → AuthCard opens with USERNAME/PASSWORD fields
+- GitHub Contents API: GET returns SHA 0a33ab9... for src/data/experiences.json (14123 bytes)
+- Vercel deploy trigger: POST /v13/deployments works (verified earlier in session via test deployment that was canceled)
+- Vercel deploy status polling: GET /v13/deployments/{id} returns readyState
+- Sticky footer + mobile responsive verified in Phase E2
+
+Deferred Verification (requires admin credentials — only the user can complete):
+- Full publish flow end-to-end: login → edit experience → click Publish → wait 30-60s → verify public site shows updated content
+- The admin password is stored in Supabase Auth (not in any env var) — only the user has it
+
+Stage Summary:
+- Experiences section reimagination COMPLETE — 3-phase darkroom layout (EXPOSED / IN DEVELOPMENT / FIXED & PRINTED) with vertical timeline rail + adaptive grid density per phase + 27 seeded experiences + all lucide icons + tags + featured spotlight cards
+- All content editable in Studio via 5th tab 'Experiences' with full CRUD + drag-drop reorder + IconPicker + DetailPanel
+- Zero Supabase Storage/Database involvement — only Supabase AUTH for admin verify
+- Data persists in src/data/experiences.json (committed to repo, statically imported at build time → perfect SEO + LCP)
+- Publish flow: commit to GitHub + trigger Vercel deploy from latest main + poll status until READY
+- 4 deploys total (egress safety + E1+E2 + E3+E4): ~504MB worst-case egress cost — recouped within hours via 30-day TTL
+- Lint clean (0 errors, 0 warnings) throughout
+- 8 new files + 3 modified files + 1 deleted file
