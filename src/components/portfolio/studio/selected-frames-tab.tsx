@@ -26,6 +26,7 @@ import {
   reorderImages, bulkUpdateImages, bulkDeleteImages,
 } from '@/lib/supabase-data';
 import { generateLQIP } from '../lib/generate-lqip';
+import { compressUploadAndGenerateLQIP } from '@/lib/image-service';
 import { StudioDetailPanel } from './studio-detail-panel';
 
 type Category = { id: string; name: string; slug: string; type: string; blurb: string | null; priority: number; };
@@ -127,30 +128,17 @@ export function SelectedFramesTab() {
     setProcessImageUrl('');
     setPreviewOrder(['description', 'video', 'image']);
     setMsg('Compressing image…');
-    // Phase 5b.6 — compress client-side before upload (browser-image-compression).
-    // Target: max 800KB, max 1920px. Uses Web Worker so main thread doesn't freeze.
-    let compressedFile = file;
-    try {
-      compressedFile = await imageCompression(file, {
-        maxSizeMB: 0.8,
-        maxWidthOrHeight: 1920,
-        useWebWorker: true,
-      });
-    } catch (e) {
-      setMsg(`Compression failed for ${file.name} — upload cancelled. ${(e as Error).message}`);
+    const progInterval = setInterval(() => setUploadProgress((p) => Math.min(p + 15, 90)), 100);
+    const result = await compressUploadAndGenerateLQIP(file, 'images');
+    clearInterval(progInterval);
+    setUploadProgress(100);
+    if (result.error || !result.publicUrl) {
+      setMsg(result.error || 'Upload failed');
       setUploadProgress(null);
       return;
     }
-    setMsg('Uploading image…');
-    const progInterval = setInterval(() => setUploadProgress((p) => Math.min(p + 15, 90)), 100);
-    const { publicUrl, error: upErr } = await uploadImageFile(compressedFile);
-    clearInterval(progInterval);
-    setUploadProgress(100);
-    if (upErr || !publicUrl) { setMsg(`Upload error: ${upErr}`); setUploadProgress(null); return; }
-    setUploadedUrl(publicUrl);
-    // Phase 5b.5 — generate LQIP base64 from the compressed file (Canvas API → 16px wide).
-    const lqip = await generateLQIP(compressedFile);
-    setLqipData(lqip);
+    setUploadedUrl(result.publicUrl);
+    setLqipData(result.lqip || '');
     setMsg('Upload complete — fill in the details below, then click Save.');
   };
 
@@ -167,21 +155,12 @@ export function SelectedFramesTab() {
   const handleProcessImageUpload = async (file: File | null) => {
     if (!file) return;
     setMsg('Compressing process image…');
-    let compressedFile = file;
-    try {
-      compressedFile = await imageCompression(file, {
-        maxSizeMB: 0.8,
-        maxWidthOrHeight: 1920,
-        useWebWorker: true,
-      });
-    } catch (e) {
-      setMsg(`Compression failed for ${file.name} — upload cancelled. ${(e as Error).message}`);
+    const result = await compressUploadAndGenerateLQIP(file, 'process');
+    if (result.error || !result.publicUrl) {
+      setMsg(result.error || 'Upload failed');
       return;
     }
-    setMsg('Uploading process image…');
-    const { publicUrl, error } = await uploadProcessFile(compressedFile);
-    if (error || !publicUrl) { setMsg(`Process image upload error: ${error}`); return; }
-    setProcessImageUrl(publicUrl);
+    setProcessImageUrl(result.publicUrl);
     setMsg('Process image uploaded.');
   };
 

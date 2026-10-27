@@ -21,7 +21,7 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { getAllImages, uploadImageFile, addImage, deleteImage, updateImage, reorderImages, bulkUpdateImages, bulkDeleteImages } from '@/lib/supabase-data';
-import { generateLQIP } from '../lib/generate-lqip';
+import { compressUploadAndGenerateLQIP } from '@/lib/image-service';
 
 type Image = { id: string; public_url: string; label: string | null; priority: number; in_lab: boolean; published: boolean; created_at?: string | null; lqip_data?: string | null; };
 
@@ -50,24 +50,12 @@ export function LabTab() {
     for (let i = 0; i < fileArr.length; i++) {
       setBulkProgress({ current: i, total: fileArr.length });
       setMsg(`Compressing ${i + 1}/${fileArr.length}…`);
-      // Compress each file before upload (same options as Selected Frames tab).
-      // On failure: skip this file, show error, do NOT upload the original.
-      let compressedFile = fileArr[i];
-      try {
-        compressedFile = await imageCompression(fileArr[i], {
-          maxSizeMB: 0.8,
-          maxWidthOrHeight: 1920,
-          useWebWorker: true,
-        });
-      } catch (e) {
-        setMsg(`Compression failed for ${fileArr[i].name} — skipped. ${(e as Error).message}`);
+      const result = await compressUploadAndGenerateLQIP(fileArr[i], 'images');
+      if (result.error || !result.publicUrl) {
+        setMsg(`Error on file ${i + 1}: ${result.error}`);
         continue;
       }
-      setMsg(`Uploading ${i + 1}/${fileArr.length}…`);
-      const { publicUrl, error } = await uploadImageFile(compressedFile);
-      if (error || !publicUrl) { setMsg(`Error on file ${i + 1}: ${error}`); continue; }
-      const lqip = await generateLQIP(compressedFile);
-      await addImage({ category_id: null, public_url, label: fileArr[i].name.replace(/\.[^.]+$/, ''), priority: 0, published: true, in_lab: true, lqip_data: lqip || null });
+      await addImage({ category_id: null, public_url: result.publicUrl, label: fileArr[i].name.replace(/\.[^.]+$/, ''), priority: 0, published: true, in_lab: true, lqip_data: result.lqip || null });
     }
 
     setBulkProgress({ current: fileArr.length, total: fileArr.length });

@@ -21,6 +21,7 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { getAllVideos, addVideo, deleteVideo, updateVideo, uploadProcessFile, reorderImages, bulkUpdateImages, bulkDeleteImages } from '@/lib/supabase-data';
+import { compressUploadAndGenerateLQIP } from '@/lib/image-service';
 import { StudioDetailPanel } from './studio-detail-panel';
 import { useEffect } from 'react';
 
@@ -165,21 +166,12 @@ export function VideosTab() {
   const handleProcessImageUpload = async (file: File | null) => {
     if (!file) return;
     setMsg('Compressing process image…');
-    let compressedFile = file;
-    try {
-      compressedFile = await imageCompression(file, {
-        maxSizeMB: 0.8,
-        maxWidthOrHeight: 1920,
-        useWebWorker: true,
-      });
-    } catch (e) {
-      setMsg(`Compression failed for ${file.name} — upload cancelled. ${(e as Error).message}`);
+    const result = await compressUploadAndGenerateLQIP(file, 'process');
+    if (result.error || !result.publicUrl) {
+      setMsg(result.error || 'Upload failed');
       return;
     }
-    setMsg('Uploading process image…');
-    const { publicUrl, error } = await uploadProcessFile(compressedFile);
-    if (error || !publicUrl) { setMsg(`Upload error: ${error}`); return; }
-    setProcessImageUrl(publicUrl);
+    setProcessImageUrl(result.publicUrl);
     setMsg('Process image uploaded.');
   };
 

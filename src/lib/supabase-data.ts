@@ -102,7 +102,7 @@ export async function uploadImageFile(file: File): Promise<{ publicUrl?: string;
   const ext = file.name.split('.').pop() || 'jpg';
   const path = `images/${crypto.randomUUID()}.${ext}`;
   const { error: upErr } = await supabase.storage.from('portfolio').upload(path, file, {
-    cacheControl: 'public, max-age=31536000, immutable',
+    cacheControl: '31536000',
     upsert: false,
   });
   if (upErr) return { error: upErr.message };
@@ -118,7 +118,7 @@ export async function uploadProcessFile(file: File): Promise<{ publicUrl?: strin
   const ext = file.name.split('.').pop() || 'bin';
   const path = `process/${crypto.randomUUID()}.${ext}`;
   const { error: upErr } = await supabase.storage.from('portfolio').upload(path, file, {
-    cacheControl: 'public, max-age=31536000, immutable',
+    cacheControl: '31536000',
     upsert: false,
   });
   if (upErr) return { error: upErr.message };
