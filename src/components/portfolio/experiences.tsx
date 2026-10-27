@@ -142,12 +142,8 @@ export function Experiences() {
         paddingBlock: 'calc(80 * var(--px))',
         position: 'relative',
         overflow: 'hidden',
-        // NOTE: content-visibility: auto is intentionally DISABLED here.
-        // It caused Lenis's smooth-scroll anchor links to miscalculate the
-        // target position (off-screen section was sized at its 100vh
-        // containIntrinsicSize placeholder, so scrollTo() landed ~2000px short).
-        // The performance benefit is minimal for this section anyway — it's
-        // already lazy-rendered via React Query + visible during normal scroll.
+        contentVisibility: 'auto',
+        containIntrinsicSize: 'auto 100vh',
       }}
     >
       <BokehField count={8} />
