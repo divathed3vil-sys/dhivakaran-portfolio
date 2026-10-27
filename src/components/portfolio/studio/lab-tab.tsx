@@ -49,11 +49,24 @@ export function LabTab() {
 
     for (let i = 0; i < fileArr.length; i++) {
       setBulkProgress({ current: i, total: fileArr.length });
-      const { publicUrl, error } = await uploadImageFile(fileArr[i]);
+      setMsg(`Compressing ${i + 1}/${fileArr.length}…`);
+      // Compress each file before upload (same options as Selected Frames tab).
+      // On failure: skip this file, show error, do NOT upload the original.
+      let compressedFile = fileArr[i];
+      try {
+        compressedFile = await imageCompression(fileArr[i], {
+          maxSizeMB: 0.8,
+          maxWidthOrHeight: 1920,
+          useWebWorker: true,
+        });
+      } catch (e) {
+        setMsg(`Compression failed for ${fileArr[i].name} — skipped. ${(e as Error).message}`);
+        continue;
+      }
+      setMsg(`Uploading ${i + 1}/${fileArr.length}…`);
+      const { publicUrl, error } = await uploadImageFile(compressedFile);
       if (error || !publicUrl) { setMsg(`Error on file ${i + 1}: ${error}`); continue; }
-      // Phase 5b.5 — generate LQIP for each lab image too (so the public site
-      // Visual Lab tiles also get instant blurred placeholders if we extend LQIP there)
-      const lqip = await generateLQIP(fileArr[i]);
+      const lqip = await generateLQIP(compressedFile);
       await addImage({ category_id: null, public_url, label: fileArr[i].name.replace(/\.[^.]+$/, ''), priority: 0, published: true, in_lab: true, lqip_data: lqip || null });
     }
 

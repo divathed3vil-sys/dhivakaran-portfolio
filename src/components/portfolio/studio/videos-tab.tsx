@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import imageCompression from 'browser-image-compression';
 import {
   DndContext,
   DragOverlay,
@@ -163,8 +164,20 @@ export function VideosTab() {
 
   const handleProcessImageUpload = async (file: File | null) => {
     if (!file) return;
+    setMsg('Compressing process image…');
+    let compressedFile = file;
+    try {
+      compressedFile = await imageCompression(file, {
+        maxSizeMB: 0.8,
+        maxWidthOrHeight: 1920,
+        useWebWorker: true,
+      });
+    } catch (e) {
+      setMsg(`Compression failed for ${file.name} — upload cancelled. ${(e as Error).message}`);
+      return;
+    }
     setMsg('Uploading process image…');
-    const { publicUrl, error } = await uploadProcessFile(file);
+    const { publicUrl, error } = await uploadProcessFile(compressedFile);
     if (error || !publicUrl) { setMsg(`Upload error: ${error}`); return; }
     setProcessImageUrl(publicUrl);
     setMsg('Process image uploaded.');

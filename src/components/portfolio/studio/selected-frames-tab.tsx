@@ -136,7 +136,11 @@ export function SelectedFramesTab() {
         maxWidthOrHeight: 1920,
         useWebWorker: true,
       });
-    } catch { /* keep original if compression fails */ }
+    } catch (e) {
+      setMsg(`Compression failed for ${file.name} — upload cancelled. ${(e as Error).message}`);
+      setUploadProgress(null);
+      return;
+    }
     setMsg('Uploading image…');
     const progInterval = setInterval(() => setUploadProgress((p) => Math.min(p + 15, 90)), 100);
     const { publicUrl, error: upErr } = await uploadImageFile(compressedFile);
@@ -162,8 +166,20 @@ export function SelectedFramesTab() {
 
   const handleProcessImageUpload = async (file: File | null) => {
     if (!file) return;
+    setMsg('Compressing process image…');
+    let compressedFile = file;
+    try {
+      compressedFile = await imageCompression(file, {
+        maxSizeMB: 0.8,
+        maxWidthOrHeight: 1920,
+        useWebWorker: true,
+      });
+    } catch (e) {
+      setMsg(`Compression failed for ${file.name} — upload cancelled. ${(e as Error).message}`);
+      return;
+    }
     setMsg('Uploading process image…');
-    const { publicUrl, error } = await uploadProcessFile(file);
+    const { publicUrl, error } = await uploadProcessFile(compressedFile);
     if (error || !publicUrl) { setMsg(`Process image upload error: ${error}`); return; }
     setProcessImageUrl(publicUrl);
     setMsg('Process image uploaded.');

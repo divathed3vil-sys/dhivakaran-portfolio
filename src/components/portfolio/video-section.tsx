@@ -140,6 +140,7 @@ export function VideoSection() {
                     alt={v.label || 'Video'}
                     width={320}
                     height={180}
+                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                     loading="lazy"
                     style={{ width: '100%', height: '100%', objectFit: 'cover', filter: 'saturate(0.95) contrast(1.05) brightness(0.9)', transition: 'filter 0.4s var(--ease-spring-soft)', userSelect: 'none', WebkitUserDrag: 'none' }}
                   />

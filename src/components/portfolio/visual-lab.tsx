@@ -399,6 +399,7 @@ export function VisualLab({ onClose }: { onClose: () => void }) {
               alt=""
               width={260}
               height={260}
+              sizes="(max-width: 768px) 33vw, 20vw"
               loading="lazy"
               onContextMenu={(e) => e.preventDefault()}
               style={{

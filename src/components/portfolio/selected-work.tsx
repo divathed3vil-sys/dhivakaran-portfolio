@@ -205,6 +205,7 @@ export function SelectedWork() {
                           alt={cell.label || ''}
                           width={800}
                           height={600}
+                          sizes="(max-width: 768px) 90vw, (max-width: 1200px) 25vw, 200px"
                           priority={i < 4}
                           loading={i < 4 ? undefined : 'lazy'}
                           placeholder={cell.lqipData ? 'blur' : undefined}
