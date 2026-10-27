@@ -1061,3 +1061,142 @@ body[data-vf-active="true"] { cursor: none; }
   to   { transform: translateX(100%); }
 }
 
+/* ============================================================================
+   Phase E2 — Experiences section reimagination (3-phase darkroom layout)
+   ============================================================================ */
+
+/* Pulsing red dot — only on EXPOSED (01) phase ticks + featured cards */
+@keyframes experiences-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(214, 41, 41, 0.5); }
+  50%      { box-shadow: 0 0 0 6px rgba(214, 41, 41, 0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .experiences-pulse { animation: none !important; }
+}
+
+/* Card entry — spring in with subtle stagger, replaces skillset's blur→sharp */
+@keyframes experiences-card-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.98);
+    filter: blur(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+  }
+}
+
+/* Card hover — spring scale + red accent stroke glow */
+.experiences-card {
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.5s var(--ease-spring-soft),
+              box-shadow 0.5s var(--ease-spring-soft),
+              border-color 0.4s var(--ease-out-soft);
+}
+.experiences-card:hover,
+.experiences-card:focus-visible {
+  transform: translateY(-2px) scale(1.01);
+}
+.experiences-card[data-featured="true"]:hover,
+.experiences-card[data-featured="true"]:focus-visible {
+  border-color: var(--accent) !important;
+  box-shadow: 0 16px 40px -8px rgba(0,0,0,0.5), 0 0 0 1px var(--accent);
+}
+
+/* Anamorphic flare sweep on hover — reuses skillset's flare-sweep keyframe */
+.experiences-flare {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 40%;
+  background: linear-gradient(90deg, transparent, rgba(214, 41, 41, 0.25), transparent);
+  transform: translateX(-120%) skewX(-15deg);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s var(--ease-out-soft);
+}
+.experiences-card:hover .experiences-flare,
+.experiences-card:focus-visible .experiences-flare {
+  opacity: 1;
+  animation: flare-sweep 0.9s var(--ease-out-soft);
+}
+
+/* Tag pill — mono, uppercase, hairline border */
+.experiences-tag-pill {
+  display: inline-block;
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: clamp(0.625rem, 0.75vw, 0.6875rem);
+  line-height: 1.4;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-weight: 500;
+  padding: 0.2rem 0.55rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--night-body);
+  white-space: nowrap;
+}
+
+/* Timeline rail tick — left side of each phase */
+.experiences-rail-tick {
+  position: absolute;
+  left: -4px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--night-hr);
+}
+.experiences-rail-tick[data-phase="exposed"] {
+  background: var(--accent);
+  animation: experiences-pulse 2s var(--ease-spring-soft) infinite;
+}
+.experiences-rail-tick[data-phase="development"] {
+  background: var(--canvas);
+  opacity: 0.85;
+}
+.experiences-rail-tick[data-phase="fixed"] {
+  background: var(--night-muted);
+}
+
+/* Featured star icon — top-right of spotlight cards */
+.experiences-featured-star {
+  color: var(--accent);
+  opacity: 0.9;
+}
+
+/* Card index label — mono, mono-tracked */
+.experiences-card-index {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: clamp(0.625rem, 0.75vw, 0.6875rem);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--accent);
+  opacity: 0.85;
+}
+
+/* Compact card hover — translate down arrow effect */
+.experiences-card-compact {
+  position: relative;
+  transition: transform 0.5s var(--ease-spring-soft),
+              box-shadow 0.5s var(--ease-spring-soft);
+}
+.experiences-card-compact:hover,
+.experiences-card-compact:focus-visible {
+  transform: translateY(-2px);
+  box-shadow: 0 16px 36px -10px rgba(0,0,0,0.55);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .experiences-card,
+  .experiences-card-compact {
+    animation: none !important;
+    transition: none !important;
+    transform: none !important;
+  }
+  .experiences-flare { display: none !important; }
+}
+

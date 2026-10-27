@@ -14,7 +14,7 @@ import { About } from '@/components/portfolio/about';
 import { SelectedWork } from '@/components/portfolio/selected-work';
 import { VideoSection } from '@/components/portfolio/video-section';
 import { VisualLabCard } from '@/components/portfolio/visual-lab-card';
-import { Skillset } from '@/components/portfolio/skillset';
+import { Experiences } from '@/components/portfolio/experiences';
 import { Contact } from '@/components/portfolio/contact';
 import { Footer } from '@/components/portfolio/footer';
 
@@ -53,7 +53,7 @@ export default function Home() {
             <SelectedWork />
             <VideoSection />
             <VisualLabCard onEnter={() => setLabOpen(true)} />
-            <Skillset />
+            <Experiences />
             <Contact />
           </main>
           <Footer />
