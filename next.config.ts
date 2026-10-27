@@ -37,6 +37,20 @@ const nextConfig: NextConfig = {
     // Supabase content images in Selected Work cells.
     deviceSizes: [400, 800, 1280, 1920],
     imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
+    // Phase 2 cache fix — bump Vercel Image Optimizer cache TTL from the
+    // 4-hour default (14400s) to 24 hours. Pairs with the Supabase-origin
+    // cacheControl fix ('31536000' = 1 year, set in src/lib/supabase-data.ts).
+    // Together they mean:
+    //   - New uploads set Supabase origin Cache-Control: max-age=31536000
+    //     (no more 'private, no-cache' fallback that forced Vercel to
+    //     re-fetch 9 MB originals every 4 hours per variant).
+    //   - Vercel Image Optimizer holds each generated variant for 24h
+    //     minimum, so AVIF/WebP variants for the same source URL are served
+    //     from the CDN edge on repeat visits instead of being regenerated.
+    // Safe because we never overwrite existing Storage objects — same source
+    // URL always maps to the same image content, so a longer TTL cannot
+    // serve stale content.
+    minimumCacheTTL: 86400,
   },
 };
 
