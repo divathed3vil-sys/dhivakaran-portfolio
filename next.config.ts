@@ -37,20 +37,25 @@ const nextConfig: NextConfig = {
     // Supabase content images in Selected Work cells.
     deviceSizes: [400, 800, 1280, 1920],
     imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
-    // Phase 2 cache fix — bump Vercel Image Optimizer cache TTL from the
-    // 4-hour default (14400s) to 24 hours. Pairs with the Supabase-origin
-    // cacheControl fix ('31536000' = 1 year, set in src/lib/supabase-data.ts).
-    // Together they mean:
-    //   - New uploads set Supabase origin Cache-Control: max-age=31536000
-    //     (no more 'private, no-cache' fallback that forced Vercel to
-    //     re-fetch 9 MB originals every 4 hours per variant).
-    //   - Vercel Image Optimizer holds each generated variant for 24h
-    //     minimum, so AVIF/WebP variants for the same source URL are served
-    //     from the CDN edge on repeat visits instead of being regenerated.
+    // Phase 2 cache fix — bump Vercel Image Optimizer cache TTL to 30 days.
+    // Original Next.js default is 14400s (4h). Originally bumped to 86400s
+    // (24h, commit 8c0a1e9) but Supabase free-plan egress limits (~5GB/mo)
+    // forced a more aggressive setting. With 30-day TTL:
+    //   - New uploads (cacheControl: '31536000' at origin) → Vercel caches
+    //     variants for 1 year minimum per origin's max-age directive.
+    //   - Existing uploads (origin still returns 'private, no-cache' due to
+    //     the pre-fix cacheControl format bug) → Vercel holds variants for
+    //     30 days minimum (overriding origin's no-cache directive).
+    // Egress math (existing 9 MB PNG worst case × 14 variants = 126 MB per
+    // cache cycle):
+    //   - 4h TTL:  126 MB × 6/day  = ~756 MB/day  = ~22 GB/mo  ← blew past 5 GB
+    //   - 24h TTL: 126 MB × 1/day = ~126 MB/day  = ~3.8 GB/mo  ← within limit
+    //   - 30d TTL: 126 MB / 30d   = ~4.2 MB/day  = ~126 MB/mo  ← huge headroom
     // Safe because we never overwrite existing Storage objects — same source
-    // URL always maps to the same image content, so a longer TTL cannot
-    // serve stale content.
-    minimumCacheTTL: 86400,
+    // URL always maps to the same image bytes, so a longer TTL cannot serve
+    // stale content. New uploads get NEW UUIDs in their paths, so cache
+    // invalidation is automatic when a new image is added.
+    minimumCacheTTL: 2592000,
   },
 };
 
