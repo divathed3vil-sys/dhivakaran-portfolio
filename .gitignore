@@ -51,4 +51,14 @@ prompt
 
 server.log
 # Skills directory
-/skills/
+/skills/audit/storage-backup/
+audit/storage-optimized/
+.env.production
+
+# Phase 7 cleanup
+audit/
+preview-*.png
+upload/
+tool-results/
+.env.production
+.env.local
