@@ -6,6 +6,8 @@ import {
   triggerVercelDeploy,
   type ExperiencesData,
   type Experience,
+  type Category,
+  type Software,
 } from '@/lib/experiences-data';
 
 /**
@@ -65,7 +67,7 @@ export async function POST(request: Request) {
     );
   }
 
-  // 2. Parse + validate payload
+  // 2. Parse + validate payload (v2 schema)
   let body: Partial<ExperiencesData>;
   try {
     body = await request.json();
@@ -76,34 +78,81 @@ export async function POST(request: Request) {
     );
   }
 
-  if (!body || !Array.isArray(body.experiences) || body.experiences.length === 0) {
+  if (!body || !Array.isArray(body.categories) || body.categories.length === 0) {
     return NextResponse.json(
-      { ok: false, reason: 'Payload must include non-empty experiences array' },
+      { ok: false, reason: 'Payload must include non-empty categories array' },
+      { status: 400 }
+    );
+  }
+  if (!Array.isArray(body.experiences)) {
+    return NextResponse.json(
+      { ok: false, reason: 'Payload must include experiences array (may be empty)' },
+      { status: 400 }
+    );
+  }
+  if (!Array.isArray(body.software)) {
+    return NextResponse.json(
+      { ok: false, reason: 'Payload must include software array (may be empty)' },
       { status: 400 }
     );
   }
 
-  // Light schema validation per item
+  // Validate each category
+  for (const c of body.categories as Category[]) {
+    if (!c.id || !c.title || !c.icon || typeof c.order !== 'number') {
+      return NextResponse.json(
+        { ok: false, reason: `Category missing required field: ${c.id || c.title || 'unknown'}` },
+        { status: 400 }
+      );
+    }
+  }
+
+  // Validate each experience
+  const validCatIds = new Set((body.categories as Category[]).map((c) => c.id));
   for (const e of body.experiences as Experience[]) {
-    if (!e.id || !e.title || !e.category || !e.status || !e.description || !e.icon) {
+    if (!e.id || !e.title || !e.category_id || !e.status || !e.description || !e.icon) {
       return NextResponse.json(
         { ok: false, reason: `Experience missing required field: ${e.id || e.title || 'unknown'}` },
         { status: 400 }
       );
     }
-    if (!['exposed', 'development', 'fixed'].includes(e.category)) {
+    if (!validCatIds.has(e.category_id)) {
       return NextResponse.json(
-        { ok: false, reason: `Invalid category: ${e.category} (id=${e.id})` },
+        { ok: false, reason: `Experience references unknown category_id: ${e.category_id} (id=${e.id})` },
         { status: 400 }
       );
     }
   }
 
-  // 3. Build the new data envelope
+  // Validate each software entry
+  for (const s of body.software as Software[]) {
+    if (!s.id || !s.name || !s.slug || typeof s.progress !== 'number' || !s.category_id) {
+      return NextResponse.json(
+        { ok: false, reason: `Software missing required field: ${s.id || s.name || 'unknown'}` },
+        { status: 400 }
+      );
+    }
+    if (!validCatIds.has(s.category_id)) {
+      return NextResponse.json(
+        { ok: false, reason: `Software references unknown category_id: ${s.category_id} (id=${s.id})` },
+        { status: 400 }
+      );
+    }
+    if (s.progress < 0 || s.progress > 100) {
+      return NextResponse.json(
+        { ok: false, reason: `Software progress must be 0-100: ${s.id} (got ${s.progress})` },
+        { status: 400 }
+      );
+    }
+  }
+
+  // 3. Build the new data envelope (v2)
   const newData: ExperiencesData = {
-    version: body.version ?? 1,
+    version: 2,
     updatedAt: body.updatedAt || new Date().toISOString(),
+    categories: body.categories as Category[],
     experiences: body.experiences as Experience[],
+    software: body.software as Software[],
   };
 
   // 4. Commit to GitHub

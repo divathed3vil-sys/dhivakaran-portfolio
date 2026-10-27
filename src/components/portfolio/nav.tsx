@@ -13,7 +13,7 @@ const NAV_LINKS: NavLink[] = [
   { label: 'Selected Work', href: '#work' },
   { label: 'Videos', href: '#videos' },
   { label: 'Visual Lab', action: 'lab' },
-  { label: 'Experiences', href: '#skillset' },
+  { label: 'Experiences', href: '#experiences' },
   { label: 'Contact', href: '#contact' },
 ];
 

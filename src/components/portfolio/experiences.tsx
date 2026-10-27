@@ -2,28 +2,30 @@
 
 import { useEffect, useRef, useState } from 'react';
 import {
-  Smartphone, Mic, Brain, Palette, Database,
-  Layout, Image as ImageIcon, Clapperboard, Sparkles, Wand2, Brush, PenTool, Music,
-  Layers, Film, Aperture, SlidersHorizontal, Box, Frame,
-  Code, AppWindow, Terminal, Cpu, Wrench, Settings, SmartphoneCharging,
-  Star,
+  Aperture, Terminal, Layout, Image as ImageIcon, Clapperboard, Sparkles, Wand2,
+  Brush, PenTool, Music, Frame, Palette, Mic, Smartphone, Brain, Database,
+  Code, AppWindow, Cpu, Wrench, Settings, SmartphoneCharging, Box,
   type LucideIcon,
 } from 'lucide-react';
 import { BokehField } from './bokeh-field';
 import { useBloom, useHeadingRack } from './lib/use-bloom-rack';
 import {
-  getPublishedExperiencesByCategory,
+  getExperiencesByCategory,
+  getSoftwareIconUrl,
+  getMasteryLabel,
+  type Category,
   type Experience,
-  type ExperienceCategory,
+  type Software,
 } from '@/lib/experiences-data';
 
-// Curated icon registry — only icons we ship in the seed JSON are bundled.
-// If a future Studio edit picks an unlisted icon, it falls back to Box.
+// Curated lucide icon registry for experiences + category headers.
+// Falls back to Box if an unknown icon name is encountered (defensive —
+// the Studio IconPicker only allows valid names, but seed/migration
+// data could have drift).
 const ICONS: Record<string, LucideIcon> = {
-  Smartphone, Mic, Brain, Palette, Database,
-  Layout, Image: ImageIcon, Clapperboard, Sparkles, Wand2, Brush, PenTool, Music,
-  Layers, Film, Aperture, SlidersHorizontal, Box, Frame,
-  Code, AppWindow, Terminal, Cpu, Wrench, Settings, SmartphoneCharging,
+  Aperture, Terminal, Layout, Image: ImageIcon, Clapperboard, Sparkles, Wand2,
+  Brush, PenTool, Music, Frame, Palette, Mic, Smartphone, Brain, Database,
+  Code, AppWindow, Cpu, Wrench, Settings, SmartphoneCharging, Box,
 };
 
 function ExperienceIcon({ name, ...props }: { name: string } & React.ComponentProps<LucideIcon>) {
@@ -31,54 +33,31 @@ function ExperienceIcon({ name, ...props }: { name: string } & React.ComponentPr
   return <Cmp {...props} />;
 }
 
-const PHASES: {
-  id: ExperienceCategory;
-  index: string;
-  name: string;
-  subtitle: string;
-  gridTemplate: string;
-  cardType: 'spotlight' | 'medium' | 'compact';
-}[] = [
-  {
-    id: 'exposed',
-    index: '01',
-    name: 'EXPOSED',
-    subtitle: 'Active Exposures · Currently Learning',
-    gridTemplate: 'repeat(2, 1fr)',
-    cardType: 'spotlight',
-  },
-  {
-    id: 'development',
-    index: '02',
-    name: 'IN DEVELOPMENT',
-    subtitle: 'Practical & Hands-On Workflows',
-    gridTemplate: 'repeat(auto-fit, minmax(min(100%, 260px), 1fr))',
-    cardType: 'medium',
-  },
-  {
-    id: 'fixed',
-    index: '03',
-    name: 'FIXED & PRINTED',
-    subtitle: 'Completed & Past Foundations',
-    gridTemplate: 'repeat(auto-fill, minmax(min(100%, 220px), 1fr))',
-    cardType: 'compact',
-  },
-];
-
 /**
- * Experiences — the "Developing Tray" 3-phase section.
+ * Experiences v2 — "Developing Tray" by STREAM (not skill level).
  *
- * Data is statically imported at build time (src/data/experiences.json).
- * Zero runtime fetch for public visitors → perfect LCP + SEO.
+ * Schema v2 changes:
+ *  - Categories are dynamic (admin-editable title/subtitle/order/icon).
+ *  - Each category contains EXPERIENCES (disciplines like "Poster Design")
+ *    AND SOFTWARE (tools like "Photoshop" with a mastery progress bar).
+ *  - Software brand icons load from jsdelivr + simple-icons CDN (no Supabase).
  *
- * Three temporal phases mirroring darkroom process:
- *   01 / EXPOSED (Currently Learning) — wide spotlight cards, pulsing red dot
- *   02 / IN DEVELOPMENT (Practical Work) — medium 4-col grid
- *   03 / FIXED & PRINTED (Completed) — compact contact-sheet tiles
+ * Layout per category block:
+ *   ┌─ 01 // VISUAL PRODUCTION ───────────────────────┐
+ *   │  [Aperture icon]  Image editing, motion, VFX  │
+ *   │                                                 │
+ *   │  EXPERIENCES (11)                              │
+ *   │  [grid of cards: title + status + tags]        │
+ *   │                                                 │
+ *   │  SOFTWARE (6)                                  │
+ *   │  [PS] Photoshop     █████████░ 92% Expert       │
+ *   │  [Pr] Premiere Pro  ████████░░ 88% Advanced     │
+ *   │  [Ae] After Effects ███████░░░ 78% Advanced     │
+ *   │  ...                                           │
+ *   └─────────────────────────────────────────────────┘
  *
- * Visual language inherits from the old Skillset section (BokehField, dolly-zoom,
- * bloom, hairline-night, anamorphic flare, spring easings) but restructured into
- * a vertical timeline rail + adaptive density per phase.
+ * Data is statically imported at build time → zero runtime fetch for public
+ * visitors. Brand icons load from jsdelivr CDN (MIT, no API key, no Supabase).
  */
 export function Experiences() {
   const sectionRef = useRef<HTMLElement>(null);
@@ -88,7 +67,7 @@ export function Experiences() {
   const [exposedCards, setExposedCards] = useState<Set<string>>(new Set());
   const [forceAll, setForceAll] = useState(false);
 
-  // Dolly-zoom on section entry (matches Skillset pattern)
+  // Dolly-zoom on section entry (matches original Skillset pattern)
   useEffect(() => {
     if (typeof window === 'undefined') return;
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
@@ -112,7 +91,7 @@ export function Experiences() {
     return () => io.disconnect();
   }, []);
 
-  // Expose cards on entry (individual) + 1.5s safety timeout (force-expose all)
+  // Expose cards on entry + safety timeout (force-expose after 1.5s)
   useEffect(() => {
     const io = new IntersectionObserver(
       (entries) => {
@@ -139,15 +118,14 @@ export function Experiences() {
     };
   }, []);
 
-  const data = getPublishedExperiencesByCategory();
+  const data = getExperiencesByCategory();
 
-  // Build a flat list of all visible experiences for stable flatIndex (same
-  // pattern as the old Skillset — stable ref indexing, no closure mutation)
-  const allExperiences: { exp: Experience; flatIndex: number; phaseIndex: number }[] = [];
+  // Flat list across all categories for stable flatIndex (used in card rotation)
+  const allExperiences: { exp: Experience; flatIndex: number; category: Category }[] = [];
   let flatIdx = 0;
-  PHASES.forEach((phase, phaseIdx) => {
-    data[phase.id].forEach((exp) => {
-      allExperiences.push({ exp, flatIndex: flatIdx++, phaseIndex: phaseIdx });
+  data.forEach(({ category, experiences }) => {
+    experiences.forEach((exp) => {
+      allExperiences.push({ exp, flatIndex: flatIdx++, category });
     });
   });
 
@@ -171,7 +149,6 @@ export function Experiences() {
       <BokehField count={8} />
 
       <div ref={bloomRef} data-dolly="" className="canvas-max" style={{ position: 'relative' }}>
-        {/* Section header */}
         <h2
           ref={titleRef}
           className="text-section"
@@ -190,9 +167,9 @@ export function Experiences() {
 
         <hr className="hairline-night" style={{ margin: '0 0 calc(48 * var(--px))' }} />
 
-        {/* Three-phase timeline rail + content */}
+        {/* Category blocks (timeline rail + content) */}
         <div style={{ position: 'relative', paddingLeft: 'calc(28 * var(--px))' }}>
-          {/* Vertical timeline rail (left edge) */}
+          {/* Vertical timeline rail */}
           <div
             aria-hidden="true"
             style={{
@@ -205,44 +182,42 @@ export function Experiences() {
             }}
           />
 
-          {PHASES.map((phase, phaseIdx) => {
-            const exps = data[phase.id];
-            if (!exps.length) return null;
-            return (
-              <PhaseBlock
-                key={phase.id}
-                phase={phase}
-                experiences={exps}
-                phaseIdx={phaseIdx}
-                cardRefs={cardRefs}
-                exposedCards={exposedCards}
-                forceAll={forceAll}
-                flatOffset={
-                  // Offset to the flatIndex of the first card in this phase
-                  allExperiences.find((e) => e.exp.category === phase.id)?.flatIndex ?? 0
-                }
-              />
-            );
-          })}
+          {data.map(({ category, experiences, software }, phaseIdx) => (
+            <CategoryBlock
+              key={category.id}
+              category={category}
+              experiences={experiences}
+              software={software}
+              phaseIdx={phaseIdx}
+              cardRefs={cardRefs}
+              exposedCards={exposedCards}
+              forceAll={forceAll}
+              flatOffset={
+                allExperiences.find((e) => e.exp.category_id === category.id)?.flatIndex ?? 0
+              }
+            />
+          ))}
         </div>
       </div>
     </section>
   );
 }
 
-// ---------- Phase block ----------
+// ---------- Category block (one per category) ----------
 
-function PhaseBlock({
-  phase,
+function CategoryBlock({
+  category,
   experiences,
+  software,
   phaseIdx,
   cardRefs,
   exposedCards,
   forceAll,
   flatOffset,
 }: {
-  phase: typeof PHASES[number];
+  category: Category;
   experiences: Experience[];
+  software: Software[];
   phaseIdx: number;
   cardRefs: React.MutableRefObject<(HTMLDivElement | null)[]>;
   exposedCards: Set<string>;
@@ -252,37 +227,48 @@ function PhaseBlock({
   return (
     <div
       style={{
-        marginBottom: phaseIdx === PHASES.length - 1 ? 0 : 'calc(48 * var(--px))',
+        marginBottom: phaseIdx === -1 ? 0 : 'calc(56 * var(--px))',
         position: 'relative',
       }}
     >
-      {/* Tick on the rail at the phase header */}
+      {/* Tick on the rail */}
       <div
         className="experiences-rail-tick"
-        data-phase={phase.id}
+        data-phase={phaseIdx === 0 ? 'exposed' : 'development'}
         aria-hidden="true"
         style={{
           top: 'calc(20 * var(--px))',
-          left: 'calc(-28 * var(--px) + -3.5px)', // align with rail line, slightly outside
+          left: 'calc(-28 * var(--px) + -3.5px)',
         }}
       />
 
-      {/* Phase header */}
+      {/* Category header */}
       <div
         style={{
           display: 'flex',
           alignItems: 'baseline',
-          gap: '0.85rem',
+          gap: '0.75rem',
           flexWrap: 'wrap',
           marginBottom: 'calc(20 * var(--px))',
         }}
       >
         <span
           className="text-mono text-label"
-          style={{ color: 'var(--accent)', fontSize: 'clamp(0.75rem, 1vw, 0.875rem)' }}
+          style={{
+            color: 'var(--accent)',
+            fontSize: 'clamp(0.75rem, 1vw, 0.875rem)',
+          }}
         >
-          {phase.index}{' //'}
+          {String(category.order).padStart(2, '0')}{' //'}
         </span>
+        <ExperienceIcon
+          name={category.icon}
+          size={24}
+          strokeWidth={1.5}
+          color="var(--accent)"
+          style={{ flexShrink: 0, alignSelf: 'center' }}
+          aria-hidden="true"
+        />
         <h3
           style={{
             fontFamily: 'var(--font-fraunces), serif',
@@ -294,58 +280,96 @@ function PhaseBlock({
             lineHeight: 1.05,
           }}
         >
-          {phase.name}
+          {category.title}
         </h3>
         <span
           className="text-mono text-label"
-          style={{ color: 'var(--night-muted)', opacity: 0.85 }}
+          style={{ color: 'var(--night-muted)', opacity: 0.85, flexBasis: '100%' }}
         >
-          {phase.subtitle}
+          {category.subtitle}
         </span>
       </div>
 
-      {/* Adaptive grid */}
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: phase.gridTemplate,
-          gap: 'calc(24 * var(--px))',
-          alignItems: 'stretch',
-        }}
-      >
-        {experiences.map((exp, idx) => {
-          const flatIndex = flatOffset + idx;
-          const cardIdx = String(flatIndex + 1).padStart(2, '0');
-          const key = `${phase.id}-${exp.id}`;
-          const exposed = forceAll || exposedCards.has(key);
-          return (
-            <ExperienceCard
-              key={exp.id}
-              exp={exp}
-              cardIdx={cardIdx}
-              cardType={phase.cardType}
-              featured={exp.featured}
-              exposed={exposed}
-              flatIndex={flatIndex}
-              cardRef={(el) => {
-                cardRefs.current[flatIndex] = el;
-              }}
-              dataKey={key}
-            />
-          );
-        })}
-      </div>
+      {/* EXPERIENCES sub-section */}
+      {experiences.length > 0 && (
+        <div style={{ marginBottom: 'calc(28 * var(--px))' }}>
+          <div
+            className="text-mono text-label"
+            style={{
+              color: 'var(--night-muted)',
+              marginBottom: 'calc(14 * var(--px))',
+              opacity: 0.85,
+            }}
+          >
+            EXPERIENCES ({experiences.length})
+          </div>
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 240px), 1fr))',
+              gap: 'calc(16 * var(--px))',
+              alignItems: 'stretch',
+            }}
+          >
+            {experiences.map((exp, idx) => {
+              const flatIndex = flatOffset + idx;
+              const cardIdx = String(flatIndex + 1).padStart(2, '0');
+              const key = `${category.id}-${exp.id}`;
+              const exposed = forceAll || exposedCards.has(key);
+              return (
+                <ExperienceCard
+                  key={exp.id}
+                  exp={exp}
+                  cardIdx={cardIdx}
+                  exposed={exposed}
+                  flatIndex={flatIndex}
+                  cardRef={(el) => {
+                    cardRefs.current[flatIndex] = el;
+                  }}
+                  dataKey={key}
+                />
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* SOFTWARE sub-section with progress bars */}
+      {software.length > 0 && (
+        <div>
+          <div
+            className="text-mono text-label"
+            style={{
+              color: 'var(--night-muted)',
+              marginBottom: 'calc(14 * var(--px))',
+              opacity: 0.85,
+            }}
+          >
+            SOFTWARE ({software.length})
+          </div>
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 220px), 1fr))',
+              gap: 'calc(10 * var(--px))',
+              alignItems: 'stretch',
+            }}
+          >
+            {software.map((sw) => (
+              <SoftwareCard key={sw.id} sw={sw} />
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
-// ---------- Card ----------
+// ---------- Experience card (discipline, not skill-level) ----------
 
 function ExperienceCard({
   exp,
   cardIdx,
-  cardType,
-  featured,
   exposed,
   flatIndex,
   cardRef,
@@ -353,53 +377,26 @@ function ExperienceCard({
 }: {
   exp: Experience;
   cardIdx: string;
-  cardType: 'spotlight' | 'medium' | 'compact';
-  featured: boolean;
   exposed: boolean;
   flatIndex: number;
   cardRef: (el: HTMLDivElement | null) => void;
   dataKey: string;
 }) {
-  const isSpotlight = cardType === 'spotlight';
-  const isCompact = cardType === 'compact';
-
-  // Slight rotation per card (analog feel) — matches old Skillset pattern
+  // Slight rotation per card (analog feel)
   const rotation = ((flatIndex * 17) % 100) / 100 * 1.6 - 0.8;
-
-  // Per-phase icon color
-  const iconColor =
-    cardType === 'spotlight'
-      ? 'var(--accent)'
-      : cardType === 'medium'
-      ? 'var(--canvas)'
-      : 'var(--night-muted)';
-
-  // Per-phase icon size
-  const iconSize =
-    isSpotlight ? 32 : isCompact ? 18 : 24;
 
   return (
     <article
       ref={cardRef}
       data-key={dataKey}
-      data-featured={featured ? 'true' : 'false'}
-      className={isCompact ? 'experiences-card experiences-card-compact' : 'experiences-card'}
+      data-featured={exp.featured ? 'true' : 'false'}
+      className="experiences-card"
       style={{
         position: 'relative',
-        background: isSpotlight
-          ? 'rgba(22, 22, 22, 0.6)'
-          : 'var(--night-soft)',
+        background: 'var(--night-soft)',
         color: 'var(--canvas)',
-        padding: isSpotlight
-          ? 'calc(24 * var(--px))'
-          : isCompact
-          ? 'calc(16 * var(--px))'
-          : 'calc(20 * var(--px))',
+        padding: 'calc(18 * var(--px))',
         border: '1px solid rgba(255, 255, 255, 0.08)',
-        backdropFilter: isSpotlight ? 'blur(12px)' : 'none',
-        WebkitBackdropFilter: isSpotlight ? 'blur(12px)' : 'none',
-        // Spotlight cards span 2 columns when featured; otherwise 1
-        gridColumn: isSpotlight && featured ? 'span 2' : 'span 1',
         transform: `rotate(${rotation}deg)`,
         opacity: exposed ? 1 : 0,
         filter: exposed ? 'blur(0px)' : 'blur(4px)',
@@ -412,107 +409,70 @@ function ExperienceCard({
         overflow: 'hidden',
         display: 'flex',
         flexDirection: 'column',
-        gap: 'calc(12 * var(--px))',
+        gap: 'calc(10 * var(--px))',
       }}
     >
-      {/* Top row: index + featured star (spotlight only) */}
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          gap: '0.5rem',
-        }}
-      >
-        <span className="experiences-card-index" style={{ color: 'var(--accent)', opacity: 0.85 }}>
-          N° {cardIdx}
-        </span>
-        {isSpotlight && featured && (
-          <Star
-            size={14}
-            className="experiences-featured-star"
-            strokeWidth={1.5}
-            aria-label="Featured"
-          />
-        )}
-      </div>
-
-      {/* Icon + title row */}
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'flex-start',
-          gap: 'calc(12 * var(--px))',
-        }}
-      >
+      {/* Top row: index + icon */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem' }}>
+        <span className="experiences-card-index">N° {cardIdx}</span>
         <ExperienceIcon
           name={exp.icon}
-          size={iconSize}
-          strokeWidth={cardType === 'compact' ? 1 : 1.5}
-          color={iconColor}
-          style={{ flexShrink: 0, marginTop: isSpotlight ? '0.15rem' : '0.1rem' }}
+          size={18}
+          strokeWidth={1.5}
+          color="var(--accent)"
           aria-hidden="true"
         />
-        <h4
-          style={{
-            fontFamily: 'var(--font-fraunces), serif',
-            fontWeight: 500,
-            fontSize: isSpotlight
-              ? 'clamp(1.3rem, 2.5vw, 2.1rem)'
-              : isCompact
-              ? 'clamp(1rem, 1.8vw, 1.25rem)'
-              : 'clamp(1.1rem, 2vw, 1.5rem)',
-            lineHeight: 1.15,
-            letterSpacing: '-0.015em',
-            color: 'var(--canvas)',
-            margin: 0,
-            flex: 1,
-          }}
-        >
-          {exp.title}
-        </h4>
       </div>
 
-      {/* Status badge */}
+      {/* Title */}
+      <h4
+        style={{
+          fontFamily: 'var(--font-fraunces), serif',
+          fontWeight: 500,
+          fontSize: 'clamp(1.05rem, 1.8vw, 1.35rem)',
+          lineHeight: 1.15,
+          letterSpacing: '-0.015em',
+          color: 'var(--canvas)',
+          margin: 0,
+        }}
+      >
+        {exp.title}
+      </h4>
+
+      {/* Status */}
       <div
         className="text-mono text-label"
-        style={{
-          color: 'var(--night-muted)',
-          opacity: 0.9,
-        }}
+        style={{ color: 'var(--night-muted)', opacity: 0.9 }}
       >
         {exp.status}
       </div>
 
-      {/* Description */}
-      {!isCompact && (
-        <p
-          style={{
-            fontFamily: 'var(--font-fraunces), serif',
-            fontSize: 'clamp(0.9rem, 1.05vw, 1rem)',
-            lineHeight: 1.55,
-            color: 'var(--night-body)',
-            margin: 0,
-            // Clamp to 3 lines on spotlight, 2 on medium
-            display: '-webkit-box',
-            WebkitLineClamp: isSpotlight ? 3 : 2,
-            WebkitBoxOrient: 'vertical',
-            overflow: 'hidden',
-          }}
-        >
-          {exp.description}
-        </p>
-      )}
+      {/* Description (clamped to 2 lines) */}
+      <p
+        style={{
+          fontFamily: 'var(--font-fraunces), serif',
+          fontSize: 'clamp(0.85rem, 1vw, 0.95rem)',
+          lineHeight: 1.5,
+          color: 'var(--night-body)',
+          margin: 0,
+          display: '-webkit-box',
+          WebkitLineClamp: 2,
+          WebkitBoxOrient: 'vertical',
+          overflow: 'hidden',
+        }}
+      >
+        {exp.description}
+      </p>
 
-      {/* Tags (spotlight + medium only — compact has no room) */}
-      {!isCompact && exp.tags.length > 0 && (
+      {/* Tags */}
+      {exp.tags.length > 0 && (
         <div
           style={{
             display: 'flex',
             flexWrap: 'wrap',
-            gap: 'calc(6 * var(--px))',
+            gap: 'calc(5 * var(--px))',
             marginTop: 'auto',
-            paddingTop: 'calc(4 * var(--px))',
+            paddingTop: 'calc(2 * var(--px))',
           }}
         >
           {exp.tags.map((tag, i) => (
@@ -523,8 +483,143 @@ function ExperienceCard({
         </div>
       )}
 
-      {/* Anamorphic flare on hover (overlay) */}
+      {/* Anamorphic flare on hover */}
       <div className="experiences-flare" aria-hidden="true" />
     </article>
+  );
+}
+
+// ---------- Software card with progress bar + CDN icon ----------
+
+function SoftwareCard({ sw }: { sw: Software }) {
+  const [iconError, setIconError] = useState(false);
+  const mastery = getMasteryLabel(sw.progress);
+
+  return (
+    <div
+      className="software-card"
+      style={{
+        padding: 'calc(12 * var(--px)) calc(14 * var(--px))',
+        background: 'rgba(22, 22, 22, 0.6)',
+        border: '1px solid rgba(255, 255, 255, 0.08)',
+        display: 'flex',
+        alignItems: 'center',
+        gap: 'calc(12 * var(--px))',
+        transition: 'border-color 0.3s var(--ease-out-soft), background 0.3s var(--ease-out-soft)',
+      }}
+    >
+      {/* Software brand icon — loads from jsdelivr + simple-icons CDN */}
+      {/* MIT-licensed, no API key, no Supabase involvement */}
+      <div
+        style={{
+          width: '28px',
+          height: '28px',
+          flexShrink: 0,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        {!iconError ? (
+           
+          <img
+            src={getSoftwareIconUrl(sw.slug)}
+            alt={`${sw.name} brand icon`}
+            width={24}
+            height={24}
+            onError={() => setIconError(true)}
+            // Brand icons are pure-black SVGs — invert to white for the dark section.
+            // (brightness(0) sets all pixels to black, then invert(1) flips to white)
+            style={{
+              filter: 'brightness(0) invert(1)',
+              opacity: 0.92,
+              display: 'block',
+            }}
+            loading="lazy"
+          />
+        ) : (
+          <Box size={20} strokeWidth={1.5} color="var(--night-muted)" aria-hidden="true" />
+        )}
+      </div>
+
+      {/* Name + progress bar + mastery label */}
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'baseline',
+            gap: '0.5rem',
+            marginBottom: 'calc(5 * var(--px))',
+          }}
+        >
+          <span
+            style={{
+              fontFamily: 'var(--font-fraunces), serif',
+              fontWeight: 500,
+              fontSize: 'clamp(0.85rem, 1vw, 0.95rem)',
+              color: 'var(--canvas)',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {sw.name}
+          </span>
+          <span
+            className="text-mono text-label"
+            style={{
+              color: 'var(--accent)',
+              opacity: 0.95,
+              fontSize: 'clamp(0.65rem, 0.75vw, 0.7rem)',
+              flexShrink: 0,
+            }}
+            aria-label={`${mastery}, ${sw.progress}% mastery`}
+          >
+            {sw.progress}%
+          </span>
+        </div>
+
+        {/* Progress bar — thin red gradient on hairline track */}
+        <div
+          role="progressbar"
+          aria-valuenow={sw.progress}
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-label={`${sw.name} mastery`}
+          style={{
+            height: '2px',
+            background: 'rgba(255, 255, 255, 0.08)',
+            position: 'relative',
+            overflow: 'hidden',
+          }}
+        >
+          <div
+            style={{
+              position: 'absolute',
+              left: 0,
+              top: 0,
+              bottom: 0,
+              width: `${sw.progress}%`,
+              background: 'linear-gradient(90deg, var(--accent-soft), var(--accent), var(--accent-deep))',
+              transition: 'width 1.2s var(--ease-reveal)',
+            }}
+          />
+        </div>
+
+        {/* Mastery label (accessible text under the bar) */}
+        <div
+          className="text-mono text-label"
+          style={{
+            color: 'var(--night-muted)',
+            opacity: 0.6,
+            marginTop: 'calc(3 * var(--px))',
+            fontSize: 'clamp(0.55rem, 0.65vw, 0.65rem)',
+          }}
+        >
+          {mastery}
+        </div>
+      </div>
+    </div>
   );
 }

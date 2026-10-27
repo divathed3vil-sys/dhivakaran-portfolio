@@ -18,44 +18,68 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import {
-  Smartphone, Mic, Brain, Palette, Database,
-  Layout, Image as ImageIcon, Clapperboard, Sparkles, Wand2, Brush, PenTool, Music,
-  Layers, Film, Aperture, SlidersHorizontal, Box, Frame,
-  Code, AppWindow, Terminal, Cpu, Wrench, Settings, SmartphoneCharging,
+  Aperture, Terminal, Layout, Image as ImageIcon, Clapperboard, Sparkles, Wand2,
+  Brush, PenTool, Music, Frame, Palette, Mic, Smartphone, Brain, Database,
+  Code, AppWindow, Cpu, Wrench, Settings, SmartphoneCharging, Box,
   Star, Plus, Trash2, Pencil, GripVertical,
   type LucideIcon,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import {
+  type Category,
   type Experience,
-  type ExperienceCategory,
+  type Software,
   type ExperiencesData,
+  getSoftwareIconUrl,
+  getMasteryLabel,
 } from '@/lib/experiences-data';
 import { StudioDetailPanel } from './studio-detail-panel';
 import { IconPicker } from './icon-picker';
+import { SoftwareIconPicker } from './software-icon-picker';
 
 /**
- * ExperiencesTab — Studio admin UI for the experiences section.
+ * ExperiencesTab v2 — Studio admin for the v2 schema (categories[] +
+ * experiences[] + software[]).
  *
  * Workflow:
- *   1. On mount, fetches current experiences via React Query → GET /api/experiences
- *   2. Admin edits are stored in a draft (per-id overrides + new ids + deleted ids).
- *      The draft is the source of truth for the UI; server data is the baseline.
- *   3. Save in DetailPanel → updates draft (NOT yet published).
- *   4. "Publish Changes" button → POST /api/experiences with merged array +
- *      Authorization header (Supabase access token from current session).
- *   5. API route verifies admin → commits JSON to GitHub → triggers Vercel deploy.
- *   6. Studio polls GET /api/experiences/status?deployId=X every 3s until READY.
- *   7. On READY: invalidate experiences query (refetch from new deploy) + show
- *      "✓ Live" indicator + clear draft.
+ *   1. React Query fetches serverData (categories[] + experiences[] + software[])
+ *   2. Admin edits stored in draft (per-id overrides + new ids + deleted ids
+ *      + order overrides per category)
+ *   3. Save in DetailPanel → updates draft (NOT yet published)
+ *   4. "Publish Changes" → POST /api/experiences with merged v2 payload +
+ *      Authorization header (Supabase access token)
+ *   5. API route verifies admin → commits JSON to GitHub → triggers Vercel
+ *      deploy → returns deploymentId
+ *   6. Studio polls /api/experiences/status?deployId=X every 3s until READY
+ *   7. On READY: invalidate experiences query + clear draft
  *
- * Layout matches existing Studio tabs (3-pane glass aesthetic):
- *   - Filter row (All / 01 / 02 / 03) + Add New button
- *   - Grid of cards (drag-drop reorder within phase)
- *   - "Publish Changes" button + status row at bottom
- *   - StudioDetailPanel slides in from right for add/edit
+ * UI structure:
+ *   - Category pills row (click to filter, drag to reorder, ✎ to rename, + to add)
+ *   - Selected category content:
+ *     - EXPERIENCES sub-section (sortable list with edit/delete + add)
+ *     - SOFTWARE sub-section (sortable list with progress + edit/delete + add)
+ *   - Sticky publish bar
+ *   - DetailPanel (slide-in) for editing experience/software/category
+ *   - SoftwareIconPicker modal (opens from software DetailPanel)
+ *   - IconPicker modal (opens from experience DetailPanel)
  */
-type Filter = 'all' | ExperienceCategory;
+
+const ICONS: Record<string, LucideIcon> = {
+  Aperture, Terminal, Layout, Image: ImageIcon, Clapperboard, Sparkles, Wand2,
+  Brush, PenTool, Music, Frame, Palette, Mic, Smartphone, Brain, Database,
+  Code, AppWindow, Cpu, Wrench, Settings, SmartphoneCharging, Box,
+};
+
+function PreviewIcon({ name, size = 16 }: { name: string; size?: number }) {
+  const Cmp = ICONS[name] || Box;
+  return <Cmp size={size} strokeWidth={1.5} />;
+}
+
+function newId(prefix: string): string {
+  return `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`;
+}
+
+// ---------- Publish state machine ----------
 
 type PublishState =
   | { phase: 'idle' }
@@ -65,11 +89,12 @@ type PublishState =
   | { phase: 'ready'; deployId: string; msg: string }
   | { phase: 'error'; msg: string };
 
-const PHASE_LABELS: Record<ExperienceCategory, string> = {
-  exposed: '01 / EXPOSED',
-  development: '02 / IN DEVELOPMENT',
-  fixed: '03 / FIXED & PRINTED',
-};
+// ---------- Editing target (which entity is being edited) ----------
+
+type EditingTarget =
+  | { kind: 'experience'; id: string | null } // null = adding new
+  | { kind: 'software'; id: string | null }
+  | { kind: 'category'; id: string | null };
 
 export function ExperiencesTab() {
   const queryClient = useQueryClient();
@@ -82,181 +107,277 @@ export function ExperiencesTab() {
     },
   });
 
-  // ---- Draft state (NOT yet published) ----
-  const [overrides, setOverrides] = useState<Record<string, Experience>>({});
-  const [newIds, setNewIds] = useState<string[]>([]);
-  const [deletedIds, setDeletedIds] = useState<Set<string>>(new Set());
-  const [orderOverrides, setOrderOverrides] = useState<Record<ExperienceCategory, string[]>>({
-    exposed: [],
-    development: [],
-    fixed: [],
-  });
+  // ---- Draft state ----
+  const [catOverrides, setCatOverrides] = useState<Record<string, Category>>({});
+  const [newCatIds, setNewCatIds] = useState<string[]>([]);
+  const [deletedCatIds, setDeletedCatIds] = useState<Set<string>>(new Set());
+  const [catOrderOverride, setCatOrderOverride] = useState<string[]>([]); // list of cat IDs in desired order
+
+  const [expOverrides, setExpOverrides] = useState<Record<string, Experience>>({});
+  const [newExpIds, setNewExpIds] = useState<string[]>([]);
+  const [deletedExpIds, setDeletedExpIds] = useState<Set<string>>(new Set());
+  const [expOrderOverrides, setExpOrderOverrides] = useState<Record<string, string[]>>({});
+
+  const [swOverrides, setSwOverrides] = useState<Record<string, Software>>({});
+  const [newSwIds, setNewSwIds] = useState<string[]>([]);
+  const [deletedSwIds, setDeletedSwIds] = useState<Set<string>>(new Set());
+  const [swOrderOverrides, setSwOrderOverrides] = useState<Record<string, string[]>>({});
 
   // ---- UI state ----
-  const [filter, setFilter] = useState<Filter>('all');
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [isAdding, setIsAdding] = useState(false);
-  const [iconPickerFor, setIconPickerFor] = useState<string | null>(null);
+  const [selectedCatId, setSelectedCatId] = useState<string | null>(null);
+  const [editingTarget, setEditingTarget] = useState<EditingTarget | null>(null);
+  const [iconPickerFor, setIconPickerFor] = useState<{ kind: 'experience' | 'category'; id: string | null } | null>(null);
+  const [swIconPickerFor, setSwIconPickerFor] = useState<string | null>(null);
   const [publishState, setPublishState] = useState<PublishState>({ phase: 'idle' });
   const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  // ---- Merge server data + draft ----
-  const mergedExperiences: Experience[] = useMemo(() => {
-    const base = (serverData?.experiences || []).filter((e) => !deletedIds.has(e.id));
-    const baseWithOverrides = base.map((e) => overrides[e.id] || e);
-    const newOnes = newIds.map((id) => overrides[id]).filter(Boolean);
-    return [...baseWithOverrides, ...newOnes];
-  }, [serverData, overrides, newIds, deletedIds]);
-
-  // Sort by priority DESC (matches public rendering)
-  const sortedExperiences = useMemo(
-    () => [...mergedExperiences].sort((a, b) => b.priority - a.priority),
-    [mergedExperiences]
-  );
-
-  const byCategory: Record<ExperienceCategory, Experience[]> = {
-    exposed: sortedExperiences.filter((e) => e.category === 'exposed'),
-    development: sortedExperiences.filter((e) => e.category === 'development'),
-    fixed: sortedExperiences.filter((e) => e.category === 'fixed'),
-  };
-
-  // Apply order overrides (drag-drop) on top of priority sort
-  const orderedByCategory: Record<ExperienceCategory, Experience[]> = useMemo(() => {
-    const result: Record<ExperienceCategory, Experience[]> = {
-      exposed: [],
-      development: [],
-      fixed: [],
-    };
-    (['exposed', 'development', 'fixed'] as ExperienceCategory[]).forEach((cat) => {
-      const order = orderOverrides[cat];
-      if (order && order.length > 0) {
-        // Use order from drag-drop, fall back to remaining items in priority order
-        const remaining = [...byCategory[cat]];
-        const ordered: Experience[] = [];
-        order.forEach((id) => {
-          const idx = remaining.findIndex((e) => e.id === id);
-          if (idx >= 0) {
-            ordered.push(remaining.splice(idx, 1)[0]);
-          }
-        });
-        result[cat] = [...ordered, ...remaining];
-      } else {
-        result[cat] = byCategory[cat];
-      }
-    });
-    return result;
-  }, [byCategory, orderOverrides]);
-
-  const visibleExperiences = useMemo(() => {
-    if (filter === 'all') {
-      return [
-        ...orderedByCategory.exposed,
-        ...orderedByCategory.development,
-        ...orderedByCategory.fixed,
-      ];
+  // ---- Merge server + draft ----
+  const mergedCategories: Category[] = useMemo(() => {
+    const base = (serverData?.categories || []).filter((c) => !deletedCatIds.has(c.id));
+    const withOverrides = base.map((c) => catOverrides[c.id] || c);
+    const newOnes = newCatIds.map((id) => catOverrides[id]).filter(Boolean);
+    const all = [...withOverrides, ...newOnes];
+    // Apply order override if set
+    if (catOrderOverride.length > 0) {
+      const ordered: Category[] = [];
+      const remaining = [...all];
+      catOrderOverride.forEach((id) => {
+        const idx = remaining.findIndex((c) => c.id === id);
+        if (idx >= 0) ordered.push(remaining.splice(idx, 1)[0]);
+      });
+      return [...ordered, ...remaining];
     }
-    return orderedByCategory[filter];
-  }, [filter, orderedByCategory]);
+    return all.sort((a, b) => a.order - b.order);
+  }, [serverData, catOverrides, newCatIds, deletedCatIds, catOrderOverride]);
 
+  // Auto-select first category if none selected
+  useEffect(() => {
+    if (!selectedCatId && mergedCategories.length > 0) {
+      setSelectedCatId(mergedCategories[0].id);
+    }
+  }, [mergedCategories, selectedCatId]);
+
+  const selectedCategory = mergedCategories.find((c) => c.id === selectedCatId) || null;
+
+  const mergedExperiences: Experience[] = useMemo(() => {
+    if (!selectedCategory) return [];
+    const base = (serverData?.experiences || [])
+      .filter((e) => e.category_id === selectedCategory.id && !deletedExpIds.has(e.id));
+    const withOverrides = base.map((e) => expOverrides[e.id] || e);
+    const newOnes = newExpIds
+      .map((id) => expOverrides[id])
+      .filter(Boolean)
+      .filter((e) => e.category_id === selectedCategory.id);
+    const all = [...withOverrides, ...newOnes];
+    const orderOverride = expOrderOverrides[selectedCategory.id];
+    if (orderOverride && orderOverride.length > 0) {
+      const ordered: Experience[] = [];
+      const remaining = [...all];
+      orderOverride.forEach((id) => {
+        const idx = remaining.findIndex((e) => e.id === id);
+        if (idx >= 0) ordered.push(remaining.splice(idx, 1)[0]);
+      });
+      return [...ordered, ...remaining];
+    }
+    return all.sort((a, b) => a.order - b.order);
+  }, [serverData, expOverrides, newExpIds, deletedExpIds, expOrderOverrides, selectedCategory]);
+
+  const mergedSoftware: Software[] = useMemo(() => {
+    if (!selectedCategory) return [];
+    const base = (serverData?.software || [])
+      .filter((s) => s.category_id === selectedCategory.id && !deletedSwIds.has(s.id));
+    const withOverrides = base.map((s) => swOverrides[s.id] || s);
+    const newOnes = newSwIds
+      .map((id) => swOverrides[id])
+      .filter(Boolean)
+      .filter((s) => s.category_id === selectedCategory.id);
+    const all = [...withOverrides, ...newOnes];
+    const orderOverride = swOrderOverrides[selectedCategory.id];
+    if (orderOverride && orderOverride.length > 0) {
+      const ordered: Software[] = [];
+      const remaining = [...all];
+      orderOverride.forEach((id) => {
+        const idx = remaining.findIndex((s) => s.id === id);
+        if (idx >= 0) ordered.push(remaining.splice(idx, 1)[0]);
+      });
+      return [...ordered, ...remaining];
+    }
+    return all.sort((a, b) => a.order - b.order);
+  }, [serverData, swOverrides, newSwIds, deletedSwIds, swOrderOverrides, selectedCategory]);
+
+  // ---- Pending count ----
   const pendingCount = useMemo(() => {
     let n = 0;
-    n += Object.keys(overrides).length;
-    n += newIds.length;
-    n += deletedIds.size;
-    // Count order overrides (non-empty arrays = changes)
-    (['exposed', 'development', 'fixed'] as ExperienceCategory[]).forEach((cat) => {
-      if (orderOverrides[cat].length > 0) n++;
-    });
+    n += Object.keys(catOverrides).length + newCatIds.length + deletedCatIds.size + (catOrderOverride.length > 0 ? 1 : 0);
+    n += Object.keys(expOverrides).length + newExpIds.length + deletedExpIds.size + Object.keys(expOrderOverrides).length;
+    n += Object.keys(swOverrides).length + newSwIds.length + deletedSwIds.size + Object.keys(swOrderOverrides).length;
     return n;
-  }, [overrides, newIds, deletedIds, orderOverrides]);
+  }, [catOverrides, newCatIds, deletedCatIds, catOrderOverride, expOverrides, newExpIds, deletedExpIds, expOrderOverrides, swOverrides, newSwIds, deletedSwIds, swOrderOverrides]);
 
-  // ---- Sensors for drag-drop ----
+  // ---- Sensors ----
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
   );
 
   // ---- Handlers ----
-  const handleDragEnd = (cat: ExperienceCategory, event: DragEndEvent) => {
+  const handleCategoryDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
     if (!over || active.id === over.id) return;
-    const current = orderOverrides[cat].length > 0
-      ? orderOverrides[cat]
-      : orderedByCategory[cat].map((e) => e.id);
+    const current = catOrderOverride.length > 0
+      ? catOrderOverride
+      : mergedCategories.map((c) => c.id);
     const oldIndex = current.indexOf(active.id as string);
     const newIndex = current.indexOf(over.id as string);
     if (oldIndex < 0 || newIndex < 0) return;
-    const next = arrayMove(current, oldIndex, newIndex);
-    setOrderOverrides((prev) => ({ ...prev, [cat]: next }));
+    setCatOrderOverride(arrayMove(current, oldIndex, newIndex));
   };
 
-  const handleSaveExisting = (id: string, patch: Experience) => {
-    setOverrides((prev) => ({ ...prev, [id]: patch }));
-    setEditingId(null);
+  const handleExpDragEnd = (event: DragEndEvent) => {
+    if (!selectedCategory) return;
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    const current = (expOrderOverrides[selectedCategory.id] && expOrderOverrides[selectedCategory.id].length > 0)
+      ? expOrderOverrides[selectedCategory.id]
+      : mergedExperiences.map((e) => e.id);
+    const oldIndex = current.indexOf(active.id as string);
+    const newIndex = current.indexOf(over.id as string);
+    if (oldIndex < 0 || newIndex < 0) return;
+    setExpOrderOverrides((prev) => ({ ...prev, [selectedCategory.id]: arrayMove(current, oldIndex, newIndex) }));
   };
 
-  const handleSaveNew = (exp: Experience) => {
-    setOverrides((prev) => ({ ...prev, [exp.id]: exp }));
-    setNewIds((prev) => [...prev, exp.id]);
-    setIsAdding(false);
+  const handleSwDragEnd = (event: DragEndEvent) => {
+    if (!selectedCategory) return;
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    const current = (swOrderOverrides[selectedCategory.id] && swOrderOverrides[selectedCategory.id].length > 0)
+      ? swOrderOverrides[selectedCategory.id]
+      : mergedSoftware.map((s) => s.id);
+    const oldIndex = current.indexOf(active.id as string);
+    const newIndex = current.indexOf(over.id as string);
+    if (oldIndex < 0 || newIndex < 0) return;
+    setSwOrderOverrides((prev) => ({ ...prev, [selectedCategory.id]: arrayMove(current, oldIndex, newIndex) }));
   };
 
-  const handleDelete = (id: string) => {
-    if (newIds.includes(id)) {
-      // It's a new draft — just remove from overrides + newIds
-      setOverrides((prev) => {
-        const next = { ...prev };
-        delete next[id];
-        return next;
-      });
-      setNewIds((prev) => prev.filter((x) => x !== id));
-    } else {
-      // Existing — mark for deletion
-      setDeletedIds((prev) => new Set([...prev, id]));
+  // Save handlers
+  const handleSaveCategory = (cat: Category) => {
+    setCatOverrides((prev) => ({ ...prev, [cat.id]: cat }));
+    if (!mergedCategories.find((c) => c.id === cat.id) && !newCatIds.includes(cat.id)) {
+      setNewCatIds((prev) => [...prev, cat.id]);
     }
-    setEditingId(null);
+    setEditingTarget(null);
   };
 
-  const handleUndoDelete = (id: string) => {
-    setDeletedIds((prev) => {
-      const next = new Set(prev);
-      next.delete(id);
-      return next;
-    });
+  const handleSaveExperience = (exp: Experience) => {
+    setExpOverrides((prev) => ({ ...prev, [exp.id]: exp }));
+    if (!mergedExperiences.find((e) => e.id === exp.id) && !newExpIds.includes(exp.id)) {
+      setNewExpIds((prev) => [...prev, exp.id]);
+    }
+    setEditingTarget(null);
   };
 
-  const handleAddNew = () => {
-    setIsAdding(true);
-    setEditingId(null);
+  const handleSaveSoftware = (sw: Software) => {
+    setSwOverrides((prev) => ({ ...prev, [sw.id]: sw }));
+    if (!mergedSoftware.find((s) => s.id === sw.id) && !newSwIds.includes(sw.id)) {
+      setNewSwIds((prev) => [...prev, sw.id]);
+    }
+    setEditingTarget(null);
   };
 
-  // ---- Publish flow ----
+  // Delete handlers
+  const handleDeleteCategory = (id: string) => {
+    setDeletedCatIds((prev) => new Set([...prev, id]));
+    if (newCatIds.includes(id)) {
+      setNewCatIds((prev) => prev.filter((x) => x !== id));
+      setCatOverrides((prev) => { const n = { ...prev }; delete n[id]; return n; });
+    }
+    setEditingTarget(null);
+    if (selectedCatId === id) setSelectedCatId(null);
+  };
+
+  const handleDeleteExperience = (id: string) => {
+    setDeletedExpIds((prev) => new Set([...prev, id]));
+    if (newExpIds.includes(id)) {
+      setNewExpIds((prev) => prev.filter((x) => x !== id));
+      setExpOverrides((prev) => { const n = { ...prev }; delete n[id]; return n; });
+    }
+    setEditingTarget(null);
+  };
+
+  const handleDeleteSoftware = (id: string) => {
+    setDeletedSwIds((prev) => new Set([...prev, id]));
+    if (newSwIds.includes(id)) {
+      setNewSwIds((prev) => prev.filter((x) => x !== id));
+      setSwOverrides((prev) => { const n = { ...prev }; delete n[id]; return n; });
+    }
+    setEditingTarget(null);
+  };
+
+  // Undo delete
+  const handleUndoDelete = (kind: 'category' | 'experience' | 'software', id: string) => {
+    if (kind === 'category') setDeletedCatIds((prev) => { const n = new Set(prev); n.delete(id); return n; });
+    if (kind === 'experience') setDeletedExpIds((prev) => { const n = new Set(prev); n.delete(id); return n; });
+    if (kind === 'software') setDeletedSwIds((prev) => { const n = new Set(prev); n.delete(id); return n; });
+  };
+
+  // ---- Publish flow (v2 payload) ----
   const handlePublish = async () => {
     if (publishState.phase !== 'idle' && publishState.phase !== 'error' && publishState.phase !== 'ready') return;
     if (pendingCount === 0) return;
 
     setPublishState({ phase: 'committing', msg: 'Committing to GitHub…' });
 
-    // Build the final payload: re-assign priorities based on current order
-    // (highest first = appears first within each category)
-    const allInOrder: Experience[] = [
-      ...orderedByCategory.exposed,
-      ...orderedByCategory.development,
-      ...orderedByCategory.fixed,
-    ];
-    const total = allInOrder.length;
-    const remapped: Experience[] = allInOrder.map((e, idx) => ({
-      ...e,
-      priority: total - idx,
-      updatedAt: new Date().toISOString(),
-    }));
+    // Build final v2 payload: re-map order values based on current drag-drop state
+    const finalCategories = mergedCategories.map((c, idx) => ({ ...c, order: idx + 1 }));
+    const finalExperiences: Experience[] = [];
+    const finalSoftware: Software[] = [];
+
+    mergedCategories.forEach((cat) => {
+      // Experiences for this category — re-map order
+      const exps = (serverData?.experiences || [])
+        .filter((e) => e.category_id === cat.id && !deletedExpIds.has(e.id))
+        .map((e) => expOverrides[e.id] || e);
+      const expNews = newExpIds.map((id) => expOverrides[id]).filter(Boolean).filter((e) => e.category_id === cat.id);
+      let allExps = [...exps, ...expNews];
+      const expOrder = expOrderOverrides[cat.id];
+      if (expOrder && expOrder.length > 0) {
+        const ordered: Experience[] = [];
+        const remaining = [...allExps];
+        expOrder.forEach((id) => {
+          const idx = remaining.findIndex((e) => e.id === id);
+          if (idx >= 0) ordered.push(remaining.splice(idx, 1)[0]);
+        });
+        allExps = [...ordered, ...remaining];
+      }
+      allExps.forEach((e, idx) => finalExperiences.push({ ...e, order: idx + 1, updatedAt: new Date().toISOString() }));
+
+      // Software for this category — re-map order
+      const sws = (serverData?.software || [])
+        .filter((s) => s.category_id === cat.id && !deletedSwIds.has(s.id))
+        .map((s) => swOverrides[s.id] || s);
+      const swNews = newSwIds.map((id) => swOverrides[id]).filter(Boolean).filter((s) => s.category_id === cat.id);
+      let allSws = [...sws, ...swNews];
+      const swOrder = swOrderOverrides[cat.id];
+      if (swOrder && swOrder.length > 0) {
+        const ordered: Software[] = [];
+        const remaining = [...allSws];
+        swOrder.forEach((id) => {
+          const idx = remaining.findIndex((s) => s.id === id);
+          if (idx >= 0) ordered.push(remaining.splice(idx, 1)[0]);
+        });
+        allSws = [...ordered, ...remaining];
+      }
+      allSws.forEach((s, idx) => finalSoftware.push({ ...s, order: idx + 1 }));
+    });
 
     const payload: ExperiencesData = {
-      version: serverData?.version ?? 1,
+      version: 2,
       updatedAt: new Date().toISOString(),
-      experiences: remapped,
+      categories: finalCategories,
+      experiences: finalExperiences,
+      software: finalSoftware,
     };
 
-    // Get the admin's Supabase access token from the current session
+    // Get admin session token
     if (!supabase) {
       setPublishState({ phase: 'error', msg: 'Supabase client not configured' });
       return;
@@ -284,34 +405,26 @@ export function ExperiencesTab() {
         return;
       }
 
-      // Now poll the Vercel deploy status
       setPublishState({
         phase: 'deploying',
         deployId: result.deploymentId,
         msg: `Deploy triggered (commit ${result.commitSha.slice(0, 7)})…`,
       });
 
-      // Poll every 3s for up to 3 min (60 polls)
       let pollCount = 0;
       const maxPolls = 60;
       const poll = async () => {
         pollCount++;
         if (pollCount > maxPolls) {
-          setPublishState({
-            phase: 'error',
-            msg: 'Polling timed out — check Vercel dashboard. Commit may still be live.',
-          });
+          setPublishState({ phase: 'error', msg: 'Polling timed out — check Vercel dashboard' });
           if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
           return;
         }
         try {
-          const statusRes = await fetch(
-            `/api/experiences/status?deployId=${result.deploymentId}`,
-            {
-              headers: { Authorization: `Bearer ${accessToken}` },
-              cache: 'no-store',
-            }
-          );
+          const statusRes = await fetch(`/api/experiences/status?deployId=${result.deploymentId}`, {
+            headers: { Authorization: `Bearer ${accessToken}` },
+            cache: 'no-store',
+          });
           const status = await statusRes.json();
           if (!status.ok) {
             setPublishState({ phase: 'error', msg: status.reason });
@@ -323,25 +436,17 @@ export function ExperiencesTab() {
             setPublishState({
               phase: 'ready',
               deployId: result.deploymentId,
-              msg: `✓ Live — published ${remapped.length} experiences`,
+              msg: `✓ Live — published ${finalCategories.length} categories, ${finalExperiences.length} experiences, ${finalSoftware.length} software`,
             });
-            // Invalidate + refetch from new deploy
             queryClient.invalidateQueries({ queryKey: ['experiences'] });
-            // Clear draft (server data is now the source of truth)
-            setOverrides({});
-            setNewIds([]);
-            setDeletedIds(new Set());
-            setOrderOverrides({ exposed: [], development: [], fixed: [] });
+            // Clear draft
+            setCatOverrides({}); setNewCatIds([]); setDeletedCatIds(new Set()); setCatOrderOverride([]);
+            setExpOverrides({}); setNewExpIds([]); setDeletedExpIds(new Set()); setExpOrderOverrides({});
+            setSwOverrides({}); setNewSwIds([]); setDeletedSwIds(new Set()); setSwOrderOverrides({});
             if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
-            // Auto-clear "ready" indicator after 8s
-            setTimeout(() => {
-              setPublishState({ phase: 'idle' });
-            }, 8000);
+            setTimeout(() => setPublishState({ phase: 'idle' }), 8000);
           } else if (state === 'ERROR' || state === 'CANCELED') {
-            setPublishState({
-              phase: 'error',
-              msg: `Deploy ${state.toLowerCase()} — see Vercel dashboard`,
-            });
+            setPublishState({ phase: 'error', msg: `Deploy ${state.toLowerCase()} — see Vercel dashboard` });
             if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
           } else if (state === 'BUILDING' || state === 'NORMALIZING') {
             setPublishState({
@@ -350,16 +455,13 @@ export function ExperiencesTab() {
               msg: `Building… (${pollCount * 3}s elapsed)`,
             });
           }
-          // INITIALIZING, QUEUED, etc — keep polling silently
         } catch (e) {
-          // Network blip — keep polling, don't error yet
           if (pollCount >= maxPolls) {
             setPublishState({ phase: 'error', msg: `Polling failed: ${(e as Error).message}` });
             if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
           }
         }
       };
-      // First poll immediately, then every 3s
       await poll();
       pollIntervalRef.current = setInterval(poll, 3000);
     } catch (e) {
@@ -374,125 +476,194 @@ export function ExperiencesTab() {
     };
   }, []);
 
-  // ---- Currently editing target ----
-  const editingExp = editingId
-    ? mergedExperiences.find((e) => e.id === editingId) || null
-    : null;
-
   if (isLoading) {
     return <div style={{ color: 'var(--night-muted)', padding: '2rem' }}>Loading experiences…</div>;
   }
 
+  // Currently editing target's data
+  const editingData: { category?: Category; experience?: Experience; software?: Software } | null =
+    editingTarget
+      ? editingTarget.kind === 'category'
+        ? { category: editingTarget.id ? (catOverrides[editingTarget.id] || serverData?.categories.find((c) => c.id === editingTarget.id)) : undefined }
+        : editingTarget.kind === 'experience'
+        ? { experience: editingTarget.id ? (expOverrides[editingTarget.id] || serverData?.experiences.find((e) => e.id === editingTarget.id)) : undefined }
+        : { software: editingTarget.id ? (swOverrides[editingTarget.id] || serverData?.software.find((s) => s.id === editingTarget.id)) : undefined }
+      : null;
+
   return (
     <div style={{ paddingBottom: '5rem' }}>
-      {/* ── FILTER ROW ── */}
-      <div
-        style={{
-          display: 'flex',
-          gap: '0.5rem',
-          marginBottom: '1.5rem',
-          flexWrap: 'wrap',
-          alignItems: 'center',
-        }}
-      >
-        <FilterPill active={filter === 'all'} onClick={() => setFilter('all')} label="All" count={mergedExperiences.length} />
-        <FilterPill active={filter === 'exposed'} onClick={() => setFilter('exposed')} label="01 Exposed" count={byCategory.exposed.length} accent />
-        <FilterPill active={filter === 'development'} onClick={() => setFilter('development')} label="02 Dev" count={byCategory.development.length} />
-        <FilterPill active={filter === 'fixed'} onClick={() => setFilter('fixed')} label="03 Fixed" count={byCategory.fixed.length} />
-        <div style={{ flex: 1 }} />
-        <button
-          onClick={handleAddNew}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.4rem',
-            padding: '0.5rem 0.9rem',
-            borderRadius: '3px',
-            border: '1px solid var(--accent)',
-            background: 'rgba(214,41,41,0.1)',
-            color: 'var(--canvas)',
-            cursor: 'pointer',
-            fontFamily: 'var(--font-mono), monospace',
-            fontSize: '0.75rem',
-            letterSpacing: '0.08em',
-            textTransform: 'uppercase',
-            transition: 'background 0.3s var(--ease-spring-soft)',
-          }}
-          onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(214,41,41,0.25)'; }}
-          onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(214,41,41,0.1)'; }}
-        >
-          <Plus size={14} strokeWidth={1.5} /> Add New
-        </button>
-      </div>
+      {/* ── CATEGORY PILLS ROW (drag-reorderable) ── */}
+      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleCategoryDragEnd}>
+        <SortableContext items={mergedCategories.map((c) => c.id)} strategy={verticalListSortingStrategy}>
+          <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', flexWrap: 'wrap', alignItems: 'center' }}>
+            {mergedCategories.map((cat) => (
+              <SortableCategoryPill
+                key={cat.id}
+                category={cat}
+                active={selectedCatId === cat.id}
+                onClick={() => setSelectedCatId(cat.id)}
+                onEdit={() => setEditingTarget({ kind: 'category', id: cat.id })}
+                onDelete={() => handleDeleteCategory(cat.id)}
+                onUndoDelete={() => handleUndoDelete('category', cat.id)}
+                isDeleted={deletedCatIds.has(cat.id)}
+              />
+            ))}
+            <button
+              onClick={() => setEditingTarget({ kind: 'category', id: null })}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.4rem',
+                padding: '0.45rem 0.85rem',
+                borderRadius: '3px',
+                border: '1px dashed rgba(255,255,255,0.15)',
+                background: 'transparent',
+                color: 'var(--night-muted)',
+                cursor: 'pointer',
+                fontFamily: 'var(--font-mono), monospace',
+                fontSize: '0.7rem',
+                letterSpacing: '0.06em',
+                textTransform: 'uppercase',
+                transition: 'all 0.3s var(--ease-spring-soft)',
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'var(--accent)'; e.currentTarget.style.color = 'var(--canvas)'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.15)'; e.currentTarget.style.color = 'var(--night-muted)'; }}
+            >
+              <Plus size={12} strokeWidth={1.5} /> Add Category
+            </button>
+          </div>
+        </SortableContext>
+      </DndContext>
 
-      {/* ── DELETED ITEMS BAR (if any) ── */}
-      {deletedIds.size > 0 && (
-        <div
-          style={{
-            padding: '0.7rem 1rem',
-            marginBottom: '1rem',
-            background: 'rgba(214,41,41,0.08)',
-            border: '1px dashed rgba(214,41,41,0.4)',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.6rem',
-            flexWrap: 'wrap',
-          }}
-        >
-          <span className="text-mono text-label" style={{ color: 'var(--accent)' }}>
-            {deletedIds.size} marked for deletion:
-          </span>
-          {Array.from(deletedIds).map((id) => {
-            const exp = serverData?.experiences.find((e) => e.id === id);
-            return (
-              <button
-                key={id}
-                onClick={() => handleUndoDelete(id)}
+      {/* ── SELECTED CATEGORY CONTENT ── */}
+      {selectedCategory ? (
+        <>
+          {/* Category header (large, with icon) */}
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.75rem',
+              marginBottom: '1.5rem',
+              padding: '0.85rem 1rem',
+              background: 'rgba(214,41,41,0.08)',
+              border: '1px solid rgba(214,41,41,0.25)',
+              borderRadius: '3px',
+            }}
+          >
+            <PreviewIcon name={selectedCategory.icon} size={28} />
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div
                 style={{
-                  padding: '0.2rem 0.55rem',
-                  background: 'transparent',
-                  border: '1px solid rgba(255,255,255,0.08)',
-                  color: 'var(--night-muted)',
-                  fontFamily: 'var(--font-mono), monospace',
-                  fontSize: '0.7rem',
-                  cursor: 'pointer',
-                  borderRadius: '3px',
+                  fontFamily: 'var(--font-fraunces), serif',
+                  fontWeight: 500,
+                  fontSize: '1.25rem',
+                  color: 'var(--canvas)',
                 }}
               >
-                ↺ {exp?.title?.slice(0, 24) || id}
-              </button>
-            );
-          })}
-        </div>
-      )}
+                {selectedCategory.title}
+              </div>
+              <div className="text-mono text-label" style={{ color: 'var(--night-muted)', marginTop: '0.15rem' }}>
+                {selectedCategory.subtitle}
+              </div>
+            </div>
+            <button
+              onClick={() => setEditingTarget({ kind: 'category', id: selectedCategory.id })}
+              style={{
+                padding: '0.4rem 0.7rem',
+                background: 'rgba(22,22,22,0.6)',
+                border: '1px solid rgba(255,255,255,0.08)',
+                color: 'var(--canvas)',
+                cursor: 'pointer',
+                borderRadius: '2px',
+                fontFamily: 'var(--font-mono), monospace',
+                fontSize: '0.7rem',
+                letterSpacing: '0.06em',
+                textTransform: 'uppercase',
+              }}
+            >
+              ✎ Edit
+            </button>
+          </div>
 
-      {/* ── CARDS GRID (per phase if filter=all, single phase otherwise) ── */}
-      {filter === 'all' ? (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '2.5rem' }}>
-          {(['exposed', 'development', 'fixed'] as ExperienceCategory[]).map((cat) => (
-            <PhaseSection
-              key={cat}
-              category={cat}
-              experiences={orderedByCategory[cat]}
-              onDragEnd={(e) => handleDragEnd(cat, e)}
-              sensors={sensors}
-              onEdit={(id) => { setEditingId(id); setIsAdding(false); }}
-              onDelete={handleDelete}
-            />
-          ))}
-        </div>
+          {/* EXPERIENCES sub-section */}
+          <div style={{ marginBottom: '2rem' }}>
+            <SubSectionHeader label="Experiences" count={mergedExperiences.length} onAdd={() => setEditingTarget({ kind: 'experience', id: null })} />
+            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleExpDragEnd}>
+              <SortableContext items={mergedExperiences.map((e) => e.id)} strategy={verticalListSortingStrategy}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                  {mergedExperiences.map((exp, idx) => (
+                    <SortableExperienceCard
+                      key={exp.id}
+                      exp={exp}
+                      index={idx}
+                      onEdit={() => setEditingTarget({ kind: 'experience', id: exp.id })}
+                      onDelete={() => handleDeleteExperience(exp.id)}
+                      onUndoDelete={() => handleUndoDelete('experience', exp.id)}
+                      isDeleted={deletedExpIds.has(exp.id)}
+                    />
+                  ))}
+                </div>
+              </SortableContext>
+            </DndContext>
+          </div>
+
+          {/* SOFTWARE sub-section */}
+          <div>
+            <SubSectionHeader label="Software" count={mergedSoftware.length} onAdd={() => setEditingTarget({ kind: 'software', id: null })} />
+            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleSwDragEnd}>
+              <SortableContext items={mergedSoftware.map((s) => s.id)} strategy={verticalListSortingStrategy}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                  {mergedSoftware.map((sw, idx) => (
+                    <SortableSoftwareCard
+                      key={sw.id}
+                      sw={sw}
+                      index={idx}
+                      onEdit={() => setEditingTarget({ kind: 'software', id: sw.id })}
+                      onDelete={() => handleDeleteSoftware(sw.id)}
+                      onUndoDelete={() => handleUndoDelete('software', sw.id)}
+                      isDeleted={deletedSwIds.has(sw.id)}
+                    />
+                  ))}
+                </div>
+              </SortableContext>
+            </DndContext>
+          </div>
+        </>
       ) : (
-        <PhaseSection
-          category={filter}
-          experiences={orderedByCategory[filter]}
-          onDragEnd={(e) => handleDragEnd(filter, e)}
-          sensors={sensors}
-          onEdit={(id) => { setEditingId(id); setIsAdding(false); }}
-          onDelete={handleDelete}
-        />
+        <div style={{ padding: '3rem 1rem', textAlign: 'center', color: 'var(--night-muted)', fontFamily: 'var(--font-mono), monospace', fontSize: '0.85rem' }}>
+          No category selected. Click "+ Add Category" to create one.
+        </div>
       )}
 
-      {/* ── PUBLISH BAR (sticky at bottom of tab) ── */}
+      {/* ── DELETED ITEMS BAR ── */}
+      {(deletedCatIds.size + deletedExpIds.size + deletedSwIds.size) > 0 && (
+        <div
+          style={{
+            marginTop: '1.5rem',
+            padding: '0.7rem 1rem',
+            background: 'rgba(214,41,41,0.08)',
+            border: '1px dashed rgba(214,41,41,0.4)',
+          }}
+        >
+          <div className="text-mono text-label" style={{ color: 'var(--accent)', marginBottom: '0.5rem' }}>
+            {deletedCatIds.size + deletedExpIds.size + deletedSwIds.size} marked for deletion:
+          </div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
+            {Array.from(deletedCatIds).map((id) => (
+              <UndoButton key={`cat-${id}`} label={serverData?.categories.find((c) => c.id === id)?.title || id} onUndo={() => handleUndoDelete('category', id)} />
+            ))}
+            {Array.from(deletedExpIds).map((id) => (
+              <UndoButton key={`exp-${id}`} label={serverData?.experiences.find((e) => e.id === id)?.title || id} onUndo={() => handleUndoDelete('experience', id)} />
+            ))}
+            {Array.from(deletedSwIds).map((id) => (
+              <UndoButton key={`sw-${id}`} label={serverData?.software.find((s) => s.id === id)?.name || id} onUndo={() => handleUndoDelete('software', id)} />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* ── PUBLISH BAR ── */}
       <div
         style={{
           position: 'sticky',
@@ -546,44 +717,61 @@ export function ExperiencesTab() {
         </button>
       </div>
 
-      {/* ── DETAIL PANEL (slide-in for edit/add) ── */}
-      {(editingId || isAdding) && (
+      {/* ── DETAIL PANEL ── */}
+      {editingTarget && (
         <ExperiencesDetailPanel
-          experience={editingExp}
-          onSaveExisting={handleSaveExisting}
-          onSaveNew={handleSaveNew}
-          onClose={() => { setEditingId(null); setIsAdding(false); }}
-          onOpenIconPicker={(targetId) => setIconPickerFor(targetId)}
-          onDelete={editingExp ? () => handleDelete(editingExp.id) : undefined}
+          target={editingTarget}
+          data={editingData}
+          selectedCategoryId={selectedCatId}
+          allCategories={mergedCategories}
+          onSaveCategory={handleSaveCategory}
+          onSaveExperience={handleSaveExperience}
+          onSaveSoftware={handleSaveSoftware}
+          onClose={() => setEditingTarget(null)}
+          onOpenIconPicker={(kind, id) => setIconPickerFor({ kind, id })}
+          onOpenSoftwareIconPicker={(id) => setSwIconPickerFor(id)}
+          onDelete={
+            editingTarget.kind === 'category' && editingTarget.id
+              ? () => handleDeleteCategory(editingTarget.id)
+              : editingTarget.kind === 'experience' && editingTarget.id
+              ? () => handleDeleteExperience(editingTarget.id)
+              : editingTarget.kind === 'software' && editingTarget.id
+              ? () => handleDeleteSoftware(editingTarget.id)
+              : undefined
+          }
         />
       )}
 
-      {/* ── ICON PICKER ── */}
+      {/* ── ICON PICKER (for experience / category lucide icons) ── */}
       {iconPickerFor && (
         <IconPicker
           value={
-            iconPickerFor === 'new'
-              ? (overrides['__new_draft__']?.icon || 'Box')
-              : (overrides[iconPickerFor]?.icon || mergedExperiences.find((e) => e.id === iconPickerFor)?.icon || 'Box')
+            iconPickerFor.id
+              ? (iconPickerFor.kind === 'experience'
+                  ? (expOverrides[iconPickerFor.id]?.icon || serverData?.experiences.find((e) => e.id === iconPickerFor.id)?.icon || 'Box')
+                  : (catOverrides[iconPickerFor.id]?.icon || serverData?.categories.find((c) => c.id === iconPickerFor.id)?.icon || 'Box'))
+              : (iconPickerFor.kind === 'experience' ? 'Layout' : 'Aperture')
           }
           onSelect={(name) => {
-            if (iconPickerFor === 'new') {
-              // Update the new-draft override
-              setOverrides((prev) => ({
-                ...prev,
-                __new_draft__: {
-                  ...(prev.__new_draft__ || {}),
-                  icon: name,
-                } as Experience,
-              }));
+            if (iconPickerFor.id) {
+              // Update existing draft
+              if (iconPickerFor.kind === 'experience') {
+                const target = serverData?.experiences.find((e) => e.id === iconPickerFor.id);
+                if (target) {
+                  setExpOverrides((prev) => ({ ...prev, [iconPickerFor.id!]: { ...(prev[iconPickerFor.id!] || target), icon: name } }));
+                }
+              } else {
+                const target = serverData?.categories.find((c) => c.id === iconPickerFor.id);
+                if (target) {
+                  setCatOverrides((prev) => ({ ...prev, [iconPickerFor.id!]: { ...(prev[iconPickerFor.id!] || target), icon: name } }));
+                }
+              }
             } else {
-              // Update existing draft's icon field directly (without full save)
-              const target = mergedExperiences.find((e) => e.id === iconPickerFor);
-              if (target) {
-                setOverrides((prev) => ({
-                  ...prev,
-                  [iconPickerFor]: { ...(prev[iconPickerFor] || target), icon: name },
-                }));
+              // Update new-draft override (held in catOverrides/expOverrides under 'new-draft' key)
+              if (iconPickerFor.kind === 'experience') {
+                setExpOverrides((prev) => ({ ...prev, '__new_draft__': { ...(prev['__new_draft__'] || {}), icon: name } as Experience }));
+              } else {
+                setCatOverrides((prev) => ({ ...prev, '__new_draft__': { ...(prev['__new_draft__'] || {}), icon: name } as Category }));
               }
             }
             setIconPickerFor(null);
@@ -591,126 +779,234 @@ export function ExperiencesTab() {
           onClose={() => setIconPickerFor(null)}
         />
       )}
+
+      {/* ── SOFTWARE ICON PICKER ── */}
+      {swIconPickerFor && (
+        <SoftwareIconPicker
+          value={
+            swIconPickerFor === 'new'
+              ? (swOverrides['__new_draft__']?.slug || 'adobephotoshop')
+              : (swOverrides[swIconPickerFor]?.slug || serverData?.software.find((s) => s.id === swIconPickerFor)?.slug || 'adobephotoshop')
+          }
+          onSelect={(slug) => {
+            if (swIconPickerFor === 'new') {
+              setSwOverrides((prev) => ({ ...prev, '__new_draft__': { ...(prev['__new_draft__'] || {}), slug } as Software }));
+            } else {
+              const target = serverData?.software.find((s) => s.id === swIconPickerFor);
+              if (target) {
+                setSwOverrides((prev) => ({ ...prev, [swIconPickerFor]: { ...(prev[swIconPickerFor] || target), slug } }));
+              }
+            }
+            setSwIconPickerFor(null);
+          }}
+          onClose={() => setSwIconPickerFor(null)}
+        />
+      )}
     </div>
   );
 }
 
-// ---------- Filter pill ----------
+// ---------- Sortable category pill ----------
 
-function FilterPill({
+function SortableCategoryPill({
+  category,
   active,
   onClick,
-  label,
-  count,
-  accent,
-}: {
-  active: boolean;
-  onClick: () => void;
-  label: string;
-  count: number;
-  accent?: boolean;
-}) {
-  return (
-    <button
-      onClick={onClick}
-      style={{
-        padding: '0.4rem 0.8rem',
-        borderRadius: '3px',
-        border: 'none',
-        color: active ? 'var(--canvas)' : 'var(--night-muted)',
-        background: active
-          ? (accent ? 'rgba(214,41,41,0.2)' : 'rgba(255,255,255,0.08)')
-          : 'transparent',
-        cursor: 'pointer',
-        fontFamily: 'var(--font-mono), monospace',
-        fontSize: '0.7rem',
-        letterSpacing: '0.06em',
-        textTransform: 'uppercase',
-        transition: 'background 0.3s var(--ease-spring-soft), color 0.3s var(--ease-spring-soft)',
-        display: 'flex',
-        alignItems: 'center',
-        gap: '0.5rem',
-      }}
-    >
-      {label}
-      <span style={{ fontSize: '0.65rem', opacity: 0.7 }}>{count}</span>
-    </button>
-  );
-}
-
-// ---------- Phase section (renders a single phase's cards with drag-drop) ----------
-
-function PhaseSection({
-  category,
-  experiences,
-  onDragEnd,
-  sensors,
   onEdit,
   onDelete,
+  onUndoDelete,
+  isDeleted,
 }: {
-  category: ExperienceCategory;
-  experiences: Experience[];
-  onDragEnd: (e: DragEndEvent) => void;
-  sensors: ReturnType<typeof useSensors>;
-  onEdit: (id: string) => void;
-  onDelete: (id: string) => void;
+  category: Category;
+  active: boolean;
+  onClick: () => void;
+  onEdit: () => void;
+  onDelete: () => void;
+  onUndoDelete: () => void;
+  isDeleted: boolean;
 }) {
-  if (experiences.length === 0) return null;
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: category.id });
 
-  return (
-    <div>
-      {/* Phase header */}
-      <div
+  if (isDeleted) {
+    return (
+      <button
+        onClick={onUndoDelete}
         style={{
-          display: 'flex',
-          alignItems: 'baseline',
-          gap: '0.75rem',
-          marginBottom: '0.85rem',
-          flexWrap: 'wrap',
+          padding: '0.4rem 0.75rem',
+          background: 'rgba(214,41,41,0.05)',
+          border: '1px dashed rgba(214,41,41,0.4)',
+          color: 'var(--night-muted)',
+          cursor: 'pointer',
+          borderRadius: '3px',
+          fontFamily: 'var(--font-mono), monospace',
+          fontSize: '0.7rem',
+          textDecoration: 'line-through',
         }}
       >
-        <span className="text-mono text-label" style={{ color: 'var(--accent)' }}>
-          {PHASE_LABELS[category]}
-        </span>
-        <span className="text-mono text-label" style={{ color: 'var(--night-muted)' }}>
-          {experiences.length} item{experiences.length === 1 ? '' : 's'}
-        </span>
-      </div>
+        ↺ {category.title}
+      </button>
+    );
+  }
 
-      {/* Drag-drop sortable list */}
-      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
-        <SortableContext items={experiences.map((e) => e.id)} strategy={verticalListSortingStrategy}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-            {experiences.map((exp, idx) => (
-              <SortableExperienceCard
-                key={exp.id}
-                exp={exp}
-                index={idx}
-                onEdit={() => onEdit(exp.id)}
-                onDelete={() => onDelete(exp.id)}
-              />
-            ))}
-          </div>
-        </SortableContext>
-      </DndContext>
+  return (
+    <div
+      ref={setNodeRef}
+      style={{
+        transform: CSS.Transform.toString(transform),
+        transition,
+        opacity: isDragging ? 0.5 : 1,
+        zIndex: isDragging ? 100 : 1,
+        display: 'flex',
+        alignItems: 'center',
+        gap: 0,
+        borderRadius: '3px',
+        overflow: 'hidden',
+        background: active ? 'rgba(214,41,41,0.2)' : 'rgba(22,22,22,0.6)',
+        border: active ? '1px solid var(--accent)' : '1px solid rgba(255,255,255,0.08)',
+      }}
+    >
+      <button
+        {...attributes}
+        {...listeners}
+        aria-label="Drag to reorder category"
+        style={{
+          cursor: 'grab',
+          background: 'transparent',
+          border: 0,
+          color: active ? 'var(--canvas)' : 'var(--night-muted)',
+          padding: '0.45rem 0.4rem 0.45rem 0.6rem',
+          display: 'flex',
+          alignItems: 'center',
+        }}
+      >
+        <GripVertical size={12} strokeWidth={1.5} />
+      </button>
+      <button
+        onClick={onClick}
+        style={{
+          padding: '0.45rem 0.5rem',
+          background: 'transparent',
+          border: 0,
+          color: active ? 'var(--canvas)' : 'var(--night-muted)',
+          cursor: 'pointer',
+          fontFamily: 'var(--font-mono), monospace',
+          fontSize: '0.7rem',
+          letterSpacing: '0.06em',
+          textTransform: 'uppercase',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.4rem',
+        }}
+      >
+        <PreviewIcon name={category.icon} size={14} />
+        {category.title}
+      </button>
+      <button
+        onClick={onEdit}
+        aria-label={`Edit ${category.title}`}
+        style={{
+          padding: '0.45rem 0.4rem',
+          background: 'transparent',
+          border: 0,
+          color: 'var(--night-muted)',
+          cursor: 'pointer',
+        }}
+      >
+        <Pencil size={11} strokeWidth={1.5} />
+      </button>
+      <button
+        onClick={onDelete}
+        aria-label={`Delete ${category.title}`}
+        style={{
+          padding: '0.45rem 0.55rem 0.45rem 0.4rem',
+          background: 'transparent',
+          border: 0,
+          color: 'var(--accent)',
+          cursor: 'pointer',
+        }}
+      >
+        <Trash2 size={11} strokeWidth={1.5} />
+      </button>
     </div>
   );
 }
 
-// ---------- Sortable card ----------
+// ---------- Sub-section header ----------
+
+function SubSectionHeader({ label, count, onAdd }: { label: string; count: number; onAdd: () => void }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
+      <span className="text-mono text-label" style={{ color: 'var(--night-muted)', fontSize: '0.75rem' }}>
+        {label.toUpperCase()} ({count})
+      </span>
+      <button
+        onClick={onAdd}
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.35rem',
+          padding: '0.3rem 0.65rem',
+          background: 'transparent',
+          border: '1px solid rgba(255,255,255,0.1)',
+          color: 'var(--canvas)',
+          cursor: 'pointer',
+          borderRadius: '2px',
+          fontFamily: 'var(--font-mono), monospace',
+          fontSize: '0.65rem',
+          letterSpacing: '0.06em',
+          textTransform: 'uppercase',
+          transition: 'border-color 0.3s var(--ease-spring-soft)',
+        }}
+        onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'var(--accent)'; }}
+        onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'; }}
+      >
+        <Plus size={10} strokeWidth={1.5} /> Add {label}
+      </button>
+    </div>
+  );
+}
+
+// ---------- Sortable experience card (Studio version) ----------
 
 function SortableExperienceCard({
   exp,
   index,
   onEdit,
   onDelete,
+  onUndoDelete,
+  isDeleted,
 }: {
   exp: Experience;
   index: number;
   onEdit: () => void;
   onDelete: () => void;
+  onUndoDelete: () => void;
+  isDeleted: boolean;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: exp.id });
+
+  if (isDeleted) {
+    return (
+      <button
+        onClick={onUndoDelete}
+        style={{
+          padding: '0.6rem 1rem',
+          background: 'rgba(214,41,41,0.05)',
+          border: '1px dashed rgba(214,41,41,0.3)',
+          color: 'var(--night-muted)',
+          cursor: 'pointer',
+          fontFamily: 'var(--font-mono), monospace',
+          fontSize: '0.75rem',
+          textDecoration: 'line-through',
+          borderRadius: '3px',
+          textAlign: 'left',
+          width: '100%',
+        }}
+      >
+        ↺ {exp.title}
+      </button>
+    );
+  }
 
   return (
     <div
@@ -728,55 +1024,32 @@ function SortableExperienceCard({
           display: 'flex',
           alignItems: 'center',
           gap: '0.75rem',
-          padding: '0.85rem 1rem',
+          padding: '0.7rem 0.9rem',
           background: 'var(--night-soft)',
           border: '1px solid rgba(255,255,255,0.08)',
           borderRadius: '3px',
           transition: 'background 0.3s var(--ease-spring-soft), border-color 0.3s var(--ease-spring-soft)',
         }}
       >
-        {/* Drag handle */}
         <button
           {...attributes}
           {...listeners}
           aria-label="Drag to reorder"
-          style={{
-            cursor: 'grab',
-            background: 'transparent',
-            border: 'none',
-            color: 'var(--night-muted)',
-            padding: '0.3rem',
-            display: 'flex',
-            alignItems: 'center',
-          }}
+          style={{ cursor: 'grab', background: 'transparent', border: 0, color: 'var(--night-muted)', padding: '0.2rem', display: 'flex' }}
         >
-          <GripVertical size={16} strokeWidth={1.5} />
+          <GripVertical size={14} strokeWidth={1.5} />
         </button>
-
-        {/* Index badge */}
-        <span
-          className="text-mono text-label"
-          style={{
-            color: 'var(--accent)',
-            opacity: 0.7,
-            minWidth: '2.2rem',
-          }}
-        >
+        <span className="text-mono text-label" style={{ color: 'var(--accent)', opacity: 0.7, minWidth: '2rem' }}>
           N°{String(index + 1).padStart(2, '0')}
         </span>
-
-        {/* Featured star */}
-        {exp.featured && exp.category === 'exposed' && (
-          <Star size={14} strokeWidth={1.5} style={{ color: 'var(--accent)' }} />
-        )}
-
-        {/* Title + status */}
+        {exp.featured && <Star size={12} strokeWidth={1.5} style={{ color: 'var(--accent)' }} />}
+        <PreviewIcon name={exp.icon} size={16} />
         <div style={{ flex: 1, minWidth: 0 }}>
           <div
             style={{
               fontFamily: 'var(--font-fraunces), serif',
               fontWeight: 500,
-              fontSize: '1rem',
+              fontSize: '0.95rem',
               color: 'var(--canvas)',
               overflow: 'hidden',
               textOverflow: 'ellipsis',
@@ -785,122 +1058,220 @@ function SortableExperienceCard({
             }}
           >
             {exp.title}
-            {!exp.published && (
-              <span className="text-mono text-label" style={{ color: 'var(--night-muted)', marginLeft: '0.5rem' }}>
-                (unpublished)
-              </span>
-            )}
+            {!exp.published && <span className="text-mono text-label" style={{ color: 'var(--night-muted)', marginLeft: '0.4rem' }}>(unpublished)</span>}
           </div>
-          <div
-            className="text-mono text-label"
-            style={{ color: 'var(--night-muted)', marginTop: '0.15rem', fontSize: '0.65rem' }}
-          >
-            {exp.status} · {exp.category}
+          <div className="text-mono text-label" style={{ color: 'var(--night-muted)', fontSize: '0.65rem', marginTop: '0.1rem' }}>
+            {exp.status}
           </div>
         </div>
-
-        {/* Tags (compact) */}
-        <div style={{ display: 'flex', gap: '0.3rem', flexWrap: 'wrap', maxWidth: '30%' }}>
-          {exp.tags.slice(0, 3).map((tag, i) => (
-            <span
-              key={`${tag}-${i}`}
-              style={{
-                fontFamily: 'var(--font-mono), monospace',
-                fontSize: '0.6rem',
-                color: 'var(--night-muted)',
-                padding: '0.15rem 0.4rem',
-                border: '1px solid rgba(255,255,255,0.06)',
-                borderRadius: '2px',
-              }}
-            >
-              {tag.startsWith('#') ? tag.slice(0, 8) : `#${tag.slice(0, 7)}`}
-            </span>
-          ))}
-        </div>
-
-        {/* Hover-reveal actions */}
-        <div className="studio-hover-reveal" style={{ display: 'flex', gap: '0.4rem' }}>
-          <button
-            onClick={onEdit}
-            aria-label="Edit"
-            style={{
-              padding: '0.3rem',
-              background: 'transparent',
-              border: '1px solid rgba(255,255,255,0.08)',
-              color: 'var(--canvas)',
-              cursor: 'pointer',
-              borderRadius: '2px',
-              display: 'flex',
-              alignItems: 'center',
-              transition: 'background 0.2s var(--ease-spring-soft)',
-            }}
-            onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(214,41,41,0.15)'; }}
-            onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
-          >
-            <Pencil size={12} strokeWidth={1.5} />
-          </button>
-          <button
-            onClick={onDelete}
-            aria-label="Delete"
-            style={{
-              padding: '0.3rem',
-              background: 'transparent',
-              border: '1px solid rgba(255,255,255,0.08)',
-              color: 'var(--accent)',
-              cursor: 'pointer',
-              borderRadius: '2px',
-              display: 'flex',
-              alignItems: 'center',
-              transition: 'background 0.2s var(--ease-spring-soft)',
-            }}
-            onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(214,41,41,0.15)'; }}
-            onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
-          >
-            <Trash2 size={12} strokeWidth={1.5} />
-          </button>
+        <div className="studio-hover-reveal" style={{ display: 'flex', gap: '0.3rem' }}>
+          <IconButton onClick={onEdit} label="Edit"><Pencil size={11} strokeWidth={1.5} /></IconButton>
+          <IconButton onClick={onDelete} label="Delete" danger><Trash2 size={11} strokeWidth={1.5} /></IconButton>
         </div>
       </div>
     </div>
   );
 }
 
-// ---------- Detail panel for edit + add ----------
+// ---------- Sortable software card (Studio version with live progress preview) ----------
+
+function SortableSoftwareCard({
+  sw,
+  index,
+  onEdit,
+  onDelete,
+  onUndoDelete,
+  isDeleted,
+}: {
+  sw: Software;
+  index: number;
+  onEdit: () => void;
+  onDelete: () => void;
+  onUndoDelete: () => void;
+  isDeleted: boolean;
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: sw.id });
+  const [iconError, setIconError] = useState(false);
+
+  if (isDeleted) {
+    return (
+      <button
+        onClick={onUndoDelete}
+        style={{
+          padding: '0.5rem 0.9rem',
+          background: 'rgba(214,41,41,0.05)',
+          border: '1px dashed rgba(214,41,41,0.3)',
+          color: 'var(--night-muted)',
+          cursor: 'pointer',
+          fontFamily: 'var(--font-mono), monospace',
+          fontSize: '0.7rem',
+          textDecoration: 'line-through',
+          borderRadius: '3px',
+          textAlign: 'left',
+          width: '100%',
+        }}
+      >
+        ↺ {sw.name}
+      </button>
+    );
+  }
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={{
+        transform: CSS.Transform.toString(transform),
+        transition,
+        opacity: isDragging ? 0.5 : 1,
+        zIndex: isDragging ? 100 : 1,
+      }}
+    >
+      <div
+        className="studio-card software-card"
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.65rem',
+          padding: '0.65rem 0.85rem',
+          background: 'rgba(22, 22, 22, 0.6)',
+          border: '1px solid rgba(255,255,255,0.08)',
+          borderRadius: '3px',
+          transition: 'background 0.3s var(--ease-spring-soft), border-color 0.3s var(--ease-spring-soft)',
+        }}
+      >
+        <button
+          {...attributes}
+          {...listeners}
+          aria-label="Drag to reorder"
+          style={{ cursor: 'grab', background: 'transparent', border: 0, color: 'var(--night-muted)', padding: '0.2rem', display: 'flex' }}
+        >
+          <GripVertical size={14} strokeWidth={1.5} />
+        </button>
+        {/* Live software brand icon from jsdelivr + simple-icons CDN */}
+        <div style={{ width: '24px', height: '24px', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          {!iconError ? (
+             
+            <img
+              src={getSoftwareIconUrl(sw.slug)}
+              alt=""
+              width={20}
+              height={20}
+              onError={() => setIconError(true)}
+              style={{ filter: 'brightness(0) invert(1)', opacity: 0.92, display: 'block' }}
+            />
+          ) : (
+            <Box size={18} strokeWidth={1.5} color="var(--night-muted)" />
+          )}
+        </div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div
+            style={{
+              fontFamily: 'var(--font-fraunces), serif',
+              fontWeight: 500,
+              fontSize: '0.9rem',
+              color: 'var(--canvas)',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {sw.name}
+          </div>
+          {/* Live progress bar preview */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.25rem' }}>
+            <div className="software-progress-bar" style={{ flex: 1, height: '2px' }}>
+              <div className="software-progress-bar-fill" style={{ width: `${sw.progress}%` }} />
+            </div>
+            <span className="text-mono text-label" style={{ color: 'var(--accent)', fontSize: '0.6rem', flexShrink: 0 }}>
+              {sw.progress}%
+            </span>
+          </div>
+        </div>
+        <div className="studio-hover-reveal" style={{ display: 'flex', gap: '0.3rem' }}>
+          <IconButton onClick={onEdit} label="Edit"><Pencil size={11} strokeWidth={1.5} /></IconButton>
+          <IconButton onClick={onDelete} label="Delete" danger><Trash2 size={11} strokeWidth={1.5} /></IconButton>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ---------- Small icon button ----------
+
+function IconButton({ children, onClick, label, danger }: { children: React.ReactNode; onClick: () => void; label: string; danger?: boolean }) {
+  return (
+    <button
+      onClick={onClick}
+      aria-label={label}
+      style={{
+        padding: '0.3rem',
+        background: 'transparent',
+        border: '1px solid rgba(255,255,255,0.08)',
+        color: danger ? 'var(--accent)' : 'var(--canvas)',
+        cursor: 'pointer',
+        borderRadius: '2px',
+        display: 'flex',
+        alignItems: 'center',
+        transition: 'background 0.2s var(--ease-spring-soft)',
+      }}
+      onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(214,41,41,0.15)'; }}
+      onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
+    >
+      {children}
+    </button>
+  );
+}
+
+// ---------- Undo button (in deleted items bar) ----------
+
+function UndoButton({ label, onUndo }: { label: string; onUndo: () => void }) {
+  return (
+    <button
+      onClick={onUndo}
+      style={{
+        padding: '0.25rem 0.55rem',
+        background: 'transparent',
+        border: '1px solid rgba(255,255,255,0.08)',
+        color: 'var(--night-muted)',
+        fontFamily: 'var(--font-mono), monospace',
+        fontSize: '0.65rem',
+        cursor: 'pointer',
+        borderRadius: '2px',
+      }}
+    >
+      ↺ {label.slice(0, 24)}
+    </button>
+  );
+}
+
+// ---------- Detail panel for editing all 3 entity types ----------
 
 function ExperiencesDetailPanel({
-  experience,
-  onSaveExisting,
-  onSaveNew,
+  target,
+  data,
+  selectedCategoryId,
+  allCategories,
+  onSaveCategory,
+  onSaveExperience,
+  onSaveSoftware,
   onClose,
   onOpenIconPicker,
+  onOpenSoftwareIconPicker,
   onDelete,
 }: {
-  experience: Experience | null;
-  onSaveExisting: (id: string, patch: Experience) => void;
-  onSaveNew: (exp: Experience) => void;
+  target: EditingTarget;
+  data: { category?: Category; experience?: Experience; software?: Software } | null;
+  selectedCategoryId: string | null;
+  allCategories: Category[];
+  onSaveCategory: (cat: Category) => void;
+  onSaveExperience: (exp: Experience) => void;
+  onSaveSoftware: (sw: Software) => void;
   onClose: () => void;
-  onOpenIconPicker: (targetId: string) => void;
+  onOpenIconPicker: (kind: 'experience' | 'category', id: string | null) => void;
+  onOpenSoftwareIconPicker: (id: string | null) => void;
   onDelete?: () => void;
 }) {
-  const isEdit = !!experience;
-  const [draft, setDraft] = useState<Experience>(
-    experience || {
-      id: `exp-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`,
-      title: '',
-      category: 'exposed' as ExperienceCategory,
-      status: '2026 — Present',
-      description: '',
-      icon: 'Box',
-      tags: [],
-      priority: 50,
-      featured: false,
-      published: true,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    }
-  );
-  const [tagInput, setTagInput] = useState('');
-
-  // For mobile detection (Studio uses 768px breakpoint)
+  const isEdit = target.id !== null;
   const [isMobile, setIsMobile] = useState(false);
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth <= 768);
@@ -909,305 +1280,384 @@ function ExperiencesDetailPanel({
     return () => window.removeEventListener('resize', check);
   }, []);
 
-  const update = (patch: Partial<Experience>) => {
-    setDraft((d) => ({ ...d, ...patch }));
-  };
+  // Determine title for the panel
+  const panelTitle =
+    target.kind === 'category'
+      ? (data?.category?.title || 'New Category')
+      : target.kind === 'experience'
+      ? (data?.experience?.title || 'New Experience')
+      : (data?.software?.name || 'New Software');
 
-  const handleAddTag = () => {
-    const t = tagInput.trim();
-    if (!t) return;
-    if (draft.tags.includes(t)) { setTagInput(''); return; }
-    update({ tags: [...draft.tags, t] });
-    setTagInput('');
-  };
-
-  const handleRemoveTag = (tag: string) => {
-    update({ tags: draft.tags.filter((t) => t !== tag) });
-  };
+  // Build draft state based on target kind
+  const [catDraft, setCatDraft] = useState<Category>(
+    data?.category || {
+      id: target.id || newId('cat'),
+      title: '',
+      subtitle: '',
+      order: (allCategories.length + 1),
+      icon: 'Aperture',
+    }
+  );
+  const [expDraft, setExpDraft] = useState<Experience>(
+    data?.experience || {
+      id: target.id || newId('exp'),
+      title: '',
+      category_id: selectedCategoryId || allCategories[0]?.id || '',
+      status: '2026 — Present',
+      description: '',
+      icon: 'Layout',
+      tags: [],
+      featured: false,
+      published: true,
+      order: 0,
+    }
+  );
+  const [swDraft, setSwDraft] = useState<Software>(
+    data?.software || {
+      id: target.id || newId('sw'),
+      name: '',
+      slug: 'adobephotoshop',
+      progress: 50,
+      category_id: selectedCategoryId || allCategories[0]?.id || '',
+      order: 0,
+    }
+  );
+  const [tagInput, setTagInput] = useState('');
 
   const handleSave = () => {
-    if (!draft.title.trim()) return;
-    if (isEdit && experience) {
-      onSaveExisting(experience.id, draft);
+    if (target.kind === 'category') {
+      if (!catDraft.title.trim()) return;
+      onSaveCategory(catDraft);
+    } else if (target.kind === 'experience') {
+      if (!expDraft.title.trim()) return;
+      onSaveExperience(expDraft);
     } else {
-      onSaveNew(draft);
+      if (!swDraft.name.trim()) return;
+      onSaveSoftware(swDraft);
     }
   };
 
+  // Build the panel preview based on target kind
+  const preview = (() => {
+    if (target.kind === 'category') {
+      return (
+        <div style={{ padding: '0.85rem', background: 'rgba(214,41,41,0.08)', border: '1px solid rgba(214,41,41,0.25)', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+          <button
+            onClick={() => onOpenIconPicker('category', target.id)}
+            style={{ padding: 0, background: 'transparent', border: 0, cursor: 'pointer', color: 'var(--accent)' }}
+            aria-label="Change category icon"
+          >
+            <PreviewIcon name={catDraft.icon} size={28} />
+          </button>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontFamily: 'var(--font-fraunces), serif', fontWeight: 500, fontSize: '1.1rem', color: 'var(--canvas)' }}>
+              {catDraft.title || 'Untitled Category'}
+            </div>
+            <div className="text-mono text-label" style={{ color: 'var(--night-muted)', marginTop: '0.15rem' }}>
+              {catDraft.subtitle || 'No subtitle'}
+            </div>
+          </div>
+        </div>
+      );
+    }
+    if (target.kind === 'experience') {
+      return (
+        <div style={{ padding: '0.85rem', background: 'rgba(22,22,22,0.6)', border: '1px solid rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+          <button
+            onClick={() => onOpenIconPicker('experience', target.id)}
+            style={{ padding: 0, background: 'transparent', border: 0, cursor: 'pointer', color: 'var(--accent)' }}
+            aria-label="Change experience icon"
+          >
+            <PreviewIcon name={expDraft.icon} size={28} />
+          </button>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontFamily: 'var(--font-fraunces), serif', fontWeight: 500, fontSize: '1.05rem', color: 'var(--canvas)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {expDraft.title || 'Untitled'}
+            </div>
+            <div className="text-mono text-label" style={{ color: 'var(--night-muted)', marginTop: '0.15rem' }}>
+              {expDraft.status || 'No status'}
+            </div>
+          </div>
+          {expDraft.featured && <Star size={14} strokeWidth={1.5} style={{ color: 'var(--accent)' }} />}
+        </div>
+      );
+    }
+    // software
+    return (
+      <div style={{ padding: '0.85rem', background: 'rgba(22,22,22,0.6)', border: '1px solid rgba(255,255,255,0.08)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.6rem' }}>
+          <button
+            onClick={() => onOpenSoftwareIconPicker(target.id)}
+            style={{ padding: 0, background: 'transparent', border: 0, cursor: 'pointer' }}
+            aria-label="Change software icon"
+          >
+            <SoftwarePreviewLive slug={swDraft.slug} size={32} />
+          </button>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontFamily: 'var(--font-fraunces), serif', fontWeight: 500, fontSize: '1.05rem', color: 'var(--canvas)' }}>
+              {swDraft.name || 'Untitled'}
+            </div>
+            <div className="text-mono text-label" style={{ color: 'var(--night-muted)', marginTop: '0.15rem' }}>
+              {swDraft.slug}
+            </div>
+          </div>
+          <span className="text-mono text-label" style={{ color: 'var(--accent)' }}>
+            {swDraft.progress}%
+          </span>
+        </div>
+        {/* Live progress preview */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <div className="software-progress-bar" style={{ flex: 1, height: '3px' }}>
+            <div className="software-progress-bar-fill" style={{ width: `${swDraft.progress}%` }} />
+          </div>
+          <span className="text-mono text-label" style={{ color: 'var(--night-muted)', fontSize: '0.65rem' }}>
+            {getMasteryLabel(swDraft.progress)}
+          </span>
+        </div>
+      </div>
+    );
+  })();
+
   return (
     <StudioDetailPanel
-      title={isEdit ? draft.title || 'Edit Experience' : 'Add New Experience'}
+      title={panelTitle}
+      preview={preview}
       onClose={onClose}
       onSave={handleSave}
       onDelete={isEdit ? onDelete : undefined}
       isMobile={isMobile}
-      preview={
-        <div
-          style={{
-            padding: '1rem',
-            background: 'rgba(22,22,22,0.6)',
-            border: '1px solid rgba(255,255,255,0.08)',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.85rem',
-          }}
-        >
-          <button
-            onClick={() => onOpenIconPicker(isEdit ? draft.id : 'new')}
-            style={{
-              padding: 0,
-              background: 'transparent',
-              border: 0,
-              cursor: 'pointer',
-              color: draft.category === 'exposed' ? 'var(--accent)' : draft.category === 'development' ? 'var(--canvas)' : 'var(--night-muted)',
-            }}
-            aria-label="Change icon"
-          >
-            <PreviewIcon name={draft.icon} size={32} />
-          </button>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div
-              style={{
-                fontFamily: 'var(--font-fraunces), serif',
-                fontWeight: 500,
-                fontSize: '1.05rem',
-                color: 'var(--canvas)',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap',
-              }}
-            >
-              {draft.title || 'Untitled'}
-            </div>
-            <div className="text-mono text-label" style={{ color: 'var(--night-muted)', marginTop: '0.15rem' }}>
-              {draft.status || 'No status'}
-            </div>
-          </div>
-        </div>
-      }
     >
-      <Field label="Title">
-        <input
-          value={draft.title}
-          onChange={(e) => update({ title: e.target.value })}
-          placeholder="e.g. Flutter App Development"
-          style={inputStyle}
-          autoFocus={!isEdit}
-        />
-      </Field>
-
-      <Field label="Category">
-        <div style={{ display: 'flex', gap: '0.5rem' }}>
-          {(['exposed', 'development', 'fixed'] as ExperienceCategory[]).map((c) => (
+      {target.kind === 'category' && (
+        <>
+          <Field label="Title">
+            <input
+              value={catDraft.title}
+              onChange={(e) => setCatDraft({ ...catDraft, title: e.target.value })}
+              placeholder="e.g. Visual Production"
+              style={inputStyle}
+              autoFocus
+            />
+          </Field>
+          <Field label="Subtitle">
+            <input
+              value={catDraft.subtitle}
+              onChange={(e) => setCatDraft({ ...catDraft, subtitle: e.target.value })}
+              placeholder="e.g. Image editing, motion graphics, VFX"
+              style={inputStyle}
+            />
+          </Field>
+          <Field label="Icon (Lucide)">
             <button
-              key={c}
-              onClick={() => update({ category: c, featured: c === 'exposed' ? draft.featured : false })}
-              style={{
-                flex: 1,
-                padding: '0.5rem',
-                background: draft.category === c ? 'rgba(214,41,41,0.15)' : 'transparent',
-                border: `1px solid ${draft.category === c ? 'var(--accent)' : 'var(--night-hr)'}`,
-                color: draft.category === c ? 'var(--canvas)' : 'var(--night-muted)',
-                cursor: 'pointer',
-                fontFamily: 'var(--font-mono), monospace',
-                fontSize: '0.65rem',
-                letterSpacing: '0.08em',
-                textTransform: 'uppercase',
-                borderRadius: '2px',
-                transition: 'background 0.2s var(--ease-spring-soft)',
-              }}
+              onClick={() => onOpenIconPicker('category', target.id)}
+              style={iconButtonStyle}
+              onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'var(--accent)'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'var(--night-hr)'; }}
             >
-              {c === 'exposed' ? '01 Exp' : c === 'development' ? '02 Dev' : '03 Fix'}
+              <PreviewIcon name={catDraft.icon} size={18} />
+              <span style={{ flex: 1, textAlign: 'left' }}>{catDraft.icon}</span>
+              <span style={{ color: 'var(--night-muted)', fontSize: '0.7rem' }}>Change →</span>
             </button>
-          ))}
-        </div>
-      </Field>
+          </Field>
+        </>
+      )}
 
-      <Field label="Status">
-        <input
-          value={draft.status}
-          onChange={(e) => update({ status: e.target.value })}
-          placeholder="2026 — Present"
-          style={inputStyle}
-        />
-      </Field>
-
-      <Field label="Description">
-        <textarea
-          value={draft.description}
-          onChange={(e) => update({ description: e.target.value })}
-          placeholder="One or two sentences describing this experience."
-          rows={4}
-          style={{ ...inputStyle, resize: 'vertical', fontFamily: 'var(--font-fraunces), serif', fontSize: '0.95rem' }}
-        />
-      </Field>
-
-      <Field label="Icon">
-        <button
-          onClick={() => onOpenIconPicker(isEdit ? draft.id : 'new')}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.6rem',
-            padding: '0.5rem 0.75rem',
-            background: 'var(--night)',
-            border: '1.5px solid var(--night-hr)',
-            color: 'var(--canvas)',
-            cursor: 'pointer',
-            borderRadius: '2px',
-            width: '100%',
-            fontFamily: 'var(--font-mono), monospace',
-            fontSize: '0.85rem',
-            transition: 'border-color 0.2s var(--ease-spring-soft)',
-          }}
-          onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'var(--accent)'; }}
-          onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'var(--night-hr)'; }}
-        >
-          <PreviewIcon name={draft.icon} size={18} />
-          <span style={{ flex: 1, textAlign: 'left' }}>{draft.icon}</span>
-          <span style={{ color: 'var(--night-muted)', fontSize: '0.7rem' }}>Change →</span>
-        </button>
-      </Field>
-
-      <Field label="Tags">
-        <div style={{ display: 'flex', gap: '0.4rem', marginBottom: '0.4rem', flexWrap: 'wrap' }}>
-          {draft.tags.map((tag) => (
-            <span
-              key={tag}
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '0.3rem',
-                padding: '0.2rem 0.55rem',
-                background: 'rgba(255,255,255,0.03)',
-                border: '1px solid rgba(255,255,255,0.08)',
-                color: 'var(--night-body)',
-                fontFamily: 'var(--font-mono), monospace',
-                fontSize: '0.7rem',
-                borderRadius: '2px',
-              }}
+      {target.kind === 'experience' && (
+        <>
+          <Field label="Title">
+            <input
+              value={expDraft.title}
+              onChange={(e) => setExpDraft({ ...expDraft, title: e.target.value })}
+              placeholder="e.g. Poster Design"
+              style={inputStyle}
+              autoFocus
+            />
+          </Field>
+          <Field label="Category">
+            <select
+              value={expDraft.category_id}
+              onChange={(e) => setExpDraft({ ...expDraft, category_id: e.target.value })}
+              style={inputStyle}
             >
-              {tag.startsWith('#') ? tag : `#${tag}`}
-              <button
-                onClick={() => handleRemoveTag(tag)}
-                style={{
-                  background: 'transparent',
-                  border: 0,
-                  color: 'var(--night-muted)',
-                  cursor: 'pointer',
-                  padding: 0,
-                  display: 'flex',
-                  alignItems: 'center',
-                }}
-                aria-label={`Remove tag ${tag}`}
-              >
-                ✕
-              </button>
-            </span>
-          ))}
-        </div>
-        <input
-          value={tagInput}
-          onChange={(e) => setTagInput(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') {
-              e.preventDefault();
-              handleAddTag();
-            }
-          }}
-          placeholder="Type a tag + Enter (e.g. DART)"
-          style={inputStyle}
-        />
-      </Field>
+              {allCategories.map((c) => (
+                <option key={c.id} value={c.id} style={{ background: 'var(--night)' }}>{c.title}</option>
+              ))}
+            </select>
+          </Field>
+          <Field label="Status">
+            <input
+              value={expDraft.status}
+              onChange={(e) => setExpDraft({ ...expDraft, status: e.target.value })}
+              placeholder="2026 — Present"
+              style={inputStyle}
+            />
+          </Field>
+          <Field label="Description">
+            <textarea
+              value={expDraft.description}
+              onChange={(e) => setExpDraft({ ...expDraft, description: e.target.value })}
+              placeholder="One or two sentences describing this experience."
+              rows={4}
+              style={{ ...inputStyle, resize: 'vertical', fontFamily: 'var(--font-fraunces), serif', fontSize: '0.95rem' }}
+            />
+          </Field>
+          <Field label="Icon (Lucide)">
+            <button
+              onClick={() => onOpenIconPicker('experience', target.id)}
+              style={iconButtonStyle}
+              onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'var(--accent)'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'var(--night-hr)'; }}
+            >
+              <PreviewIcon name={expDraft.icon} size={18} />
+              <span style={{ flex: 1, textAlign: 'left' }}>{expDraft.icon}</span>
+              <span style={{ color: 'var(--night-muted)', fontSize: '0.7rem' }}>Change →</span>
+            </button>
+          </Field>
+          <Field label="Tags">
+            <div style={{ display: 'flex', gap: '0.35rem', marginBottom: '0.4rem', flexWrap: 'wrap' }}>
+              {expDraft.tags.map((tag) => (
+                <span key={tag} style={tagPillStyle}>
+                  {tag.startsWith('#') ? tag : `#${tag}`}
+                  <button onClick={() => setExpDraft({ ...expDraft, tags: expDraft.tags.filter((t) => t !== tag) })} style={tagRemoveStyle} aria-label={`Remove tag ${tag}`}>✕</button>
+                </span>
+              ))}
+            </div>
+            <input
+              value={tagInput}
+              onChange={(e) => setTagInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  const t = tagInput.trim();
+                  if (t && !expDraft.tags.includes(t)) {
+                    setExpDraft({ ...expDraft, tags: [...expDraft.tags, t] });
+                  }
+                  setTagInput('');
+                }
+              }}
+              placeholder="Type a tag + Enter"
+              style={inputStyle}
+            />
+          </Field>
+          <Field label="Featured (spotlight card)">
+            <button
+              onClick={() => setExpDraft({ ...expDraft, featured: !expDraft.featured })}
+              style={toggleButtonStyle(expDraft.featured)}
+            >
+              <Star size={14} strokeWidth={1.5} style={{ color: expDraft.featured ? 'var(--accent)' : 'var(--night-muted)' }} />
+              {expDraft.featured ? 'Featured — highlighted' : 'Not featured'}
+            </button>
+          </Field>
+          <Field label="Published">
+            <button
+              onClick={() => setExpDraft({ ...expDraft, published: !expDraft.published })}
+              style={toggleButtonStyle(expDraft.published)}
+            >
+              <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: expDraft.published ? 'var(--accent)' : 'var(--night-muted)' }} />
+              {expDraft.published ? 'Public — visible on site' : 'Hidden — draft only'}
+            </button>
+          </Field>
+        </>
+      )}
 
-      <Field label="Featured (spotlight card — EXPOSED only)">
-        <button
-          onClick={() => update({ featured: !draft.featured })}
-          disabled={draft.category !== 'exposed'}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.5rem',
-            padding: '0.5rem 0.75rem',
-            background: draft.featured ? 'rgba(214,41,41,0.15)' : 'transparent',
-            border: `1.5px solid ${draft.featured ? 'var(--accent)' : 'var(--night-hr)'}`,
-            color: draft.featured ? 'var(--accent)' : 'var(--night-muted)',
-            cursor: draft.category === 'exposed' ? 'pointer' : 'not-allowed',
-            opacity: draft.category === 'exposed' ? 1 : 0.4,
-            borderRadius: '2px',
-            fontFamily: 'var(--font-mono), monospace',
-            fontSize: '0.75rem',
-            letterSpacing: '0.08em',
-            textTransform: 'uppercase',
-          }}
-        >
-          <Star size={14} strokeWidth={1.5} style={{ color: draft.featured ? 'var(--accent)' : 'var(--night-muted)' }} />
-          {draft.featured ? 'Featured — wide spotlight card' : 'Not featured'}
-        </button>
-      </Field>
-
-      <Field label="Published">
-        <button
-          onClick={() => update({ published: !draft.published })}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.5rem',
-            padding: '0.5rem 0.75rem',
-            background: draft.published ? 'rgba(214,41,41,0.15)' : 'transparent',
-            border: `1.5px solid ${draft.published ? 'var(--accent)' : 'var(--night-hr)'}`,
-            color: draft.published ? 'var(--canvas)' : 'var(--night-muted)',
-            cursor: 'pointer',
-            borderRadius: '2px',
-            fontFamily: 'var(--font-mono), monospace',
-            fontSize: '0.75rem',
-            letterSpacing: '0.08em',
-            textTransform: 'uppercase',
-          }}
-        >
-          <span style={{
-            width: '8px', height: '8px', borderRadius: '50%',
-            background: draft.published ? 'var(--accent)' : 'var(--night-muted)',
-          }} />
-          {draft.published ? 'Public — visible on site' : 'Hidden — draft only'}
-        </button>
-      </Field>
+      {target.kind === 'software' && (
+        <>
+          <Field label="Software Name">
+            <input
+              value={swDraft.name}
+              onChange={(e) => setSwDraft({ ...swDraft, name: e.target.value })}
+              placeholder="e.g. Adobe Photoshop"
+              style={inputStyle}
+              autoFocus
+            />
+          </Field>
+          <Field label="Category">
+            <select
+              value={swDraft.category_id}
+              onChange={(e) => setSwDraft({ ...swDraft, category_id: e.target.value })}
+              style={inputStyle}
+            >
+              {allCategories.map((c) => (
+                <option key={c.id} value={c.id} style={{ background: 'var(--night)' }}>{c.title}</option>
+              ))}
+            </select>
+          </Field>
+          <Field label="Brand Icon (loads from simple-icons CDN — no Supabase)">
+            <button
+              onClick={() => onOpenSoftwareIconPicker(target.id)}
+              style={iconButtonStyle}
+              onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'var(--accent)'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'var(--night-hr)'; }}
+            >
+              <SoftwarePreviewLive slug={swDraft.slug} size={18} />
+              <span style={{ flex: 1, textAlign: 'left' }}>{swDraft.slug}</span>
+              <span style={{ color: 'var(--night-muted)', fontSize: '0.7rem' }}>Change →</span>
+            </button>
+          </Field>
+          <Field label={`Mastery — ${swDraft.progress}% (${getMasteryLabel(swDraft.progress)})`}>
+            {/* Live progress preview bar */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.5rem' }}>
+              <div className="software-progress-bar" style={{ flex: 1, height: '4px' }}>
+                <div className="software-progress-bar-fill" style={{ width: `${swDraft.progress}%` }} />
+              </div>
+              <span className="text-mono text-label" style={{ color: 'var(--accent)', fontSize: '0.75rem', minWidth: '2.5rem', textAlign: 'right' }}>
+                {swDraft.progress}%
+              </span>
+            </div>
+            {/* Range slider for editing */}
+            <input
+              type="range"
+              min={0}
+              max={100}
+              value={swDraft.progress}
+              onChange={(e) => setSwDraft({ ...swDraft, progress: Number(e.target.value) })}
+              className="studio-progress-slider"
+              aria-label="Mastery progress"
+            />
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '0.4rem' }}>
+              <span className="text-mono text-label" style={{ color: 'var(--night-muted)', fontSize: '0.6rem' }}>BEGINNER</span>
+              <span className="text-mono text-label" style={{ color: 'var(--night-muted)', fontSize: '0.6rem' }}>INTERMEDIATE</span>
+              <span className="text-mono text-label" style={{ color: 'var(--night-muted)', fontSize: '0.6rem' }}>ADVANCED</span>
+              <span className="text-mono text-label" style={{ color: 'var(--night-muted)', fontSize: '0.6rem' }}>EXPERT</span>
+            </div>
+          </Field>
+        </>
+      )}
     </StudioDetailPanel>
   );
 }
 
-// ---------- Field wrapper ----------
+// ---------- Software preview with live CDN load ----------
+
+function SoftwarePreviewLive({ slug, size = 22 }: { slug: string; size?: number }) {
+  const [iconError, setIconError] = useState(false);
+  if (!slug || iconError) {
+    return <Box size={size} strokeWidth={1.5} color="var(--night-muted)" />;
+  }
+  return (
+     
+    <img
+      src={getSoftwareIconUrl(slug)}
+      alt={slug}
+      width={size}
+      height={size}
+      onError={() => setIconError(true)}
+      style={{ filter: 'brightness(0) invert(1)', opacity: 0.92, display: 'block' }}
+    />
+  );
+}
+
+// ---------- Field + shared styles ----------
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div style={{ marginBottom: '1.1rem' }}>
-      <label
-        className="text-mono text-label"
-        style={{ color: 'var(--night-muted)', display: 'block', marginBottom: '0.4rem' }}
-      >
+      <label className="text-mono text-label" style={{ color: 'var(--night-muted)', display: 'block', marginBottom: '0.4rem' }}>
         {label}
       </label>
       {children}
     </div>
   );
 }
-
-// ---------- Preview icon (uses the consolidated lucide imports from top) ----------
-
-const PREVIEW_ICONS: Record<string, LucideIcon> = {
-  Smartphone, Mic, Brain, Palette, Database,
-  Layout, Image: ImageIcon, Clapperboard, Sparkles, Wand2, Brush, PenTool, Music,
-  Layers, Film, Aperture, SlidersHorizontal, Box, Frame,
-  Code, AppWindow, Terminal, Cpu, Wrench, Settings, SmartphoneCharging,
-  Star,
-};
-
-function PreviewIcon({ name, size = 16 }: { name: string; size?: number }) {
-  const Cmp = PREVIEW_ICONS[name] || Box;
-  return <Cmp size={size} strokeWidth={1.5} />;
-}
-
-// ---------- Shared input style ----------
 
 const inputStyle: React.CSSProperties = {
   width: '100%',
@@ -1221,3 +1671,61 @@ const inputStyle: React.CSSProperties = {
   borderRadius: '2px',
   transition: 'border-color 0.2s var(--ease-spring-soft)',
 };
+
+const iconButtonStyle: React.CSSProperties = {
+  display: 'flex',
+  alignItems: 'center',
+  gap: '0.6rem',
+  padding: '0.5rem 0.75rem',
+  background: 'var(--night)',
+  border: '1.5px solid var(--night-hr)',
+  color: 'var(--canvas)',
+  cursor: 'pointer',
+  borderRadius: '2px',
+  width: '100%',
+  fontFamily: 'var(--font-mono), monospace',
+  fontSize: '0.85rem',
+  transition: 'border-color 0.2s var(--ease-spring-soft)',
+};
+
+const tagPillStyle: React.CSSProperties = {
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: '0.3rem',
+  padding: '0.2rem 0.55rem',
+  background: 'rgba(255,255,255,0.03)',
+  border: '1px solid rgba(255,255,255,0.08)',
+  color: 'var(--night-body)',
+  fontFamily: 'var(--font-mono), monospace',
+  fontSize: '0.7rem',
+  borderRadius: '2px',
+};
+
+const tagRemoveStyle: React.CSSProperties = {
+  background: 'transparent',
+  border: 0,
+  color: 'var(--night-muted)',
+  cursor: 'pointer',
+  padding: 0,
+  display: 'flex',
+  alignItems: 'center',
+};
+
+function toggleButtonStyle(active: boolean): React.CSSProperties {
+  return {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.5rem',
+    padding: '0.5rem 0.75rem',
+    background: active ? 'rgba(214,41,41,0.15)' : 'transparent',
+    border: `1.5px solid ${active ? 'var(--accent)' : 'var(--night-hr)'}`,
+    color: active ? 'var(--canvas)' : 'var(--night-muted)',
+    cursor: 'pointer',
+    borderRadius: '2px',
+    fontFamily: 'var(--font-mono), monospace',
+    fontSize: '0.75rem',
+    letterSpacing: '0.08em',
+    textTransform: 'uppercase',
+    width: '100%',
+  };
+}

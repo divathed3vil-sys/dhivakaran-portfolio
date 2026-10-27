@@ -1,86 +1,123 @@
 /**
- * Experiences data layer — Supabase-free, frontend-first.
+ * Experiences data layer v2 — Supabase-free, frontend-first.
  *
- * The experiences data is a static JSON file in the repo at
- * `src/data/experiences.json`. Public reads import it statically at build time
- * (zero runtime fetch, perfect SEO/LCP). Studio edits go through the API
- * route which commits the new JSON to GitHub via the GitHub Contents API +
- * triggers a Vercel production deploy via the Vercel API. No Supabase
- * Storage, no Supabase Database — only Supabase AUTH (separate concern, used
- * only to verify the admin session server-side).
+ * Schema v2 changes from v1:
+ *  - Categories are dynamic (not enum). Each has id/title/subtitle/order/icon.
+ *    Admin can rename, reorder, add, delete categories in the Studio.
+ *  - Experiences belong to a category via `category_id` (string), not the
+ *    old `category` enum. Use `order` for sort instead of `priority`.
+ *  - Software is a NEW entity type — tools used (e.g. Photoshop, Python).
+ *    Each has a simple-icons CDN slug + progress (0-100) for the mastery bar.
+ *    Icons load from https://cdn.jsdelivr.net/npm/simple-icons@latest/icons/{slug}.svg
+ *    (MIT-licensed, no API key, no Supabase involvement).
  *
- * Tokens (all server-side only, never client-exposed):
- *  - GITHUB_TOKEN        — commits experiences.json to the GitHub repo
- *  - VERCEL_TOKEN        — triggers a production redeploy via Vercel API
- *  - VERCEL_PROJECT_ID   — target project for the redeploy
- *  - NEXT_PUBLIC_SUPABASE_URL + NEXT_PUBLIC_SUPABASE_ANON_KEY — used by the
- *    server-side supabase client only to verify the admin's session JWT.
+ * Persistence (unchanged from v1):
+ *  - src/data/experiences.json — committed to repo, statically imported at
+ *    build time → zero runtime fetch for public visitors → perfect SEO + LCP.
+ *  - POST /api/experiences — admin auth verify → commit JSON to GitHub via
+ *    Contents API → trigger Vercel deploy via v13/deployments API.
+ *  - GET /api/experiences/status?deployId=X — polls deploy state.
+ *
+ * Auth (unchanged): ONLY Supabase AUTH (no Storage, no Database) via
+ * verifyAdminAuth() — verifies the admin's JWT server-side.
  */
 
 import data from '@/data/experiences.json';
 
-export type ExperienceCategory = 'exposed' | 'development' | 'fixed';
+export type Category = {
+  id: string;
+  title: string;
+  subtitle: string;
+  order: number;
+  icon: string; // lucide icon name for the category header
+};
 
 export type Experience = {
   id: string;
   title: string;
-  category: ExperienceCategory;
+  category_id: string;
   status: string;
   description: string;
-  icon: string;
+  icon: string; // lucide icon name (different from software brand icon)
   tags: string[];
-  priority: number;
   featured: boolean;
   published: boolean;
-  createdAt: string;
-  updatedAt: string;
+  order: number;
+};
+
+export type Software = {
+  id: string;
+  name: string;
+  slug: string; // simple-icons CDN slug (e.g. "adobephotoshop")
+  progress: number; // 0-100 mastery level
+  category_id: string;
+  order: number;
 };
 
 export type ExperiencesData = {
   version: number;
   updatedAt: string;
+  categories: Category[];
   experiences: Experience[];
+  software: Software[];
 };
 
 // ---------- PUBLIC READ (static import) ----------
 
-/**
- * Returns the experiences data statically imported from the JSON file.
- * This is called by the public Experiences component at build time →
- * the data is baked into the HTML, zero runtime fetch.
- */
 export function getExperiences(): ExperiencesData {
   return data as ExperiencesData;
 }
 
 /**
- * Returns only experiences that should be visible on the public site
- * (published === true), sorted by priority DESC within each category.
+ * Returns the data structured by category for the public render:
+ *   categories sorted by `order`
+ *   experiences + software nested under each category, sorted by `order`
  */
-export function getPublishedExperiencesByCategory(): Record<ExperienceCategory, Experience[]> {
-  const all = (data as ExperiencesData).experiences.filter((e) => e.published);
-  return {
-    exposed: all.filter((e) => e.category === 'exposed').sort((a, b) => b.priority - a.priority),
-    development: all.filter((e) => e.category === 'development').sort((a, b) => b.priority - a.priority),
-    fixed: all.filter((e) => e.category === 'fixed').sort((a, b) => b.priority - a.priority),
-  };
+export function getExperiencesByCategory(): Array<{
+  category: Category;
+  experiences: Experience[];
+  software: Software[];
+}> {
+  const d = data as ExperiencesData;
+  return [...d.categories]
+    .sort((a, b) => a.order - b.order)
+    .map((category) => ({
+      category,
+      experiences: d.experiences
+        .filter((e) => e.category_id === category.id && e.published)
+        .sort((a, b) => a.order - b.order),
+      software: d.software
+        .filter((s) => s.category_id === category.id)
+        .sort((a, b) => a.order - b.order),
+    }));
 }
 
-// ---------- ADMIN AUTH VERIFICATION ----------
+/**
+ * Returns the URL for a software brand icon on the simple-icons CDN
+ * (jsdelivr mirror, MIT-licensed, no API key needed, no Supabase).
+ *
+ * Format: https://cdn.jsdelivr.net/npm/simple-icons@latest/icons/{slug}.svg
+ *
+ * Falls back to a generic placeholder if the slug is invalid (handled in
+ * the React component via onError).
+ */
+export function getSoftwareIconUrl(slug: string): string {
+  return `https://cdn.jsdelivr.net/npm/simple-icons@latest/icons/${slug}.svg`;
+}
 
 /**
- * Verifies that the incoming request is from the authenticated Studio admin.
- *
- * The Studio client (after Supabase `signInWithPassword` succeeds) has the
- * user's access_token (JWT) in its session. The client sends it as
- * `Authorization: Bearer <jwt>` to the API route. This function uses the
- * Supabase server client (anon key only — no service role needed) to verify
- * the JWT and check that the email matches the admin's email.
- *
- * This is the ONLY Supabase call in the experiences flow — and it's an AUTH
- * call, not a Storage/Database call. Honors the "no Supabase for experiences
- * data" constraint strictly.
+ * Returns a human-readable mastery level label derived from progress 0-100.
+ * Used as an accessible text label next to the progress bar.
  */
+export function getMasteryLabel(progress: number): string {
+  if (progress >= 86) return 'Expert';
+  if (progress >= 61) return 'Advanced';
+  if (progress >= 31) return 'Intermediate';
+  return 'Beginner';
+}
+
+// ---------- ADMIN AUTH VERIFICATION (unchanged from v1) ----------
+
 export async function verifyAdminAuth(authHeader: string | null): Promise<{ ok: true; email: string } | { ok: false; reason: string }> {
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     return { ok: false, reason: 'Missing Authorization header' };
@@ -94,8 +131,6 @@ export async function verifyAdminAuth(authHeader: string | null): Promise<{ ok: 
     return { ok: false, reason: 'Supabase env not configured' };
   }
 
-  // Verify the JWT via Supabase Auth API. The anon key is safe to use
-  // server-side — it only lets us READ user identity, not modify data.
   try {
     const res = await fetch(`${supabaseUrl}/auth/v1/user`, {
       headers: {
@@ -108,9 +143,6 @@ export async function verifyAdminAuth(authHeader: string | null): Promise<{ ok: 
     const user = await res.json();
     if (!user || !user.email) return { ok: false, reason: 'No user in JWT' };
 
-    // The Studio's username "diva" maps to email "diva@studio.local" (see
-    // src/lib/supabase.ts → STUDIO_AUTH_EMAIL_SUFFIX). This is the only
-    // allowed admin email for the experiences publish flow.
     const adminEmail = process.env.STUDIO_ADMIN_EMAIL || 'diva@studio.local';
     if (user.email !== adminEmail) {
       return { ok: false, reason: `Not admin (email=${user.email})` };
@@ -121,27 +153,19 @@ export async function verifyAdminAuth(authHeader: string | null): Promise<{ ok: 
   }
 }
 
-// ---------- GITHUB COMMIT ----------
+// ---------- GITHUB COMMIT (unchanged from v1) ----------
 
 const GITHUB_REPO_OWNER = 'divathed3vil-sys';
 const GITHUB_REPO_NAME = 'dhivakaran-portfolio';
 const EXPERIENCES_FILE_PATH = 'src/data/experiences.json';
 const GITHUB_BRANCH = 'main';
 
-/**
- * Commits the new experiences JSON to GitHub via the Contents API.
- * Uses the file's current SHA for atomic update (no race conditions
- * if two admin sessions edit simultaneously — second one gets a 409).
- *
- * Returns the new commit SHA on success.
- */
 export async function commitExperiencesToGitHub(
   newData: ExperiencesData
 ): Promise<{ ok: true; commitSha: string } | { ok: false; reason: string }> {
   const token = process.env.GITHUB_TOKEN;
   if (!token) return { ok: false, reason: 'GITHUB_TOKEN not configured' };
 
-  // 1. Fetch the current file to get its SHA (required for update).
   const getFileUrl = `https://api.github.com/repos/${GITHUB_REPO_OWNER}/${GITHUB_REPO_NAME}/contents/${EXPERIENCES_FILE_PATH}?ref=${GITHUB_BRANCH}`;
   const fileRes = await fetch(getFileUrl, {
     headers: {
@@ -159,9 +183,8 @@ export async function commitExperiencesToGitHub(
   const sha: string | undefined = fileData?.sha;
   if (!sha) return { ok: false, reason: 'GitHub getFile: no sha returned' };
 
-  // 2. PUT the new content with the SHA for atomic update.
   const content = Buffer.from(JSON.stringify(newData, null, 2) + '\n', 'utf8').toString('base64');
-  const commitMessage = `experiences: publish ${newData.experiences.length} items — ${newData.updatedAt}`;
+  const commitMessage = `experiences: publish ${newData.experiences.length} items + ${newData.software.length} software across ${newData.categories.length} categories — ${newData.updatedAt}`;
 
   const putRes = await fetch(getFileUrl.replace(/\?ref=[^&]+/, ''), {
     method: 'PUT',
@@ -192,18 +215,8 @@ export async function commitExperiencesToGitHub(
   return { ok: true, commitSha };
 }
 
-// ---------- VERCEL REDEPLOY ----------
+// ---------- VERCEL REDEPLOY (unchanged from v1) ----------
 
-/**
- * Triggers a production deployment from the latest GitHub commit on main.
- *
- * The Vercel project is NOT GitHub-linked (gitRepository: null in project
- * settings), but the Vercel API still accepts `gitSource: { type: 'github',
- * org, repo, ref: 'main' }` and triggers a deploy from the latest commit.
- * Verified working via API test on 2026-10-27.
- *
- * Returns the deployment ID for status polling.
- */
 export async function triggerVercelDeploy(): Promise<
   { ok: true; deploymentId: string; deploymentUrl: string } | { ok: false; reason: string }
 > {
@@ -245,13 +258,6 @@ export async function triggerVercelDeploy(): Promise<
   return { ok: true, deploymentId, deploymentUrl: deploymentUrl || '' };
 }
 
-/**
- * Polls the deployment status. Used by the /api/experiences/status route
- * to give the Studio UI live "Publishing… building… ready" feedback.
- *
- * Possible readyStates: INITIALIZING → QUEUED → BUILDING → NORMALIZING → READY
- * (or ERROR / CANCELED on failure)
- */
 export async function pollVercelDeployStatus(
   deploymentId: string
 ): Promise<
