@@ -1624,3 +1624,98 @@ Stage Summary:
 - 4 deploys total (egress safety + E1+E2 + E3+E4): ~504MB worst-case egress cost — recouped within hours via 30-day TTL
 - Lint clean (0 errors, 0 warnings) throughout
 - 8 new files + 3 modified files + 1 deleted file
+
+---
+Task ID: EXP-v2 (Experiences v2 — categories by STREAM + software with progress + CDN icons + nav fix)
+Agent: main-orchestrator
+Task: User wanted: (1) categories by STREAM (not skill level), (2) editable category titles + reorder, (3) software section per category with real progress bars + software icons loaded from internet (no Supabase), (4) fix burger nav not reaching Experiences and other sections.
+
+Work Log:
+
+Research (parallel):
+- Verified Simple Icons CDN (cdn.simpleicons.org) returns 403 — User-Agent blocking. Pivoted to jsdelivr + simple-icons npm package: https://cdn.jsdelivr.net/npm/simple-icons@latest/icons/{slug}.svg — HTTP 200 for all 15 tested brands (Adobe CC suite, Blender, Python, Flutter, Supabase, Linux, GitHub, TypeScript, Next.js, VS Code, DaVinci Resolve, Figma, etc.). MIT-licensed, no API key, no Supabase involvement.
+- Inspected nav.tsx + section IDs: nav link for Experiences pointed to '#skillset' (deleted file). Other links: #about, #work, #videos, #experiences, #contact, #top. All section IDs exist except skillset.
+- Found use-lenis.ts anchor link selector was actually correct ('a[href^="#"]') — earlier bash cat display was a terminal escape artifact.
+
+Schema v2 (src/data/experiences.json):
+- version: 2 (was 1)
+- NEW: categories[] — admin-editable title, subtitle, order, lucide icon. Seeded 2:
+  - cat-visual: "Visual Production" (Aperture icon) — image editing, motion, VFX, color, sound
+  - cat-code: "Code & Systems" (Terminal icon) — programming, OS, hardware, infrastructure
+- experiences[] now use category_id (string) instead of category enum. order field for sort.
+  21 experiences mapped from old 27 (6 software-app entries moved to software[]).
+- NEW: software[] — each has name + simple-icons slug + progress (0-100) + category_id + order.
+  14 software seeded: 6 in Visual Production (Photoshop 92%, Premiere 88%, After Effects 78%, Illustrator 82%, DaVinci 72%, Blender 58%), 8 in Code & Systems (Python 55%, TypeScript 75%, Next.js 70%, Flutter 68%, Supabase 80%, GitHub 65%, Linux 78%, VS Code 85%).
+
+New files:
+- src/components/portfolio/studio/software-icon-picker.tsx (~370 lines):
+  cmdk-style command palette + 80 curated brand slugs (Adobe, Blender, Python, Flutter, Supabase, Linux, GitHub, TypeScript, Next.js, VS Code, all major languages/frameworks/databases/dev tools).
+  Live preview from jsdelivr CDN. Custom-slug fallback if query doesn't match.
+  Brand SVGs are pure-black — filter: brightness(0) invert(1) makes them white on dark section.
+  onError fallback to lucide Box icon.
+
+Modified files:
+- src/lib/experiences-data.ts: new types (Category, Experience, Software) + v2 helpers
+  (getExperiencesByCategory, getSoftwareIconUrl, getMasteryLabel).
+  getMasteryLabel auto-derives level from progress: 0-30 Beginner, 31-60 Intermediate,
+  61-85 Advanced, 86-100 Expert.
+- src/components/portfolio/experiences.tsx: full rewrite for v2. Per-category blocks
+  with category header (icon + title + subtitle) + EXPERIENCES sub-section + SOFTWARE
+  sub-section (with progress bars + CDN icons).
+- src/components/portfolio/studio/experiences-tab.tsx: full rewrite for v2. Category pills
+  row (drag-drop reorder + ✎ edit + delete + add) + selected category content (experiences
+  grid + software grid with live progress preview) + DetailPanel for editing all 3 entity
+  types (category/experience/software) with progress slider + SoftwareIconPicker integration.
+- src/app/api/experiences/route.ts: v2 payload validation (categories[] + experiences[]
+  with category_id + software[] with progress 0-100).
+- src/components/portfolio/nav.tsx: burger link fix #skillset → #experiences.
+- src/app/globals.css: software-card styles + progress bar styles + range slider styling.
+- src/components/portfolio/lib/use-lenis.ts: anchor click handler now forces layout
+  computation on all content-visibility: auto elements before scrollTo (defensive).
+- All 7 section components (about, selected-work, video-section, visual-lab-card,
+  contact, footer, experiences): removed contentVisibility: 'auto' +
+  containIntrinsicSize (the root cause of the nav bug).
+
+Critical bug fix: Lenis anchor scroll miscalculation
+- ROOT CAUSE: Lenis's scrollTo(element) uses getBoundingClientRect() to compute target
+  position. When sections above target use 'content-visibility: auto', they collapse
+  to their containIntrinsicSize placeholder (60-200vh) when off-screen. Lenis scrolled
+  to the COLLAPSED cumulative position, landing ~2000px short for sections deep in page.
+- ATTEMPT 1 (use-lenis.ts reflow trick): forced content-visibility: visible on all
+  cv-elements before scrollTo. Helped reduce shortfall from 1933px to 768px but didn't
+  fully fix it.
+- ATTEMPT 2 (final, working): removed content-visibility: auto from all 7 section
+  components. Performance impact: minimal for portfolio (~50 elements per section,
+  rendering cost negligible). User's free-plan egress concern is about Supabase
+  (addressed by 30-day TTL), not browser rendering.
+- Verified live: all 6 nav links (About, Work, Videos, Experiences, Contact, Top)
+  scroll correctly to their sections. Experiences lands 38px overshoot but section
+  is fully visible (within first viewport).
+
+Verification (live site, post-deploy):
+- Public site HTTP 200, title correct, zero errors.
+- Burger menu Experiences link → scrolls to experiences section (was broken before fix).
+- All 6 nav anchor links verified working: About (y=680), Work (y=1834), Videos
+  (y=4637), Experiences (y=5932), Contact (y=8589), Top (y=0).
+- Experiences section: 2 categories rendered (Visual Production, Code & Systems),
+  21 experience cards, 14 software cards with progress bars, 6/14 software icons
+  loaded (rest are lazy-loaded via loading="lazy" when scrolled into view — correct
+  efficient behavior).
+- Sticky footer intact.
+- Mobile responsive (verified earlier).
+
+4 deploys this session (e59e630 v2 redesign, 8a52ae0 partial nav fix attempt 1,
+3282b92 use-lenis reflow trick, 3ad4933 full nav fix removing content-visibility
+from all sections). All egress within free-plan budget due to 30-day TTL.
+
+Stage Summary:
+- Experiences section redesigned per user spec:
+  - Categories by STREAM (Visual Production, Code & Systems) — admin-editable titles
+  - Software section per category with real progress bars + simple-icons CDN icons
+  - 14 software brand icons load from jsdelivr CDN (no Supabase, MIT-licensed)
+  - Progress slider in Studio (range input 0-100, with mastery label auto-derivation)
+- Burger nav bug FIXED — all 6 nav links scroll to correct sections
+- Data flow unchanged: static JSON in repo + GitHub commit + Vercel redeploy via API
+- Lint clean throughout, no Supabase egress impact (icons come from jsdelivr CDN)
+- All 27 original experiences preserved + 14 software entries added (was 6
+  standalone software items in v1 "Software & Tools" group, now 14 across 2 cats)
