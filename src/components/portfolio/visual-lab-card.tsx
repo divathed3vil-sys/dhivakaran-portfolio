@@ -69,8 +69,8 @@ export function VisualLabCard({ onEnter }: { onEnter: () => void }) {
         cursor: 'pointer',
         // Phase 3 — skip paint/layout when offscreen + isolate layout/paint
         // when onscreen (the 12 blurred tile imgs are heavy without containment).
-        contentVisibility: 'auto',
-        containIntrinsicSize: 'auto 70vh',
+        // REMOVED: contentVisibility: 'auto', — caused Lenis anchor scroll bug (see use-lenis.ts)
+        // REMOVED: containIntrinsicSize — paired with contentVisibility above
         contain: 'layout paint',
       }}
     >

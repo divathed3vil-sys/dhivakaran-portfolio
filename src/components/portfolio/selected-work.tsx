@@ -115,8 +115,8 @@ export function SelectedWork() {
         paddingBlock: 'calc(80 * var(--px))',
         position: 'relative',
         overflow: 'hidden',
-        contentVisibility: 'auto',
-        containIntrinsicSize: 'auto 150vh',
+        // REMOVED: contentVisibility: 'auto', — caused Lenis anchor scroll bug (see use-lenis.ts)
+        // REMOVED: containIntrinsicSize — paired with contentVisibility above
       }}
     >
       <div className="canvas-max" style={{ position: 'relative' }}>

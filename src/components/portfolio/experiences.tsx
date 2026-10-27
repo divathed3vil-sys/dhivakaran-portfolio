@@ -142,8 +142,8 @@ export function Experiences() {
         paddingBlock: 'calc(80 * var(--px))',
         position: 'relative',
         overflow: 'hidden',
-        contentVisibility: 'auto',
-        containIntrinsicSize: 'auto 100vh',
+        // REMOVED: contentVisibility: 'auto', — caused Lenis anchor scroll bug (see use-lenis.ts)
+        // REMOVED: containIntrinsicSize — paired with contentVisibility above
       }}
     >
       <BokehField count={8} />

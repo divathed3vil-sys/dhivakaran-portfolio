@@ -85,8 +85,8 @@ export function VideoSection() {
         position: 'relative',
         overflow: 'hidden',
         // Phase 3 — skip paint/layout for offscreen content.
-        contentVisibility: 'auto',
-        containIntrinsicSize: 'auto 80vh',
+        // REMOVED: contentVisibility: 'auto', — caused Lenis anchor scroll bug (see use-lenis.ts)
+        // REMOVED: containIntrinsicSize — paired with contentVisibility above
       }}
     >
       <div className="canvas-max" style={{ position: 'relative' }}>

@@ -29,8 +29,8 @@ export function About() {
         // Phase 3 — skip paint/layout for offscreen content (brief §8.2).
         // contain-intrinsic-size matches the 200vh sticky-travel wrapper so the
         // scrollbar doesn't jump when the section comes into view.
-        contentVisibility: 'auto',
-        containIntrinsicSize: 'auto 200vh',
+        // REMOVED: contentVisibility: 'auto', — caused Lenis anchor scroll bug (see use-lenis.ts)
+        // REMOVED: containIntrinsicSize — paired with contentVisibility above
       }}
     >
       {/* sticky travel wrapper — 200vh. Paragraph pins while WaveText develops. */}

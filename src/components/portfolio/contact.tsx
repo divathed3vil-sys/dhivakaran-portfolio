@@ -93,8 +93,8 @@ export function Contact() {
         position: 'relative',
         overflow: 'hidden',
         // Phase 3 — skip paint/layout when offscreen.
-        contentVisibility: 'auto',
-        containIntrinsicSize: 'auto 80vh',
+        // REMOVED: contentVisibility: 'auto', — caused Lenis anchor scroll bug (see use-lenis.ts)
+        // REMOVED: containIntrinsicSize — paired with contentVisibility above
       }}
       aria-label="Contact — the final print"
     >

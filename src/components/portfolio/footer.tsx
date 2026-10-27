@@ -64,8 +64,8 @@ export function Footer() {
         clipPath: 'inset(5% 7% 100% 7%)',
         // Phase 3 — skip paint/layout when offscreen + isolate layout/paint
         // when onscreen (footer has heavy clip-path + wordmark + bokeh overlay).
-        contentVisibility: 'auto',
-        containIntrinsicSize: 'auto 60vh',
+        // REMOVED: contentVisibility: 'auto', — caused Lenis anchor scroll bug (see use-lenis.ts)
+        // REMOVED: containIntrinsicSize — paired with contentVisibility above
         contain: 'layout paint',
       }}
     >
