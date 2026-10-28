@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "updatedAt": "2026-10-27T07:30:00.000Z",
+  "updatedAt": "2026-10-28T03:42:25.344Z",
   "categories": [
     {
       "id": "cat-visual",
@@ -25,10 +25,15 @@
       "status": "2025 — 2026",
       "description": "Hand-composed film posters — typographic hierarchy, optical kerning, and analog-print finishing for theatrical and fan-art runs.",
       "icon": "Layout",
-      "tags": ["TYPOGRAPHY", "PRINT", "FILM"],
+      "tags": [
+        "TYPOGRAPHY",
+        "PRINT",
+        "FILM"
+      ],
       "featured": true,
       "published": true,
-      "order": 1
+      "order": 1,
+      "updatedAt": "2026-10-28T03:42:25.337Z"
     },
     {
       "id": "exp-002",
@@ -37,10 +42,15 @@
       "status": "2025 — Present",
       "description": "High-CTR thumbnail composition — color-counterpoint, facial-cue framing, and click-through optimization across 100+ video titles.",
       "icon": "Image",
-      "tags": ["CTR", "COLOR", "COMPOSITION"],
+      "tags": [
+        "CTR",
+        "COLOR",
+        "COMPOSITION"
+      ],
       "featured": false,
       "published": true,
-      "order": 2
+      "order": 2,
+      "updatedAt": "2026-10-28T03:42:25.344Z"
     },
     {
       "id": "exp-003",
@@ -49,10 +59,15 @@
       "status": "2024 — Present",
       "description": "Long-form narrative + short-form social cut editing — pacing-driven J/L cuts, multi-cam sync, and dialogue-first story assembly.",
       "icon": "Clapperboard",
-      "tags": ["PREMIERE", "PACING", "MULTICAM"],
+      "tags": [
+        "PREMIERE",
+        "PACING",
+        "MULTICAM"
+      ],
       "featured": false,
       "published": true,
-      "order": 3
+      "order": 3,
+      "updatedAt": "2026-10-28T03:42:25.344Z"
     },
     {
       "id": "exp-004",
@@ -61,10 +76,15 @@
       "status": "2024 — Present",
       "description": "Title sequences, lower-thirds, and brand-spring animations — shape-layer rigging and expression-driven physics.",
       "icon": "Sparkles",
-      "tags": ["AE", "EXPRESSIONS", "TITLES"],
+      "tags": [
+        "AE",
+        "EXPRESSIONS",
+        "TITLES"
+      ],
       "featured": false,
       "published": true,
-      "order": 4
+      "order": 4,
+      "updatedAt": "2026-10-28T03:42:25.344Z"
     },
     {
       "id": "exp-005",
@@ -73,10 +93,15 @@
       "status": "2024 — Present",
       "description": "Compositing, tracking, and rotoscope work — clean-plate reconstruction, planar tracking, and screen-replacement for short film.",
       "icon": "Wand2",
-      "tags": ["COMP", "TRACKING", "ROTO"],
+      "tags": [
+        "COMP",
+        "TRACKING",
+        "ROTO"
+      ],
       "featured": false,
       "published": true,
-      "order": 5
+      "order": 5,
+      "updatedAt": "2026-10-28T03:42:25.344Z"
     },
     {
       "id": "exp-006",
@@ -85,10 +110,15 @@
       "status": "2025 — Present",
       "description": "Cinematic look development in DaVinci Resolve — node-based primaries, qualifier-isolated secondaries, and film-emulation LUTs.",
       "icon": "Palette",
-      "tags": ["DAVINCI", "LUTS", "NODES"],
+      "tags": [
+        "DAVINCI",
+        "LUTS",
+        "NODES"
+      ],
       "featured": false,
       "published": true,
-      "order": 6
+      "order": 6,
+      "updatedAt": "2026-10-28T03:42:25.344Z"
     },
     {
       "id": "exp-007",
@@ -97,10 +127,15 @@
       "status": "2024 — Present",
       "description": "Composited photo illustrations — mask-stack blending, frequency-separation retouch, and creative-probability explorations.",
       "icon": "Brush",
-      "tags": ["MASKS", "FREQ SEP", "COMPOSITE"],
+      "tags": [
+        "MASKS",
+        "FREQ SEP",
+        "COMPOSITE"
+      ],
       "featured": false,
       "published": true,
-      "order": 7
+      "order": 7,
+      "updatedAt": "2026-10-28T03:42:25.344Z"
     },
     {
       "id": "exp-008",
@@ -109,10 +144,15 @@
       "status": "2024 — Present",
       "description": "Generative + hand-painted artwork — print-ready illustration, custom texture sets, and identity-driven visual systems.",
       "icon": "PenTool",
-      "tags": ["ILLUSTRATION", "PRINT", "IDENTITY"],
+      "tags": [
+        "ILLUSTRATION",
+        "PRINT",
+        "IDENTITY"
+      ],
       "featured": false,
       "published": true,
-      "order": 8
+      "order": 8,
+      "updatedAt": "2026-10-28T03:42:25.344Z"
     },
     {
       "id": "exp-009",
@@ -121,10 +161,15 @@
       "status": "2026 — Present",
       "description": "Foley generation, spatial audio mixing, and dialogue-driven score design for short-form narrative film.",
       "icon": "Mic",
-      "tags": ["FOLEY", "SPATIAL AUDIO", "MIX"],
+      "tags": [
+        "FOLEY",
+        "SPATIAL AUDIO",
+        "MIX"
+      ],
       "featured": true,
       "published": true,
-      "order": 9
+      "order": 9,
+      "updatedAt": "2026-10-28T03:42:25.344Z"
     },
     {
       "id": "exp-010",
@@ -133,10 +178,15 @@
       "status": "2024 — 2025",
       "description": "Performance-recorded foley — fabric, footstep, and prop sweetening layered against dialogue stems for short film sound design.",
       "icon": "Music",
-      "tags": ["FOLEY", "SWEETENING", "LAYER"],
+      "tags": [
+        "FOLEY",
+        "SWEETENING",
+        "LAYER"
+      ],
       "featured": false,
       "published": true,
-      "order": 10
+      "order": 10,
+      "updatedAt": "2026-10-28T03:42:25.344Z"
     },
     {
       "id": "exp-011",
@@ -145,12 +195,16 @@
       "status": "2022 — 2025",
       "description": "Frame-level composition theory — golden-ratio, leading lines, and negative-space discipline applied across all visual output.",
       "icon": "Frame",
-      "tags": ["COMPOSITION", "RATIO", "SPACE"],
+      "tags": [
+        "COMPOSITION",
+        "RATIO",
+        "SPACE"
+      ],
       "featured": false,
       "published": true,
-      "order": 11
+      "order": 11,
+      "updatedAt": "2026-10-28T03:42:25.344Z"
     },
-
     {
       "id": "exp-012",
       "title": "Flutter App Development",
@@ -158,10 +212,15 @@
       "status": "2026 — Present",
       "description": "Building reactive cross-platform mobile architecture with Supabase backend sync, custom Apple-style spring physics, and stream-based state management.",
       "icon": "Smartphone",
-      "tags": ["DART", "SUPABASE", "STATE MGMT"],
+      "tags": [
+        "DART",
+        "SUPABASE",
+        "STATE MGMT"
+      ],
       "featured": true,
       "published": true,
-      "order": 1
+      "order": 1,
+      "updatedAt": "2026-10-28T03:42:25.344Z"
     },
     {
       "id": "exp-013",
@@ -170,10 +229,15 @@
       "status": "2025 — Present",
       "description": "Pair-programming with LLMs on full-stack TypeScript, building agentic workflows that bridge design intent and shipped code.",
       "icon": "Brain",
-      "tags": ["LLM", "AGENTIC", "TYPESCRIPT"],
+      "tags": [
+        "LLM",
+        "AGENTIC",
+        "TYPESCRIPT"
+      ],
       "featured": false,
       "published": true,
-      "order": 2
+      "order": 2,
+      "updatedAt": "2026-10-28T03:42:25.344Z"
     },
     {
       "id": "exp-014",
@@ -182,10 +246,15 @@
       "status": "2025 — Present",
       "description": "Postgres + RLS + Storage + Edge Functions as a single declarative backend — auth-gated CRUD, server-side cache-control, and realtime subscriptions.",
       "icon": "Database",
-      "tags": ["POSTGRES", "RLS", "EDGE"],
+      "tags": [
+        "POSTGRES",
+        "RLS",
+        "EDGE"
+      ],
       "featured": false,
       "published": true,
-      "order": 3
+      "order": 3,
+      "updatedAt": "2026-10-28T03:42:25.344Z"
     },
     {
       "id": "exp-015",
@@ -194,10 +263,15 @@
       "status": "2023 — 2024",
       "description": "Foundational scripting — file automation, simple data parsing, and CLI utilities bridging design tooling.",
       "icon": "Code",
-      "tags": ["SCRIPT", "CLI", "AUTOMATION"],
+      "tags": [
+        "SCRIPT",
+        "CLI",
+        "AUTOMATION"
+      ],
       "featured": false,
       "published": true,
-      "order": 4
+      "order": 4,
+      "updatedAt": "2026-10-28T03:42:25.344Z"
     },
     {
       "id": "exp-016",
@@ -206,10 +280,15 @@
       "status": "2023 — 2024",
       "description": "Full-stack foundations — REST API design, simple auth flows, and component-driven UI architecture.",
       "icon": "AppWindow",
-      "tags": ["REST", "AUTH", "UI"],
+      "tags": [
+        "REST",
+        "AUTH",
+        "UI"
+      ],
       "featured": false,
       "published": true,
-      "order": 5
+      "order": 5,
+      "updatedAt": "2026-10-28T03:42:25.344Z"
     },
     {
       "id": "exp-017",
@@ -218,10 +297,15 @@
       "status": "2022 — 2025",
       "description": "Daily-driver Linux — package management, shell scripting, systemd, and dev-environment hardening across distros.",
       "icon": "Terminal",
-      "tags": ["SYSTEMD", "SHELL", "DISTRO"],
+      "tags": [
+        "SYSTEMD",
+        "SHELL",
+        "DISTRO"
+      ],
       "featured": false,
       "published": true,
-      "order": 6
+      "order": 6,
+      "updatedAt": "2026-10-28T03:42:25.344Z"
     },
     {
       "id": "exp-018",
@@ -230,10 +314,15 @@
       "status": "2022 — 2025",
       "description": "Component-level diagnosis — POST codes, voltage rail checks, and motherboard trace analysis for desktop repair.",
       "icon": "Cpu",
-      "tags": ["POST", "DIAGNOSIS", "REPAIR"],
+      "tags": [
+        "POST",
+        "DIAGNOSIS",
+        "REPAIR"
+      ],
       "featured": false,
       "published": true,
-      "order": 7
+      "order": 7,
+      "updatedAt": "2026-10-28T03:42:25.344Z"
     },
     {
       "id": "exp-019",
@@ -242,10 +331,15 @@
       "status": "2022 — 2025",
       "description": "Logic-level laptop repair — keyboard swaps, hinge alignment, thermal repaste, and battery-cell replacement.",
       "icon": "Wrench",
-      "tags": ["HARDWARE", "THERMAL", "REPLACE"],
+      "tags": [
+        "HARDWARE",
+        "THERMAL",
+        "REPLACE"
+      ],
       "featured": false,
       "published": true,
-      "order": 8
+      "order": 8,
+      "updatedAt": "2026-10-28T03:42:25.344Z"
     },
     {
       "id": "exp-020",
@@ -254,10 +348,15 @@
       "status": "2022 — 2025",
       "description": "Dual-boot setup, partition management, driver compatibility, and performance tuning across Windows + Linux.",
       "icon": "Settings",
-      "tags": ["DUAL-BOOT", "DRIVERS", "TUNE"],
+      "tags": [
+        "DUAL-BOOT",
+        "DRIVERS",
+        "TUNE"
+      ],
       "featured": false,
       "published": true,
-      "order": 9
+      "order": 9,
+      "updatedAt": "2026-10-28T03:42:25.344Z"
     },
     {
       "id": "exp-021",
@@ -266,10 +365,15 @@
       "status": "2022 — 2024",
       "description": "Android + iOS diagnosis — display swaps, battery service, recovery-mode flashing, and app-level diagnostics.",
       "icon": "SmartphoneCharging",
-      "tags": ["ANDROID", "IOS", "RECOVERY"],
+      "tags": [
+        "ANDROID",
+        "IOS",
+        "RECOVERY"
+      ],
       "featured": false,
       "published": true,
-      "order": 10
+      "order": 10,
+      "updatedAt": "2026-10-28T03:42:25.344Z"
     }
   ],
   "software": [
@@ -277,7 +381,7 @@
       "id": "sw-001",
       "name": "Adobe Photoshop",
       "slug": "adobephotoshop",
-      "progress": 92,
+      "progress": 89,
       "category_id": "cat-visual",
       "order": 1
     },
@@ -293,7 +397,7 @@
       "id": "sw-003",
       "name": "Adobe After Effects",
       "slug": "adobeaftereffects",
-      "progress": 78,
+      "progress": 75,
       "category_id": "cat-visual",
       "order": 3
     },
@@ -301,7 +405,7 @@
       "id": "sw-004",
       "name": "Adobe Illustrator",
       "slug": "adobeillustrator",
-      "progress": 82,
+      "progress": 70,
       "category_id": "cat-visual",
       "order": 4
     },
@@ -309,7 +413,7 @@
       "id": "sw-005",
       "name": "DaVinci Resolve",
       "slug": "davinciresolve",
-      "progress": 72,
+      "progress": 10,
       "category_id": "cat-visual",
       "order": 5
     },
@@ -317,11 +421,10 @@
       "id": "sw-006",
       "name": "Blender",
       "slug": "blender",
-      "progress": 58,
+      "progress": 5,
       "category_id": "cat-visual",
       "order": 6
     },
-
     {
       "id": "sw-007",
       "name": "Python",
