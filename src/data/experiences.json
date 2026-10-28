@@ -1,223 +1,53 @@
 {
   "version": 2,
-  "updatedAt": "2026-10-28T05:05:31.660Z",
+  "updatedAt": "2026-10-28T05:10:14.100Z",
   "categories": [
     {
-      "id": "cat-mvrlqvzd-b3qu",
-      "title": "Photo Manipulation & Image Composition",
-      "subtitle": "Image",
+      "id": "cat-visual",
+      "title": "Visual Production",
+      "subtitle": "Image editing, motion graphics, VFX, color grading, sound",
       "order": 1,
-      "icon": "Aperture"
-    },
-    {
-      "id": "cat-mvrlwz9o-gm7j",
-      "title": "Video Editing & VFX",
-      "subtitle": "Video",
-      "order": 2,
       "icon": "Aperture"
     },
     {
       "id": "cat-code",
       "title": "Code & Systems",
       "subtitle": "Programming, OS, hardware, infrastructure",
-      "order": 3,
+      "order": 2,
       "icon": "Terminal"
     },
     {
-      "id": "cat-visual",
-      "title": "Visual Production",
-      "subtitle": "Image editing, motion graphics, VFX, color grading, sound",
+      "id": "cat-mvrlqvzd-b3qu",
+      "title": "Photo Manipulation & Image Composition",
+      "subtitle": "Image",
+      "order": 3,
+      "icon": "Aperture"
+    },
+    {
+      "id": "cat-mvrlwz9o-gm7j",
+      "title": "Video Editing & VFX",
+      "subtitle": "Video",
       "order": 4,
       "icon": "Aperture"
     }
   ],
   "experiences": [
     {
-      "id": "exp-011",
-      "title": "Visual Composition (Image Manipulation)",
-      "category_id": "cat-mvrlqvzd-b3qu",
-      "status": "2022 — 2025",
-      "description": "Frame-level composition theory — golden-ratio, leading lines, and negative-space discipline applied across all visual output.",
-      "icon": "Frame",
-      "tags": [
-        "COMPOSITION",
-        "RATIO",
-        "SPACE"
-      ],
-      "featured": false,
-      "published": true,
-      "order": 1,
-      "updatedAt": "2026-10-28T05:05:31.660Z"
-    },
-    {
-      "id": "exp-007",
-      "title": "Image Manipulation",
-      "category_id": "cat-mvrlqvzd-b3qu",
-      "status": "2020 — Present",
-      "description": "Composited photo illustrations — mask-stack blending, frequency-separation retouch, and creative-probability explorations.",
-      "icon": "Brush",
-      "tags": [
-        "MASKS",
-        "FREQ SEP",
-        "COMPOSITE"
-      ],
-      "featured": false,
-      "published": true,
-      "order": 2,
-      "updatedAt": "2026-10-28T05:05:31.660Z"
-    },
-    {
-      "id": "exp-001",
-      "title": "Poster Design",
-      "category_id": "cat-mvrlqvzd-b3qu",
-      "status": "2021 — PRESENT",
-      "description": "Hand-composed film posters — typographic hierarchy, optical kerning, and analog-print finishing for theatrical and fan-art runs.",
-      "icon": "Layout",
-      "tags": [
-        "TYPOGRAPHY",
-        "PRINT",
-        "FILM"
-      ],
-      "featured": true,
-      "published": true,
-      "order": 3,
-      "updatedAt": "2026-10-28T05:05:31.660Z"
-    },
-    {
-      "id": "exp-002",
-      "title": "YouTube Thumbnail Design",
-      "category_id": "cat-mvrlqvzd-b3qu",
-      "status": "2021 — Present",
-      "description": "High-CTR thumbnail composition — color-counterpoint, facial-cue framing, and click-through optimization across 100+ video titles.",
-      "icon": "Image",
-      "tags": [
-        "CTR",
-        "COLOR",
-        "COMPOSITION"
-      ],
-      "featured": false,
-      "published": true,
-      "order": 4,
-      "updatedAt": "2026-10-28T05:05:31.660Z"
-    },
-    {
-      "id": "exp-003",
-      "title": "Video Editing",
-      "category_id": "cat-mvrlwz9o-gm7j",
-      "status": "2024 — Present",
-      "description": "Long-form narrative + short-form social cut editing — pacing-driven J/L cuts, multi-cam sync, and dialogue-first story assembly.",
-      "icon": "Clapperboard",
-      "tags": [
-        "PREMIERE",
-        "PACING",
-        "MULTICAM"
-      ],
-      "featured": false,
-      "published": true,
-      "order": 1,
-      "updatedAt": "2026-10-28T05:05:31.660Z"
-    },
-    {
-      "id": "exp-004",
-      "title": "Motion Graphics",
-      "category_id": "cat-mvrlwz9o-gm7j",
-      "status": "2022 — Present",
-      "description": "Title sequences, lower-thirds, and brand-spring animations — shape-layer rigging and expression-driven physics.",
-      "icon": "Sparkles",
-      "tags": [
-        "AE",
-        "EXPRESSIONS",
-        "TITLES"
-      ],
-      "featured": false,
-      "published": true,
-      "order": 2,
-      "updatedAt": "2026-10-28T05:05:31.660Z"
-    },
-    {
-      "id": "exp-005",
-      "title": "Visual Effects (VFX)",
-      "category_id": "cat-mvrlwz9o-gm7j",
-      "status": "2023 — Present",
-      "description": "Compositing, tracking, and rotoscope work — clean-plate reconstruction, planar tracking, and screen-replacement for short film.",
-      "icon": "Wand2",
-      "tags": [
-        "COMP",
-        "TRACKING",
-        "ROTO"
-      ],
-      "featured": false,
-      "published": true,
-      "order": 3,
-      "updatedAt": "2026-10-28T05:05:31.660Z"
-    },
-    {
-      "id": "exp-006",
-      "title": "Color Grading",
-      "category_id": "cat-mvrlwz9o-gm7j",
-      "status": "2022 — Present",
-      "description": "Cinematic look development in DaVinci Resolve — node-based primaries, qualifier-isolated secondaries, and film-emulation LUTs.",
-      "icon": "Palette",
-      "tags": [
-        "DAVINCI",
-        "LUTS",
-        "NODES"
-      ],
-      "featured": false,
-      "published": true,
-      "order": 4,
-      "updatedAt": "2026-10-28T05:05:31.660Z"
-    },
-    {
-      "id": "exp-009",
-      "title": "Sound Design & Foley",
-      "category_id": "cat-mvrlwz9o-gm7j",
-      "status": "2023 — Present",
-      "description": "Foley generation, spatial audio mixing, and dialogue-driven score design for short-form narrative film.",
-      "icon": "Mic",
-      "tags": [
-        "FOLEY",
-        "SPATIAL AUDIO",
-        "MIX"
-      ],
-      "featured": true,
-      "published": true,
-      "order": 5,
-      "updatedAt": "2026-10-28T05:05:31.660Z"
-    },
-    {
-      "id": "exp-mvrm472g-kyh3",
-      "title": "Visual Composition (Video Editing)",
-      "category_id": "cat-mvrlwz9o-gm7j",
-      "status": "2022 — Present",
-      "description": "Frame-level composition theory — golden-ratio, leading lines, and negative-space discipline applied across all visual output.",
-      "icon": "Layout",
-      "tags": [
-        "Rule of Thirds",
-        "Golden Ratio",
-        "etc"
-      ],
-      "featured": false,
-      "published": true,
-      "order": 6,
-      "updatedAt": "2026-10-28T05:05:31.660Z"
-    },
-    {
       "id": "exp-017",
       "title": "Linux Operating Systems",
       "category_id": "cat-code",
       "status": "2022 — 2025",
-      "description": "Daily-driver Linux — package management, shell scripting, systemd, and dev-environment hardening across distros.",
+      "description": "Hands-on experience installing, configuring, and troubleshooting a diverse range of Linux distributions, including Ubuntu, Kali Linux, Debian-based systems, EndeavourOS, CachyOS, Deepin, MX Linux, and Puppy Linux. Explored different desktop environments, package management systems, installation methods, and approaches to everyday system administration.",
       "icon": "Terminal",
       "tags": [
         "SYSTEMD",
         "SHELL",
-        "DISTRO"
+        "Distro Hoping"
       ],
       "featured": false,
       "published": true,
       "order": 1,
-      "updatedAt": "2026-10-28T05:05:31.660Z"
+      "updatedAt": "2026-10-28T05:10:14.100Z"
     },
     {
       "id": "exp-012",
@@ -234,7 +64,7 @@
       "featured": true,
       "published": true,
       "order": 2,
-      "updatedAt": "2026-10-28T05:05:31.660Z"
+      "updatedAt": "2026-10-28T05:10:14.100Z"
     },
     {
       "id": "exp-013",
@@ -251,7 +81,7 @@
       "featured": false,
       "published": true,
       "order": 3,
-      "updatedAt": "2026-10-28T05:05:31.660Z"
+      "updatedAt": "2026-10-28T05:10:14.100Z"
     },
     {
       "id": "exp-014",
@@ -268,24 +98,25 @@
       "featured": false,
       "published": true,
       "order": 4,
-      "updatedAt": "2026-10-28T05:05:31.660Z"
+      "updatedAt": "2026-10-28T05:10:14.100Z"
     },
     {
       "id": "exp-015",
       "title": "Basic Python Programming",
       "category_id": "cat-code",
-      "status": "2023 — 2024",
-      "description": "Foundational scripting — file automation, simple data parsing, and CLI utilities bridging design tooling.",
+      "status": "2022 — Learning",
+      "description": "Developed foundational Python programming skills through scripting and practical exercises, exploring variables, control flow, functions, data structures, file handling, and basic automation. Focused on understanding programming fundamentals and using code to solve small, practical problems.",
       "icon": "Code",
       "tags": [
-        "SCRIPT",
-        "CLI",
-        "AUTOMATION"
+        "Basics",
+        "Functions",
+        "Data Structure & types",
+        "Basic Automation"
       ],
       "featured": false,
       "published": true,
       "order": 5,
-      "updatedAt": "2026-10-28T05:05:31.660Z"
+      "updatedAt": "2026-10-28T05:10:14.100Z"
     },
     {
       "id": "exp-016",
@@ -302,7 +133,7 @@
       "featured": false,
       "published": true,
       "order": 6,
-      "updatedAt": "2026-10-28T05:05:31.660Z"
+      "updatedAt": "2026-10-28T05:10:14.100Z"
     },
     {
       "id": "exp-018",
@@ -319,7 +150,7 @@
       "featured": false,
       "published": true,
       "order": 7,
-      "updatedAt": "2026-10-28T05:05:31.660Z"
+      "updatedAt": "2026-10-28T05:10:14.100Z"
     },
     {
       "id": "exp-019",
@@ -336,7 +167,7 @@
       "featured": false,
       "published": true,
       "order": 8,
-      "updatedAt": "2026-10-28T05:05:31.660Z"
+      "updatedAt": "2026-10-28T05:10:14.100Z"
     },
     {
       "id": "exp-020",
@@ -353,7 +184,7 @@
       "featured": false,
       "published": true,
       "order": 9,
-      "updatedAt": "2026-10-28T05:05:31.660Z"
+      "updatedAt": "2026-10-28T05:10:14.100Z"
     },
     {
       "id": "exp-021",
@@ -370,10 +201,228 @@
       "featured": false,
       "published": true,
       "order": 10,
-      "updatedAt": "2026-10-28T05:05:31.660Z"
+      "updatedAt": "2026-10-28T05:10:14.100Z"
+    },
+    {
+      "id": "exp-011",
+      "title": "Visual Composition (Image Manipulation)",
+      "category_id": "cat-mvrlqvzd-b3qu",
+      "status": "2022 — 2025",
+      "description": "Frame-level composition theory — golden-ratio, leading lines, and negative-space discipline applied across all visual output.",
+      "icon": "Frame",
+      "tags": [
+        "COMPOSITION",
+        "RATIO",
+        "SPACE"
+      ],
+      "featured": false,
+      "published": true,
+      "order": 1,
+      "updatedAt": "2026-10-28T05:10:14.100Z"
+    },
+    {
+      "id": "exp-007",
+      "title": "Image Manipulation",
+      "category_id": "cat-mvrlqvzd-b3qu",
+      "status": "2020 — Present",
+      "description": "Composited photo illustrations — mask-stack blending, frequency-separation retouch, and creative-probability explorations.",
+      "icon": "Brush",
+      "tags": [
+        "MASKS",
+        "FREQ SEP",
+        "COMPOSITE"
+      ],
+      "featured": false,
+      "published": true,
+      "order": 2,
+      "updatedAt": "2026-10-28T05:10:14.100Z"
+    },
+    {
+      "id": "exp-001",
+      "title": "Poster Design",
+      "category_id": "cat-mvrlqvzd-b3qu",
+      "status": "2021 — PRESENT",
+      "description": "Hand-composed film posters — typographic hierarchy, optical kerning, and analog-print finishing for theatrical and fan-art runs.",
+      "icon": "Layout",
+      "tags": [
+        "TYPOGRAPHY",
+        "PRINT",
+        "FILM"
+      ],
+      "featured": true,
+      "published": true,
+      "order": 3,
+      "updatedAt": "2026-10-28T05:10:14.100Z"
+    },
+    {
+      "id": "exp-002",
+      "title": "YouTube Thumbnail Design",
+      "category_id": "cat-mvrlqvzd-b3qu",
+      "status": "2021 — Present",
+      "description": "High-CTR thumbnail composition — color-counterpoint, facial-cue framing, and click-through optimization across 100+ video titles.",
+      "icon": "Image",
+      "tags": [
+        "CTR",
+        "COLOR",
+        "COMPOSITION"
+      ],
+      "featured": false,
+      "published": true,
+      "order": 4,
+      "updatedAt": "2026-10-28T05:10:14.100Z"
+    },
+    {
+      "id": "exp-003",
+      "title": "Video Editing",
+      "category_id": "cat-mvrlwz9o-gm7j",
+      "status": "2024 — Present",
+      "description": "Long-form narrative + short-form social cut editing — pacing-driven J/L cuts, multi-cam sync, and dialogue-first story assembly.",
+      "icon": "Clapperboard",
+      "tags": [
+        "PREMIERE",
+        "PACING",
+        "MULTICAM"
+      ],
+      "featured": false,
+      "published": true,
+      "order": 1,
+      "updatedAt": "2026-10-28T05:10:14.100Z"
+    },
+    {
+      "id": "exp-004",
+      "title": "Motion Graphics",
+      "category_id": "cat-mvrlwz9o-gm7j",
+      "status": "2022 — Present",
+      "description": "Title sequences, lower-thirds, and brand-spring animations — shape-layer rigging and expression-driven physics.",
+      "icon": "Sparkles",
+      "tags": [
+        "AE",
+        "EXPRESSIONS",
+        "TITLES"
+      ],
+      "featured": false,
+      "published": true,
+      "order": 2,
+      "updatedAt": "2026-10-28T05:10:14.100Z"
+    },
+    {
+      "id": "exp-005",
+      "title": "Visual Effects (VFX)",
+      "category_id": "cat-mvrlwz9o-gm7j",
+      "status": "2023 — Present",
+      "description": "Compositing, tracking, and rotoscope work — clean-plate reconstruction, planar tracking, and screen-replacement for short film.",
+      "icon": "Wand2",
+      "tags": [
+        "COMP",
+        "TRACKING",
+        "ROTO"
+      ],
+      "featured": false,
+      "published": true,
+      "order": 3,
+      "updatedAt": "2026-10-28T05:10:14.100Z"
+    },
+    {
+      "id": "exp-006",
+      "title": "Color Grading",
+      "category_id": "cat-mvrlwz9o-gm7j",
+      "status": "2022 — Present",
+      "description": "Cinematic look development in DaVinci Resolve — node-based primaries, qualifier-isolated secondaries, and film-emulation LUTs.",
+      "icon": "Palette",
+      "tags": [
+        "DAVINCI",
+        "LUTS",
+        "NODES"
+      ],
+      "featured": false,
+      "published": true,
+      "order": 4,
+      "updatedAt": "2026-10-28T05:10:14.100Z"
+    },
+    {
+      "id": "exp-009",
+      "title": "Sound Design & Foley",
+      "category_id": "cat-mvrlwz9o-gm7j",
+      "status": "2023 — Present",
+      "description": "Foley generation, spatial audio mixing, and dialogue-driven score design for short-form narrative film.",
+      "icon": "Mic",
+      "tags": [
+        "FOLEY",
+        "SPATIAL AUDIO",
+        "MIX"
+      ],
+      "featured": true,
+      "published": true,
+      "order": 5,
+      "updatedAt": "2026-10-28T05:10:14.100Z"
+    },
+    {
+      "id": "exp-mvrm472g-kyh3",
+      "title": "Visual Composition (Video Editing)",
+      "category_id": "cat-mvrlwz9o-gm7j",
+      "status": "2022 — Present",
+      "description": "Frame-level composition theory — golden-ratio, leading lines, and negative-space discipline applied across all visual output.",
+      "icon": "Layout",
+      "tags": [
+        "Rule of Thirds",
+        "Golden Ratio",
+        "etc"
+      ],
+      "featured": false,
+      "published": true,
+      "order": 6,
+      "updatedAt": "2026-10-28T05:10:14.100Z"
     }
   ],
   "software": [
+    {
+      "id": "sw-013",
+      "name": "Linux",
+      "slug": "linux",
+      "progress": 78,
+      "category_id": "cat-code",
+      "order": 1
+    },
+    {
+      "id": "sw-012",
+      "name": "GitHub",
+      "slug": "github",
+      "progress": 65,
+      "category_id": "cat-code",
+      "order": 2
+    },
+    {
+      "id": "sw-014",
+      "name": "VS Code",
+      "slug": "visualstudiocode",
+      "progress": 85,
+      "category_id": "cat-code",
+      "order": 3
+    },
+    {
+      "id": "sw-007",
+      "name": "Python",
+      "slug": "python",
+      "progress": 25,
+      "category_id": "cat-code",
+      "order": 4
+    },
+    {
+      "id": "sw-010",
+      "name": "Flutter",
+      "slug": "flutter",
+      "progress": 25,
+      "category_id": "cat-code",
+      "order": 5
+    },
+    {
+      "id": "sw-011",
+      "name": "Supabase",
+      "slug": "supabase",
+      "progress": 50,
+      "category_id": "cat-code",
+      "order": 6
+    },
     {
       "id": "sw-001",
       "name": "Adobe Photoshop",
@@ -391,59 +440,11 @@
       "order": 2
     },
     {
-      "id": "sw-013",
-      "name": "Linux",
-      "slug": "linux",
-      "progress": 78,
-      "category_id": "cat-code",
-      "order": 1
-    },
-    {
-      "id": "sw-007",
-      "name": "Python",
-      "slug": "python",
-      "progress": 25,
-      "category_id": "cat-code",
-      "order": 2
-    },
-    {
-      "id": "sw-010",
-      "name": "Flutter",
-      "slug": "flutter",
-      "progress": 25,
-      "category_id": "cat-code",
-      "order": 3
-    },
-    {
-      "id": "sw-011",
-      "name": "Supabase",
-      "slug": "supabase",
-      "progress": 50,
-      "category_id": "cat-code",
-      "order": 4
-    },
-    {
-      "id": "sw-012",
-      "name": "GitHub",
-      "slug": "github",
-      "progress": 65,
-      "category_id": "cat-code",
-      "order": 5
-    },
-    {
-      "id": "sw-014",
-      "name": "VS Code",
-      "slug": "visualstudiocode",
-      "progress": 85,
-      "category_id": "cat-code",
-      "order": 6
-    },
-    {
       "id": "sw-002",
       "name": "Adobe Premiere Pro",
       "slug": "adobepremierepro",
       "progress": 88,
-      "category_id": "cat-visual",
+      "category_id": "cat-mvrlwz9o-gm7j",
       "order": 1
     },
     {
@@ -451,7 +452,7 @@
       "name": "Adobe After Effects",
       "slug": "adobeaftereffects",
       "progress": 75,
-      "category_id": "cat-visual",
+      "category_id": "cat-mvrlwz9o-gm7j",
       "order": 2
     },
     {
@@ -459,7 +460,7 @@
       "name": "DaVinci Resolve",
       "slug": "davinciresolve",
       "progress": 10,
-      "category_id": "cat-visual",
+      "category_id": "cat-mvrlwz9o-gm7j",
       "order": 3
     },
     {
@@ -467,7 +468,7 @@
       "name": "Blender",
       "slug": "blender",
       "progress": 5,
-      "category_id": "cat-visual",
+      "category_id": "cat-mvrlwz9o-gm7j",
       "order": 4
     }
   ]
