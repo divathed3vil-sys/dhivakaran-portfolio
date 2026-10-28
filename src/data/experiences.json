@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "updatedAt": "2026-10-28T03:42:25.344Z",
+  "updatedAt": "2026-10-28T03:46:25.696Z",
   "categories": [
     {
       "id": "cat-visual",
@@ -19,112 +19,10 @@
   ],
   "experiences": [
     {
-      "id": "exp-001",
-      "title": "Poster Design",
-      "category_id": "cat-visual",
-      "status": "2025 — 2026",
-      "description": "Hand-composed film posters — typographic hierarchy, optical kerning, and analog-print finishing for theatrical and fan-art runs.",
-      "icon": "Layout",
-      "tags": [
-        "TYPOGRAPHY",
-        "PRINT",
-        "FILM"
-      ],
-      "featured": true,
-      "published": true,
-      "order": 1,
-      "updatedAt": "2026-10-28T03:42:25.337Z"
-    },
-    {
-      "id": "exp-002",
-      "title": "YouTube Thumbnail Design",
-      "category_id": "cat-visual",
-      "status": "2025 — Present",
-      "description": "High-CTR thumbnail composition — color-counterpoint, facial-cue framing, and click-through optimization across 100+ video titles.",
-      "icon": "Image",
-      "tags": [
-        "CTR",
-        "COLOR",
-        "COMPOSITION"
-      ],
-      "featured": false,
-      "published": true,
-      "order": 2,
-      "updatedAt": "2026-10-28T03:42:25.344Z"
-    },
-    {
-      "id": "exp-003",
-      "title": "Video Editing",
-      "category_id": "cat-visual",
-      "status": "2024 — Present",
-      "description": "Long-form narrative + short-form social cut editing — pacing-driven J/L cuts, multi-cam sync, and dialogue-first story assembly.",
-      "icon": "Clapperboard",
-      "tags": [
-        "PREMIERE",
-        "PACING",
-        "MULTICAM"
-      ],
-      "featured": false,
-      "published": true,
-      "order": 3,
-      "updatedAt": "2026-10-28T03:42:25.344Z"
-    },
-    {
-      "id": "exp-004",
-      "title": "Motion Graphics",
-      "category_id": "cat-visual",
-      "status": "2024 — Present",
-      "description": "Title sequences, lower-thirds, and brand-spring animations — shape-layer rigging and expression-driven physics.",
-      "icon": "Sparkles",
-      "tags": [
-        "AE",
-        "EXPRESSIONS",
-        "TITLES"
-      ],
-      "featured": false,
-      "published": true,
-      "order": 4,
-      "updatedAt": "2026-10-28T03:42:25.344Z"
-    },
-    {
-      "id": "exp-005",
-      "title": "Visual Effects (VFX)",
-      "category_id": "cat-visual",
-      "status": "2024 — Present",
-      "description": "Compositing, tracking, and rotoscope work — clean-plate reconstruction, planar tracking, and screen-replacement for short film.",
-      "icon": "Wand2",
-      "tags": [
-        "COMP",
-        "TRACKING",
-        "ROTO"
-      ],
-      "featured": false,
-      "published": true,
-      "order": 5,
-      "updatedAt": "2026-10-28T03:42:25.344Z"
-    },
-    {
-      "id": "exp-006",
-      "title": "Color Grading",
-      "category_id": "cat-visual",
-      "status": "2025 — Present",
-      "description": "Cinematic look development in DaVinci Resolve — node-based primaries, qualifier-isolated secondaries, and film-emulation LUTs.",
-      "icon": "Palette",
-      "tags": [
-        "DAVINCI",
-        "LUTS",
-        "NODES"
-      ],
-      "featured": false,
-      "published": true,
-      "order": 6,
-      "updatedAt": "2026-10-28T03:42:25.344Z"
-    },
-    {
       "id": "exp-007",
       "title": "Image Manipulation",
       "category_id": "cat-visual",
-      "status": "2024 — Present",
+      "status": "2020 — Present",
       "description": "Composited photo illustrations — mask-stack blending, frequency-separation retouch, and creative-probability explorations.",
       "icon": "Brush",
       "tags": [
@@ -134,59 +32,42 @@
       ],
       "featured": false,
       "published": true,
-      "order": 7,
-      "updatedAt": "2026-10-28T03:42:25.344Z"
+      "order": 1,
+      "updatedAt": "2026-10-28T03:46:25.696Z"
     },
     {
-      "id": "exp-008",
-      "title": "Digital Artwork & Creative Design",
+      "id": "exp-001",
+      "title": "Poster Design",
       "category_id": "cat-visual",
-      "status": "2024 — Present",
-      "description": "Generative + hand-painted artwork — print-ready illustration, custom texture sets, and identity-driven visual systems.",
-      "icon": "PenTool",
+      "status": "2021 — PRESENT",
+      "description": "Hand-composed film posters — typographic hierarchy, optical kerning, and analog-print finishing for theatrical and fan-art runs.",
+      "icon": "Layout",
       "tags": [
-        "ILLUSTRATION",
+        "TYPOGRAPHY",
         "PRINT",
-        "IDENTITY"
-      ],
-      "featured": false,
-      "published": true,
-      "order": 8,
-      "updatedAt": "2026-10-28T03:42:25.344Z"
-    },
-    {
-      "id": "exp-009",
-      "title": "Sound Design for Film",
-      "category_id": "cat-visual",
-      "status": "2026 — Present",
-      "description": "Foley generation, spatial audio mixing, and dialogue-driven score design for short-form narrative film.",
-      "icon": "Mic",
-      "tags": [
-        "FOLEY",
-        "SPATIAL AUDIO",
-        "MIX"
+        "FILM"
       ],
       "featured": true,
       "published": true,
-      "order": 9,
-      "updatedAt": "2026-10-28T03:42:25.344Z"
+      "order": 2,
+      "updatedAt": "2026-10-28T03:46:25.696Z"
     },
     {
-      "id": "exp-010",
-      "title": "Foley Art",
+      "id": "exp-002",
+      "title": "YouTube Thumbnail Design",
       "category_id": "cat-visual",
-      "status": "2024 — 2025",
-      "description": "Performance-recorded foley — fabric, footstep, and prop sweetening layered against dialogue stems for short film sound design.",
-      "icon": "Music",
+      "status": "2021 — Present",
+      "description": "High-CTR thumbnail composition — color-counterpoint, facial-cue framing, and click-through optimization across 100+ video titles.",
+      "icon": "Image",
       "tags": [
-        "FOLEY",
-        "SWEETENING",
-        "LAYER"
+        "CTR",
+        "COLOR",
+        "COMPOSITION"
       ],
       "featured": false,
       "published": true,
-      "order": 10,
-      "updatedAt": "2026-10-28T03:42:25.344Z"
+      "order": 3,
+      "updatedAt": "2026-10-28T03:46:25.696Z"
     },
     {
       "id": "exp-011",
@@ -202,8 +83,110 @@
       ],
       "featured": false,
       "published": true,
-      "order": 11,
-      "updatedAt": "2026-10-28T03:42:25.344Z"
+      "order": 4,
+      "updatedAt": "2026-10-28T03:46:25.696Z"
+    },
+    {
+      "id": "exp-003",
+      "title": "Video Editing",
+      "category_id": "cat-visual",
+      "status": "2024 — Present",
+      "description": "Long-form narrative + short-form social cut editing — pacing-driven J/L cuts, multi-cam sync, and dialogue-first story assembly.",
+      "icon": "Clapperboard",
+      "tags": [
+        "PREMIERE",
+        "PACING",
+        "MULTICAM"
+      ],
+      "featured": false,
+      "published": true,
+      "order": 5,
+      "updatedAt": "2026-10-28T03:46:25.696Z"
+    },
+    {
+      "id": "exp-004",
+      "title": "Motion Graphics",
+      "category_id": "cat-visual",
+      "status": "2022 — Present",
+      "description": "Title sequences, lower-thirds, and brand-spring animations — shape-layer rigging and expression-driven physics.",
+      "icon": "Sparkles",
+      "tags": [
+        "AE",
+        "EXPRESSIONS",
+        "TITLES"
+      ],
+      "featured": false,
+      "published": true,
+      "order": 6,
+      "updatedAt": "2026-10-28T03:46:25.696Z"
+    },
+    {
+      "id": "exp-005",
+      "title": "Visual Effects (VFX)",
+      "category_id": "cat-visual",
+      "status": "2023 — Present",
+      "description": "Compositing, tracking, and rotoscope work — clean-plate reconstruction, planar tracking, and screen-replacement for short film.",
+      "icon": "Wand2",
+      "tags": [
+        "COMP",
+        "TRACKING",
+        "ROTO"
+      ],
+      "featured": false,
+      "published": true,
+      "order": 7,
+      "updatedAt": "2026-10-28T03:46:25.696Z"
+    },
+    {
+      "id": "exp-006",
+      "title": "Color Grading",
+      "category_id": "cat-visual",
+      "status": "2022 — Present",
+      "description": "Cinematic look development in DaVinci Resolve — node-based primaries, qualifier-isolated secondaries, and film-emulation LUTs.",
+      "icon": "Palette",
+      "tags": [
+        "DAVINCI",
+        "LUTS",
+        "NODES"
+      ],
+      "featured": false,
+      "published": true,
+      "order": 8,
+      "updatedAt": "2026-10-28T03:46:25.696Z"
+    },
+    {
+      "id": "exp-009",
+      "title": "Sound Design for Film",
+      "category_id": "cat-visual",
+      "status": "2023 — Present",
+      "description": "Foley generation, spatial audio mixing, and dialogue-driven score design for short-form narrative film.",
+      "icon": "Mic",
+      "tags": [
+        "FOLEY",
+        "SPATIAL AUDIO",
+        "MIX"
+      ],
+      "featured": true,
+      "published": true,
+      "order": 9,
+      "updatedAt": "2026-10-28T03:46:25.696Z"
+    },
+    {
+      "id": "exp-010",
+      "title": "Foley Art",
+      "category_id": "cat-visual",
+      "status": "2023 — 2025",
+      "description": "Performance-recorded foley — fabric, footstep, and prop sweetening layered against dialogue stems for short film sound design.",
+      "icon": "Music",
+      "tags": [
+        "FOLEY",
+        "SWEETENING",
+        "LAYER"
+      ],
+      "featured": false,
+      "published": true,
+      "order": 10,
+      "updatedAt": "2026-10-28T03:46:25.696Z"
     },
     {
       "id": "exp-012",
@@ -220,7 +203,7 @@
       "featured": true,
       "published": true,
       "order": 1,
-      "updatedAt": "2026-10-28T03:42:25.344Z"
+      "updatedAt": "2026-10-28T03:46:25.696Z"
     },
     {
       "id": "exp-013",
@@ -237,7 +220,7 @@
       "featured": false,
       "published": true,
       "order": 2,
-      "updatedAt": "2026-10-28T03:42:25.344Z"
+      "updatedAt": "2026-10-28T03:46:25.696Z"
     },
     {
       "id": "exp-014",
@@ -254,7 +237,7 @@
       "featured": false,
       "published": true,
       "order": 3,
-      "updatedAt": "2026-10-28T03:42:25.344Z"
+      "updatedAt": "2026-10-28T03:46:25.696Z"
     },
     {
       "id": "exp-015",
@@ -271,7 +254,7 @@
       "featured": false,
       "published": true,
       "order": 4,
-      "updatedAt": "2026-10-28T03:42:25.344Z"
+      "updatedAt": "2026-10-28T03:46:25.696Z"
     },
     {
       "id": "exp-016",
@@ -288,7 +271,7 @@
       "featured": false,
       "published": true,
       "order": 5,
-      "updatedAt": "2026-10-28T03:42:25.344Z"
+      "updatedAt": "2026-10-28T03:46:25.696Z"
     },
     {
       "id": "exp-017",
@@ -305,7 +288,7 @@
       "featured": false,
       "published": true,
       "order": 6,
-      "updatedAt": "2026-10-28T03:42:25.344Z"
+      "updatedAt": "2026-10-28T03:46:25.696Z"
     },
     {
       "id": "exp-018",
@@ -322,7 +305,7 @@
       "featured": false,
       "published": true,
       "order": 7,
-      "updatedAt": "2026-10-28T03:42:25.344Z"
+      "updatedAt": "2026-10-28T03:46:25.696Z"
     },
     {
       "id": "exp-019",
@@ -339,7 +322,7 @@
       "featured": false,
       "published": true,
       "order": 8,
-      "updatedAt": "2026-10-28T03:42:25.344Z"
+      "updatedAt": "2026-10-28T03:46:25.696Z"
     },
     {
       "id": "exp-020",
@@ -356,7 +339,7 @@
       "featured": false,
       "published": true,
       "order": 9,
-      "updatedAt": "2026-10-28T03:42:25.344Z"
+      "updatedAt": "2026-10-28T03:46:25.696Z"
     },
     {
       "id": "exp-021",
@@ -373,7 +356,7 @@
       "featured": false,
       "published": true,
       "order": 10,
-      "updatedAt": "2026-10-28T03:42:25.344Z"
+      "updatedAt": "2026-10-28T03:46:25.696Z"
     }
   ],
   "software": [
