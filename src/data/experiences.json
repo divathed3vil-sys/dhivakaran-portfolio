@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "updatedAt": "2026-10-28T03:50:00.537Z",
+  "updatedAt": "2026-10-28T04:05:55.135Z",
   "categories": [
     {
       "id": "cat-visual",
@@ -33,7 +33,7 @@
       "featured": false,
       "published": true,
       "order": 1,
-      "updatedAt": "2026-10-28T03:50:00.537Z"
+      "updatedAt": "2026-10-28T04:05:55.135Z"
     },
     {
       "id": "exp-001",
@@ -50,7 +50,7 @@
       "featured": true,
       "published": true,
       "order": 2,
-      "updatedAt": "2026-10-28T03:50:00.537Z"
+      "updatedAt": "2026-10-28T04:05:55.135Z"
     },
     {
       "id": "exp-002",
@@ -67,7 +67,7 @@
       "featured": false,
       "published": true,
       "order": 3,
-      "updatedAt": "2026-10-28T03:50:00.537Z"
+      "updatedAt": "2026-10-28T04:05:55.135Z"
     },
     {
       "id": "exp-011",
@@ -84,7 +84,7 @@
       "featured": false,
       "published": true,
       "order": 4,
-      "updatedAt": "2026-10-28T03:50:00.537Z"
+      "updatedAt": "2026-10-28T04:05:55.135Z"
     },
     {
       "id": "exp-003",
@@ -101,7 +101,7 @@
       "featured": false,
       "published": true,
       "order": 5,
-      "updatedAt": "2026-10-28T03:50:00.537Z"
+      "updatedAt": "2026-10-28T04:05:55.135Z"
     },
     {
       "id": "exp-004",
@@ -118,7 +118,7 @@
       "featured": false,
       "published": true,
       "order": 6,
-      "updatedAt": "2026-10-28T03:50:00.537Z"
+      "updatedAt": "2026-10-28T04:05:55.135Z"
     },
     {
       "id": "exp-005",
@@ -135,7 +135,7 @@
       "featured": false,
       "published": true,
       "order": 7,
-      "updatedAt": "2026-10-28T03:50:00.537Z"
+      "updatedAt": "2026-10-28T04:05:55.135Z"
     },
     {
       "id": "exp-006",
@@ -152,7 +152,7 @@
       "featured": false,
       "published": true,
       "order": 8,
-      "updatedAt": "2026-10-28T03:50:00.537Z"
+      "updatedAt": "2026-10-28T04:05:55.135Z"
     },
     {
       "id": "exp-009",
@@ -169,7 +169,7 @@
       "featured": true,
       "published": true,
       "order": 9,
-      "updatedAt": "2026-10-28T03:50:00.537Z"
+      "updatedAt": "2026-10-28T04:05:55.135Z"
     },
     {
       "id": "exp-010",
@@ -186,92 +186,7 @@
       "featured": false,
       "published": true,
       "order": 10,
-      "updatedAt": "2026-10-28T03:50:00.537Z"
-    },
-    {
-      "id": "exp-012",
-      "title": "Flutter App Development",
-      "category_id": "cat-code",
-      "status": "2026 — Present",
-      "description": "Building reactive cross-platform mobile architecture with Supabase backend sync, custom Apple-style spring physics, and stream-based state management.",
-      "icon": "Smartphone",
-      "tags": [
-        "DART",
-        "SUPABASE",
-        "STATE MGMT"
-      ],
-      "featured": true,
-      "published": true,
-      "order": 1,
-      "updatedAt": "2026-10-28T03:50:00.537Z"
-    },
-    {
-      "id": "exp-013",
-      "title": "AI-Assisted Coding",
-      "category_id": "cat-code",
-      "status": "2025 — Present",
-      "description": "Pair-programming with LLMs on full-stack TypeScript, building agentic workflows that bridge design intent and shipped code.",
-      "icon": "Brain",
-      "tags": [
-        "LLM",
-        "AGENTIC",
-        "TYPESCRIPT"
-      ],
-      "featured": false,
-      "published": true,
-      "order": 2,
-      "updatedAt": "2026-10-28T03:50:00.537Z"
-    },
-    {
-      "id": "exp-014",
-      "title": "Backend Integration with Supabase",
-      "category_id": "cat-code",
-      "status": "2025 — Present",
-      "description": "Postgres + RLS + Storage + Edge Functions as a single declarative backend — auth-gated CRUD, server-side cache-control, and realtime subscriptions.",
-      "icon": "Database",
-      "tags": [
-        "POSTGRES",
-        "RLS",
-        "EDGE"
-      ],
-      "featured": false,
-      "published": true,
-      "order": 3,
-      "updatedAt": "2026-10-28T03:50:00.537Z"
-    },
-    {
-      "id": "exp-015",
-      "title": "Basic Python Programming",
-      "category_id": "cat-code",
-      "status": "2023 — 2024",
-      "description": "Foundational scripting — file automation, simple data parsing, and CLI utilities bridging design tooling.",
-      "icon": "Code",
-      "tags": [
-        "SCRIPT",
-        "CLI",
-        "AUTOMATION"
-      ],
-      "featured": false,
-      "published": true,
-      "order": 4,
-      "updatedAt": "2026-10-28T03:50:00.537Z"
-    },
-    {
-      "id": "exp-016",
-      "title": "Basic Application Development",
-      "category_id": "cat-code",
-      "status": "2023 — 2024",
-      "description": "Full-stack foundations — REST API design, simple auth flows, and component-driven UI architecture.",
-      "icon": "AppWindow",
-      "tags": [
-        "REST",
-        "AUTH",
-        "UI"
-      ],
-      "featured": false,
-      "published": true,
-      "order": 5,
-      "updatedAt": "2026-10-28T03:50:00.537Z"
+      "updatedAt": "2026-10-28T04:05:55.135Z"
     },
     {
       "id": "exp-017",
@@ -287,8 +202,93 @@
       ],
       "featured": false,
       "published": true,
+      "order": 1,
+      "updatedAt": "2026-10-28T04:05:55.135Z"
+    },
+    {
+      "id": "exp-012",
+      "title": "Flutter App Development",
+      "category_id": "cat-code",
+      "status": "2026 — Present",
+      "description": "Building reactive cross-platform mobile architecture with Supabase backend sync, custom Apple-style spring physics, and stream-based state management.",
+      "icon": "Smartphone",
+      "tags": [
+        "DART",
+        "SUPABASE",
+        "STATE MGMT"
+      ],
+      "featured": true,
+      "published": true,
+      "order": 2,
+      "updatedAt": "2026-10-28T04:05:55.135Z"
+    },
+    {
+      "id": "exp-013",
+      "title": "AI-Assisted Coding",
+      "category_id": "cat-code",
+      "status": "2025 — Present",
+      "description": "Pair-programming with LLMs on full-stack TypeScript, building agentic workflows that bridge design intent and shipped code.",
+      "icon": "Brain",
+      "tags": [
+        "LLM",
+        "AGENTIC",
+        "TYPESCRIPT"
+      ],
+      "featured": false,
+      "published": true,
+      "order": 3,
+      "updatedAt": "2026-10-28T04:05:55.135Z"
+    },
+    {
+      "id": "exp-014",
+      "title": "Backend Integration with Supabase",
+      "category_id": "cat-code",
+      "status": "2025 — Present",
+      "description": "Postgres + RLS + Storage + Edge Functions as a single declarative backend — auth-gated CRUD, server-side cache-control, and realtime subscriptions.",
+      "icon": "Database",
+      "tags": [
+        "POSTGRES",
+        "RLS",
+        "EDGE"
+      ],
+      "featured": false,
+      "published": true,
+      "order": 4,
+      "updatedAt": "2026-10-28T04:05:55.135Z"
+    },
+    {
+      "id": "exp-015",
+      "title": "Basic Python Programming",
+      "category_id": "cat-code",
+      "status": "2023 — 2024",
+      "description": "Foundational scripting — file automation, simple data parsing, and CLI utilities bridging design tooling.",
+      "icon": "Code",
+      "tags": [
+        "SCRIPT",
+        "CLI",
+        "AUTOMATION"
+      ],
+      "featured": false,
+      "published": true,
+      "order": 5,
+      "updatedAt": "2026-10-28T04:05:55.135Z"
+    },
+    {
+      "id": "exp-016",
+      "title": "Basic Application Development",
+      "category_id": "cat-code",
+      "status": "2023 — 2024",
+      "description": "Full-stack foundations — REST API design, simple auth flows, and component-driven UI architecture.",
+      "icon": "AppWindow",
+      "tags": [
+        "REST",
+        "AUTH",
+        "UI"
+      ],
+      "featured": false,
+      "published": true,
       "order": 6,
-      "updatedAt": "2026-10-28T03:50:00.537Z"
+      "updatedAt": "2026-10-28T04:05:55.135Z"
     },
     {
       "id": "exp-018",
@@ -305,7 +305,7 @@
       "featured": false,
       "published": true,
       "order": 7,
-      "updatedAt": "2026-10-28T03:50:00.537Z"
+      "updatedAt": "2026-10-28T04:05:55.135Z"
     },
     {
       "id": "exp-019",
@@ -322,7 +322,7 @@
       "featured": false,
       "published": true,
       "order": 8,
-      "updatedAt": "2026-10-28T03:50:00.537Z"
+      "updatedAt": "2026-10-28T04:05:55.135Z"
     },
     {
       "id": "exp-020",
@@ -339,7 +339,7 @@
       "featured": false,
       "published": true,
       "order": 9,
-      "updatedAt": "2026-10-28T03:50:00.537Z"
+      "updatedAt": "2026-10-28T04:05:55.135Z"
     },
     {
       "id": "exp-021",
@@ -356,7 +356,7 @@
       "featured": false,
       "published": true,
       "order": 10,
-      "updatedAt": "2026-10-28T03:50:00.537Z"
+      "updatedAt": "2026-10-28T04:05:55.135Z"
     }
   ],
   "software": [
@@ -409,12 +409,36 @@
       "order": 6
     },
     {
+      "id": "sw-013",
+      "name": "Linux",
+      "slug": "linux",
+      "progress": 78,
+      "category_id": "cat-code",
+      "order": 1
+    },
+    {
       "id": "sw-007",
       "name": "Python",
       "slug": "python",
-      "progress": 55,
+      "progress": 25,
       "category_id": "cat-code",
-      "order": 1
+      "order": 2
+    },
+    {
+      "id": "sw-010",
+      "name": "Flutter",
+      "slug": "flutter",
+      "progress": 25,
+      "category_id": "cat-code",
+      "order": 3
+    },
+    {
+      "id": "sw-011",
+      "name": "Supabase",
+      "slug": "supabase",
+      "progress": 50,
+      "category_id": "cat-code",
+      "order": 4
     },
     {
       "id": "sw-012",
@@ -422,7 +446,7 @@
       "slug": "github",
       "progress": 65,
       "category_id": "cat-code",
-      "order": 2
+      "order": 5
     },
     {
       "id": "sw-014",
@@ -430,47 +454,7 @@
       "slug": "visualstudiocode",
       "progress": 85,
       "category_id": "cat-code",
-      "order": 3
-    },
-    {
-      "id": "sw-010",
-      "name": "Flutter",
-      "slug": "flutter",
-      "progress": 68,
-      "category_id": "cat-code",
-      "order": 4
-    },
-    {
-      "id": "sw-009",
-      "name": "Next.js",
-      "slug": "nextdotjs",
-      "progress": 70,
-      "category_id": "cat-code",
-      "order": 5
-    },
-    {
-      "id": "sw-008",
-      "name": "TypeScript",
-      "slug": "typescript",
-      "progress": 75,
-      "category_id": "cat-code",
       "order": 6
-    },
-    {
-      "id": "sw-011",
-      "name": "Supabase",
-      "slug": "supabase",
-      "progress": 80,
-      "category_id": "cat-code",
-      "order": 7
-    },
-    {
-      "id": "sw-013",
-      "name": "Linux",
-      "slug": "linux",
-      "progress": 78,
-      "category_id": "cat-code",
-      "order": 8
     }
   ]
 }
