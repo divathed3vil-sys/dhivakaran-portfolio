@@ -1,207 +1,37 @@
 {
   "version": 2,
-  "updatedAt": "2026-10-28T04:31:06.470Z",
+  "updatedAt": "2026-10-28T05:05:31.660Z",
   "categories": [
-    {
-      "id": "cat-visual",
-      "title": "Visual Production",
-      "subtitle": "Image editing, motion graphics, VFX, color grading, sound",
-      "order": 1,
-      "icon": "Aperture"
-    },
-    {
-      "id": "cat-code",
-      "title": "Code & Systems",
-      "subtitle": "Programming, OS, hardware, infrastructure",
-      "order": 2,
-      "icon": "Terminal"
-    },
     {
       "id": "cat-mvrlqvzd-b3qu",
       "title": "Photo Manipulation & Image Composition",
       "subtitle": "Image",
-      "order": 3,
+      "order": 1,
       "icon": "Aperture"
     },
     {
       "id": "cat-mvrlwz9o-gm7j",
       "title": "Video Editing & VFX",
       "subtitle": "Video",
+      "order": 2,
+      "icon": "Aperture"
+    },
+    {
+      "id": "cat-code",
+      "title": "Code & Systems",
+      "subtitle": "Programming, OS, hardware, infrastructure",
+      "order": 3,
+      "icon": "Terminal"
+    },
+    {
+      "id": "cat-visual",
+      "title": "Visual Production",
+      "subtitle": "Image editing, motion graphics, VFX, color grading, sound",
       "order": 4,
       "icon": "Aperture"
     }
   ],
   "experiences": [
-    {
-      "id": "exp-017",
-      "title": "Linux Operating Systems",
-      "category_id": "cat-code",
-      "status": "2022 — 2025",
-      "description": "Daily-driver Linux — package management, shell scripting, systemd, and dev-environment hardening across distros.",
-      "icon": "Terminal",
-      "tags": [
-        "SYSTEMD",
-        "SHELL",
-        "DISTRO"
-      ],
-      "featured": false,
-      "published": true,
-      "order": 1,
-      "updatedAt": "2026-10-28T04:31:06.469Z"
-    },
-    {
-      "id": "exp-012",
-      "title": "Flutter App Development",
-      "category_id": "cat-code",
-      "status": "2026 — Present",
-      "description": "Building reactive cross-platform mobile architecture with Supabase backend sync, custom Apple-style spring physics, and stream-based state management.",
-      "icon": "Smartphone",
-      "tags": [
-        "DART",
-        "SUPABASE",
-        "STATE MGMT"
-      ],
-      "featured": true,
-      "published": true,
-      "order": 2,
-      "updatedAt": "2026-10-28T04:31:06.469Z"
-    },
-    {
-      "id": "exp-013",
-      "title": "AI-Assisted Coding",
-      "category_id": "cat-code",
-      "status": "2025 — Present",
-      "description": "Pair-programming with LLMs on full-stack TypeScript, building agentic workflows that bridge design intent and shipped code.",
-      "icon": "Brain",
-      "tags": [
-        "LLM",
-        "AGENTIC",
-        "TYPESCRIPT"
-      ],
-      "featured": false,
-      "published": true,
-      "order": 3,
-      "updatedAt": "2026-10-28T04:31:06.469Z"
-    },
-    {
-      "id": "exp-014",
-      "title": "Backend Integration with Supabase",
-      "category_id": "cat-code",
-      "status": "2025 — Present",
-      "description": "Postgres + RLS + Storage + Edge Functions as a single declarative backend — auth-gated CRUD, server-side cache-control, and realtime subscriptions.",
-      "icon": "Database",
-      "tags": [
-        "POSTGRES",
-        "RLS",
-        "EDGE"
-      ],
-      "featured": false,
-      "published": true,
-      "order": 4,
-      "updatedAt": "2026-10-28T04:31:06.469Z"
-    },
-    {
-      "id": "exp-015",
-      "title": "Basic Python Programming",
-      "category_id": "cat-code",
-      "status": "2023 — 2024",
-      "description": "Foundational scripting — file automation, simple data parsing, and CLI utilities bridging design tooling.",
-      "icon": "Code",
-      "tags": [
-        "SCRIPT",
-        "CLI",
-        "AUTOMATION"
-      ],
-      "featured": false,
-      "published": true,
-      "order": 5,
-      "updatedAt": "2026-10-28T04:31:06.469Z"
-    },
-    {
-      "id": "exp-016",
-      "title": "Basic Application Development",
-      "category_id": "cat-code",
-      "status": "2023 — 2024",
-      "description": "Full-stack foundations — REST API design, simple auth flows, and component-driven UI architecture.",
-      "icon": "AppWindow",
-      "tags": [
-        "REST",
-        "AUTH",
-        "UI"
-      ],
-      "featured": false,
-      "published": true,
-      "order": 6,
-      "updatedAt": "2026-10-28T04:31:06.469Z"
-    },
-    {
-      "id": "exp-018",
-      "title": "Computer Hardware Troubleshooting",
-      "category_id": "cat-code",
-      "status": "2022 — 2025",
-      "description": "Component-level diagnosis — POST codes, voltage rail checks, and motherboard trace analysis for desktop repair.",
-      "icon": "Cpu",
-      "tags": [
-        "POST",
-        "DIAGNOSIS",
-        "REPAIR"
-      ],
-      "featured": false,
-      "published": true,
-      "order": 7,
-      "updatedAt": "2026-10-28T04:31:06.469Z"
-    },
-    {
-      "id": "exp-019",
-      "title": "Laptop Repair & Maintenance",
-      "category_id": "cat-code",
-      "status": "2022 — 2025",
-      "description": "Logic-level laptop repair — keyboard swaps, hinge alignment, thermal repaste, and battery-cell replacement.",
-      "icon": "Wrench",
-      "tags": [
-        "HARDWARE",
-        "THERMAL",
-        "REPLACE"
-      ],
-      "featured": false,
-      "published": true,
-      "order": 8,
-      "updatedAt": "2026-10-28T04:31:06.469Z"
-    },
-    {
-      "id": "exp-020",
-      "title": "Operating System Configuration",
-      "category_id": "cat-code",
-      "status": "2022 — 2025",
-      "description": "Dual-boot setup, partition management, driver compatibility, and performance tuning across Windows + Linux.",
-      "icon": "Settings",
-      "tags": [
-        "DUAL-BOOT",
-        "DRIVERS",
-        "TUNE"
-      ],
-      "featured": false,
-      "published": true,
-      "order": 9,
-      "updatedAt": "2026-10-28T04:31:06.469Z"
-    },
-    {
-      "id": "exp-021",
-      "title": "Mobile Device Troubleshooting",
-      "category_id": "cat-code",
-      "status": "2022 — 2024",
-      "description": "Android + iOS diagnosis — display swaps, battery service, recovery-mode flashing, and app-level diagnostics.",
-      "icon": "SmartphoneCharging",
-      "tags": [
-        "ANDROID",
-        "IOS",
-        "RECOVERY"
-      ],
-      "featured": false,
-      "published": true,
-      "order": 10,
-      "updatedAt": "2026-10-28T04:31:06.469Z"
-    },
     {
       "id": "exp-011",
       "title": "Visual Composition (Image Manipulation)",
@@ -217,7 +47,7 @@
       "featured": false,
       "published": true,
       "order": 1,
-      "updatedAt": "2026-10-28T04:31:06.469Z"
+      "updatedAt": "2026-10-28T05:05:31.660Z"
     },
     {
       "id": "exp-007",
@@ -234,7 +64,7 @@
       "featured": false,
       "published": true,
       "order": 2,
-      "updatedAt": "2026-10-28T04:31:06.469Z"
+      "updatedAt": "2026-10-28T05:05:31.660Z"
     },
     {
       "id": "exp-001",
@@ -251,7 +81,7 @@
       "featured": true,
       "published": true,
       "order": 3,
-      "updatedAt": "2026-10-28T04:31:06.470Z"
+      "updatedAt": "2026-10-28T05:05:31.660Z"
     },
     {
       "id": "exp-002",
@@ -268,7 +98,7 @@
       "featured": false,
       "published": true,
       "order": 4,
-      "updatedAt": "2026-10-28T04:31:06.470Z"
+      "updatedAt": "2026-10-28T05:05:31.660Z"
     },
     {
       "id": "exp-003",
@@ -285,7 +115,7 @@
       "featured": false,
       "published": true,
       "order": 1,
-      "updatedAt": "2026-10-28T04:31:06.470Z"
+      "updatedAt": "2026-10-28T05:05:31.660Z"
     },
     {
       "id": "exp-004",
@@ -302,7 +132,7 @@
       "featured": false,
       "published": true,
       "order": 2,
-      "updatedAt": "2026-10-28T04:31:06.470Z"
+      "updatedAt": "2026-10-28T05:05:31.660Z"
     },
     {
       "id": "exp-005",
@@ -319,7 +149,7 @@
       "featured": false,
       "published": true,
       "order": 3,
-      "updatedAt": "2026-10-28T04:31:06.470Z"
+      "updatedAt": "2026-10-28T05:05:31.660Z"
     },
     {
       "id": "exp-006",
@@ -336,7 +166,7 @@
       "featured": false,
       "published": true,
       "order": 4,
-      "updatedAt": "2026-10-28T04:31:06.470Z"
+      "updatedAt": "2026-10-28T05:05:31.660Z"
     },
     {
       "id": "exp-009",
@@ -353,7 +183,7 @@
       "featured": true,
       "published": true,
       "order": 5,
-      "updatedAt": "2026-10-28T04:31:06.470Z"
+      "updatedAt": "2026-10-28T05:05:31.660Z"
     },
     {
       "id": "exp-mvrm472g-kyh3",
@@ -370,41 +200,195 @@
       "featured": false,
       "published": true,
       "order": 6,
-      "updatedAt": "2026-10-28T04:31:06.470Z"
+      "updatedAt": "2026-10-28T05:05:31.660Z"
+    },
+    {
+      "id": "exp-017",
+      "title": "Linux Operating Systems",
+      "category_id": "cat-code",
+      "status": "2022 — 2025",
+      "description": "Daily-driver Linux — package management, shell scripting, systemd, and dev-environment hardening across distros.",
+      "icon": "Terminal",
+      "tags": [
+        "SYSTEMD",
+        "SHELL",
+        "DISTRO"
+      ],
+      "featured": false,
+      "published": true,
+      "order": 1,
+      "updatedAt": "2026-10-28T05:05:31.660Z"
+    },
+    {
+      "id": "exp-012",
+      "title": "Flutter App Development",
+      "category_id": "cat-code",
+      "status": "2026 — Present",
+      "description": "Building reactive cross-platform mobile architecture with Supabase backend sync, custom Apple-style spring physics, and stream-based state management.",
+      "icon": "Smartphone",
+      "tags": [
+        "DART",
+        "SUPABASE",
+        "STATE MGMT"
+      ],
+      "featured": true,
+      "published": true,
+      "order": 2,
+      "updatedAt": "2026-10-28T05:05:31.660Z"
+    },
+    {
+      "id": "exp-013",
+      "title": "AI-Assisted Coding",
+      "category_id": "cat-code",
+      "status": "2025 — Present",
+      "description": "Pair-programming with LLMs on full-stack TypeScript, building agentic workflows that bridge design intent and shipped code.",
+      "icon": "Brain",
+      "tags": [
+        "LLM",
+        "AGENTIC",
+        "TYPESCRIPT"
+      ],
+      "featured": false,
+      "published": true,
+      "order": 3,
+      "updatedAt": "2026-10-28T05:05:31.660Z"
+    },
+    {
+      "id": "exp-014",
+      "title": "Backend Integration with Supabase",
+      "category_id": "cat-code",
+      "status": "2025 — Present",
+      "description": "Postgres + RLS + Storage + Edge Functions as a single declarative backend — auth-gated CRUD, server-side cache-control, and realtime subscriptions.",
+      "icon": "Database",
+      "tags": [
+        "POSTGRES",
+        "RLS",
+        "EDGE"
+      ],
+      "featured": false,
+      "published": true,
+      "order": 4,
+      "updatedAt": "2026-10-28T05:05:31.660Z"
+    },
+    {
+      "id": "exp-015",
+      "title": "Basic Python Programming",
+      "category_id": "cat-code",
+      "status": "2023 — 2024",
+      "description": "Foundational scripting — file automation, simple data parsing, and CLI utilities bridging design tooling.",
+      "icon": "Code",
+      "tags": [
+        "SCRIPT",
+        "CLI",
+        "AUTOMATION"
+      ],
+      "featured": false,
+      "published": true,
+      "order": 5,
+      "updatedAt": "2026-10-28T05:05:31.660Z"
+    },
+    {
+      "id": "exp-016",
+      "title": "Basic Application Development",
+      "category_id": "cat-code",
+      "status": "2023 — 2024",
+      "description": "Full-stack foundations — REST API design, simple auth flows, and component-driven UI architecture.",
+      "icon": "AppWindow",
+      "tags": [
+        "REST",
+        "AUTH",
+        "UI"
+      ],
+      "featured": false,
+      "published": true,
+      "order": 6,
+      "updatedAt": "2026-10-28T05:05:31.660Z"
+    },
+    {
+      "id": "exp-018",
+      "title": "Computer Hardware Troubleshooting",
+      "category_id": "cat-code",
+      "status": "2022 — 2025",
+      "description": "Component-level diagnosis — POST codes, voltage rail checks, and motherboard trace analysis for desktop repair.",
+      "icon": "Cpu",
+      "tags": [
+        "POST",
+        "DIAGNOSIS",
+        "REPAIR"
+      ],
+      "featured": false,
+      "published": true,
+      "order": 7,
+      "updatedAt": "2026-10-28T05:05:31.660Z"
+    },
+    {
+      "id": "exp-019",
+      "title": "Laptop Repair & Maintenance",
+      "category_id": "cat-code",
+      "status": "2022 — 2025",
+      "description": "Logic-level laptop repair — keyboard swaps, hinge alignment, thermal repaste, and battery-cell replacement.",
+      "icon": "Wrench",
+      "tags": [
+        "HARDWARE",
+        "THERMAL",
+        "REPLACE"
+      ],
+      "featured": false,
+      "published": true,
+      "order": 8,
+      "updatedAt": "2026-10-28T05:05:31.660Z"
+    },
+    {
+      "id": "exp-020",
+      "title": "Operating System Configuration",
+      "category_id": "cat-code",
+      "status": "2022 — 2025",
+      "description": "Dual-boot setup, partition management, driver compatibility, and performance tuning across Windows + Linux.",
+      "icon": "Settings",
+      "tags": [
+        "DUAL-BOOT",
+        "DRIVERS",
+        "TUNE"
+      ],
+      "featured": false,
+      "published": true,
+      "order": 9,
+      "updatedAt": "2026-10-28T05:05:31.660Z"
+    },
+    {
+      "id": "exp-021",
+      "title": "Mobile Device Troubleshooting",
+      "category_id": "cat-code",
+      "status": "2022 — 2024",
+      "description": "Android + iOS diagnosis — display swaps, battery service, recovery-mode flashing, and app-level diagnostics.",
+      "icon": "SmartphoneCharging",
+      "tags": [
+        "ANDROID",
+        "IOS",
+        "RECOVERY"
+      ],
+      "featured": false,
+      "published": true,
+      "order": 10,
+      "updatedAt": "2026-10-28T05:05:31.660Z"
     }
   ],
   "software": [
     {
-      "id": "sw-002",
-      "name": "Adobe Premiere Pro",
-      "slug": "adobepremierepro",
-      "progress": 88,
-      "category_id": "cat-mvrlwz9o-gm7j",
+      "id": "sw-001",
+      "name": "Adobe Photoshop",
+      "slug": "adobephotoshop",
+      "progress": 89,
+      "category_id": "cat-mvrlqvzd-b3qu",
       "order": 1
     },
     {
-      "id": "sw-003",
-      "name": "Adobe After Effects",
-      "slug": "adobeaftereffects",
-      "progress": 75,
-      "category_id": "cat-mvrlwz9o-gm7j",
+      "id": "sw-004",
+      "name": "Adobe Illustrator",
+      "slug": "adobeillustrator",
+      "progress": 70,
+      "category_id": "cat-mvrlqvzd-b3qu",
       "order": 2
-    },
-    {
-      "id": "sw-005",
-      "name": "DaVinci Resolve",
-      "slug": "davinciresolve",
-      "progress": 10,
-      "category_id": "cat-mvrlwz9o-gm7j",
-      "order": 3
-    },
-    {
-      "id": "sw-006",
-      "name": "Blender",
-      "slug": "blender",
-      "progress": 5,
-      "category_id": "cat-mvrlwz9o-gm7j",
-      "order": 4
     },
     {
       "id": "sw-013",
@@ -455,20 +439,36 @@
       "order": 6
     },
     {
-      "id": "sw-001",
-      "name": "Adobe Photoshop",
-      "slug": "adobephotoshop",
-      "progress": 89,
-      "category_id": "cat-mvrlqvzd-b3qu",
+      "id": "sw-002",
+      "name": "Adobe Premiere Pro",
+      "slug": "adobepremierepro",
+      "progress": 88,
+      "category_id": "cat-visual",
       "order": 1
     },
     {
-      "id": "sw-004",
-      "name": "Adobe Illustrator",
-      "slug": "adobeillustrator",
-      "progress": 70,
-      "category_id": "cat-mvrlqvzd-b3qu",
+      "id": "sw-003",
+      "name": "Adobe After Effects",
+      "slug": "adobeaftereffects",
+      "progress": 75,
+      "category_id": "cat-visual",
       "order": 2
+    },
+    {
+      "id": "sw-005",
+      "name": "DaVinci Resolve",
+      "slug": "davinciresolve",
+      "progress": 10,
+      "category_id": "cat-visual",
+      "order": 3
+    },
+    {
+      "id": "sw-006",
+      "name": "Blender",
+      "slug": "blender",
+      "progress": 5,
+      "category_id": "cat-visual",
+      "order": 4
     }
   ]
 }
