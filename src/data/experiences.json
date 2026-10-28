@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "updatedAt": "2026-10-28T05:22:38.171Z",
+  "updatedAt": "2026-10-28T07:49:34.909Z",
   "categories": [
     {
       "id": "cat-mvrlqvzd-b3qu",
@@ -22,13 +22,6 @@
       "subtitle": "Programming, OS, hardware, infrastructure",
       "order": 3,
       "icon": "Terminal"
-    },
-    {
-      "id": "cat-visual",
-      "title": "Visual Production",
-      "subtitle": "Image editing, motion graphics, VFX, color grading, sound",
-      "order": 4,
-      "icon": "Aperture"
     }
   ],
   "experiences": [
@@ -47,7 +40,7 @@
       "featured": false,
       "published": true,
       "order": 1,
-      "updatedAt": "2026-10-28T05:22:38.171Z"
+      "updatedAt": "2026-10-28T07:49:34.909Z"
     },
     {
       "id": "exp-007",
@@ -64,7 +57,7 @@
       "featured": false,
       "published": true,
       "order": 2,
-      "updatedAt": "2026-10-28T05:22:38.171Z"
+      "updatedAt": "2026-10-28T07:49:34.909Z"
     },
     {
       "id": "exp-001",
@@ -81,7 +74,7 @@
       "featured": true,
       "published": true,
       "order": 3,
-      "updatedAt": "2026-10-28T05:22:38.171Z"
+      "updatedAt": "2026-10-28T07:49:34.909Z"
     },
     {
       "id": "exp-002",
@@ -98,7 +91,7 @@
       "featured": false,
       "published": true,
       "order": 4,
-      "updatedAt": "2026-10-28T05:22:38.171Z"
+      "updatedAt": "2026-10-28T07:49:34.909Z"
     },
     {
       "id": "exp-003",
@@ -115,7 +108,7 @@
       "featured": false,
       "published": true,
       "order": 1,
-      "updatedAt": "2026-10-28T05:22:38.171Z"
+      "updatedAt": "2026-10-28T07:49:34.909Z"
     },
     {
       "id": "exp-004",
@@ -132,7 +125,7 @@
       "featured": false,
       "published": true,
       "order": 2,
-      "updatedAt": "2026-10-28T05:22:38.171Z"
+      "updatedAt": "2026-10-28T07:49:34.909Z"
     },
     {
       "id": "exp-005",
@@ -149,7 +142,7 @@
       "featured": false,
       "published": true,
       "order": 3,
-      "updatedAt": "2026-10-28T05:22:38.171Z"
+      "updatedAt": "2026-10-28T07:49:34.909Z"
     },
     {
       "id": "exp-006",
@@ -166,7 +159,7 @@
       "featured": false,
       "published": true,
       "order": 4,
-      "updatedAt": "2026-10-28T05:22:38.171Z"
+      "updatedAt": "2026-10-28T07:49:34.909Z"
     },
     {
       "id": "exp-009",
@@ -183,7 +176,7 @@
       "featured": true,
       "published": true,
       "order": 5,
-      "updatedAt": "2026-10-28T05:22:38.171Z"
+      "updatedAt": "2026-10-28T07:49:34.909Z"
     },
     {
       "id": "exp-mvrm472g-kyh3",
@@ -200,7 +193,7 @@
       "featured": false,
       "published": true,
       "order": 6,
-      "updatedAt": "2026-10-28T05:22:38.171Z"
+      "updatedAt": "2026-10-28T07:49:34.909Z"
     },
     {
       "id": "exp-017",
@@ -217,7 +210,7 @@
       "featured": false,
       "published": true,
       "order": 1,
-      "updatedAt": "2026-10-28T05:22:38.171Z"
+      "updatedAt": "2026-10-28T07:49:34.909Z"
     },
     {
       "id": "exp-012",
@@ -234,7 +227,7 @@
       "featured": true,
       "published": true,
       "order": 2,
-      "updatedAt": "2026-10-28T05:22:38.171Z"
+      "updatedAt": "2026-10-28T07:49:34.909Z"
     },
     {
       "id": "exp-013",
@@ -251,7 +244,7 @@
       "featured": false,
       "published": true,
       "order": 3,
-      "updatedAt": "2026-10-28T05:22:38.171Z"
+      "updatedAt": "2026-10-28T07:49:34.909Z"
     },
     {
       "id": "exp-014",
@@ -268,7 +261,7 @@
       "featured": false,
       "published": true,
       "order": 4,
-      "updatedAt": "2026-10-28T05:22:38.171Z"
+      "updatedAt": "2026-10-28T07:49:34.909Z"
     },
     {
       "id": "exp-015",
@@ -285,7 +278,7 @@
       "featured": false,
       "published": true,
       "order": 5,
-      "updatedAt": "2026-10-28T05:22:38.171Z"
+      "updatedAt": "2026-10-28T07:49:34.909Z"
     },
     {
       "id": "exp-016",
@@ -302,7 +295,7 @@
       "featured": false,
       "published": true,
       "order": 6,
-      "updatedAt": "2026-10-28T05:22:38.171Z"
+      "updatedAt": "2026-10-28T07:49:34.909Z"
     },
     {
       "id": "exp-018",
@@ -319,7 +312,7 @@
       "featured": false,
       "published": true,
       "order": 7,
-      "updatedAt": "2026-10-28T05:22:38.171Z"
+      "updatedAt": "2026-10-28T07:49:34.909Z"
     },
     {
       "id": "exp-019",
@@ -336,7 +329,7 @@
       "featured": false,
       "published": true,
       "order": 8,
-      "updatedAt": "2026-10-28T05:22:38.171Z"
+      "updatedAt": "2026-10-28T07:49:34.909Z"
     },
     {
       "id": "exp-020",
@@ -353,7 +346,7 @@
       "featured": false,
       "published": true,
       "order": 9,
-      "updatedAt": "2026-10-28T05:22:38.171Z"
+      "updatedAt": "2026-10-28T07:49:34.909Z"
     },
     {
       "id": "exp-021",
@@ -370,7 +363,7 @@
       "featured": false,
       "published": true,
       "order": 10,
-      "updatedAt": "2026-10-28T05:22:38.171Z"
+      "updatedAt": "2026-10-28T07:49:34.909Z"
     }
   ],
   "software": [
@@ -437,38 +430,6 @@
       "progress": 85,
       "category_id": "cat-code",
       "order": 6
-    },
-    {
-      "id": "sw-002",
-      "name": "Adobe Premiere Pro",
-      "slug": "adobepremierepro",
-      "progress": 88,
-      "category_id": "cat-visual",
-      "order": 1
-    },
-    {
-      "id": "sw-003",
-      "name": "Adobe After Effects",
-      "slug": "adobeaftereffects",
-      "progress": 75,
-      "category_id": "cat-visual",
-      "order": 2
-    },
-    {
-      "id": "sw-005",
-      "name": "DaVinci Resolve",
-      "slug": "davinciresolve",
-      "progress": 10,
-      "category_id": "cat-visual",
-      "order": 3
-    },
-    {
-      "id": "sw-006",
-      "name": "Blender",
-      "slug": "blender",
-      "progress": 5,
-      "category_id": "cat-visual",
-      "order": 4
     }
   ]
 }
