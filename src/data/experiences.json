@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "updatedAt": "2026-10-28T04:18:53.975Z",
+  "updatedAt": "2026-10-28T04:28:58.759Z",
   "categories": [
     {
       "id": "cat-visual",
@@ -22,64 +22,20 @@
       "subtitle": "Image",
       "order": 3,
       "icon": "Aperture"
+    },
+    {
+      "id": "cat-mvrlwz9o-gm7j",
+      "title": "Video Editing & VFX",
+      "subtitle": "Video",
+      "order": 4,
+      "icon": "Aperture"
     }
   ],
   "experiences": [
     {
-      "id": "exp-007",
-      "title": "Image Manipulation",
-      "category_id": "cat-mvrlqvzd-b3qu",
-      "status": "2020 — Present",
-      "description": "Composited photo illustrations — mask-stack blending, frequency-separation retouch, and creative-probability explorations.",
-      "icon": "Brush",
-      "tags": [
-        "MASKS",
-        "FREQ SEP",
-        "COMPOSITE"
-      ],
-      "featured": false,
-      "published": true,
-      "order": 1,
-      "updatedAt": "2026-10-28T04:18:53.975Z"
-    },
-    {
-      "id": "exp-001",
-      "title": "Poster Design",
-      "category_id": "cat-mvrlqvzd-b3qu",
-      "status": "2021 — PRESENT",
-      "description": "Hand-composed film posters — typographic hierarchy, optical kerning, and analog-print finishing for theatrical and fan-art runs.",
-      "icon": "Layout",
-      "tags": [
-        "TYPOGRAPHY",
-        "PRINT",
-        "FILM"
-      ],
-      "featured": true,
-      "published": true,
-      "order": 2,
-      "updatedAt": "2026-10-28T04:18:53.975Z"
-    },
-    {
-      "id": "exp-002",
-      "title": "YouTube Thumbnail Design",
-      "category_id": "cat-mvrlqvzd-b3qu",
-      "status": "2021 — Present",
-      "description": "High-CTR thumbnail composition — color-counterpoint, facial-cue framing, and click-through optimization across 100+ video titles.",
-      "icon": "Image",
-      "tags": [
-        "CTR",
-        "COLOR",
-        "COMPOSITION"
-      ],
-      "featured": false,
-      "published": true,
-      "order": 3,
-      "updatedAt": "2026-10-28T04:18:53.975Z"
-    },
-    {
       "id": "exp-011",
-      "title": "Visual Composition",
-      "category_id": "cat-visual",
+      "title": "Visual Composition (Image Manipulation)",
+      "category_id": "cat-mvrlqvzd-b3qu",
       "status": "2022 — 2025",
       "description": "Frame-level composition theory — golden-ratio, leading lines, and negative-space discipline applied across all visual output.",
       "icon": "Frame",
@@ -90,13 +46,13 @@
       ],
       "featured": false,
       "published": true,
-      "order": 4,
-      "updatedAt": "2026-10-28T04:18:53.975Z"
+      "order": 1,
+      "updatedAt": "2026-10-28T04:28:58.759Z"
     },
     {
       "id": "exp-003",
       "title": "Video Editing",
-      "category_id": "cat-visual",
+      "category_id": "cat-mvrlwz9o-gm7j",
       "status": "2024 — Present",
       "description": "Long-form narrative + short-form social cut editing — pacing-driven J/L cuts, multi-cam sync, and dialogue-first story assembly.",
       "icon": "Clapperboard",
@@ -107,13 +63,13 @@
       ],
       "featured": false,
       "published": true,
-      "order": 5,
-      "updatedAt": "2026-10-28T04:18:53.975Z"
+      "order": 2,
+      "updatedAt": "2026-10-28T04:28:58.759Z"
     },
     {
       "id": "exp-004",
       "title": "Motion Graphics",
-      "category_id": "cat-visual",
+      "category_id": "cat-mvrlwz9o-gm7j",
       "status": "2022 — Present",
       "description": "Title sequences, lower-thirds, and brand-spring animations — shape-layer rigging and expression-driven physics.",
       "icon": "Sparkles",
@@ -124,13 +80,13 @@
       ],
       "featured": false,
       "published": true,
-      "order": 6,
-      "updatedAt": "2026-10-28T04:18:53.975Z"
+      "order": 3,
+      "updatedAt": "2026-10-28T04:28:58.759Z"
     },
     {
       "id": "exp-005",
       "title": "Visual Effects (VFX)",
-      "category_id": "cat-visual",
+      "category_id": "cat-mvrlwz9o-gm7j",
       "status": "2023 — Present",
       "description": "Compositing, tracking, and rotoscope work — clean-plate reconstruction, planar tracking, and screen-replacement for short film.",
       "icon": "Wand2",
@@ -141,13 +97,13 @@
       ],
       "featured": false,
       "published": true,
-      "order": 7,
-      "updatedAt": "2026-10-28T04:18:53.975Z"
+      "order": 4,
+      "updatedAt": "2026-10-28T04:28:58.759Z"
     },
     {
       "id": "exp-006",
       "title": "Color Grading",
-      "category_id": "cat-visual",
+      "category_id": "cat-mvrlwz9o-gm7j",
       "status": "2022 — Present",
       "description": "Cinematic look development in DaVinci Resolve — node-based primaries, qualifier-isolated secondaries, and film-emulation LUTs.",
       "icon": "Palette",
@@ -158,13 +114,13 @@
       ],
       "featured": false,
       "published": true,
-      "order": 8,
-      "updatedAt": "2026-10-28T04:18:53.975Z"
+      "order": 5,
+      "updatedAt": "2026-10-28T04:28:58.759Z"
     },
     {
       "id": "exp-009",
-      "title": "Sound Design for Film",
-      "category_id": "cat-visual",
+      "title": "Sound Design & Foley",
+      "category_id": "cat-mvrlwz9o-gm7j",
       "status": "2023 — Present",
       "description": "Foley generation, spatial audio mixing, and dialogue-driven score design for short-form narrative film.",
       "icon": "Mic",
@@ -175,25 +131,8 @@
       ],
       "featured": true,
       "published": true,
-      "order": 9,
-      "updatedAt": "2026-10-28T04:18:53.975Z"
-    },
-    {
-      "id": "exp-010",
-      "title": "Foley Art",
-      "category_id": "cat-visual",
-      "status": "2023 — 2025",
-      "description": "Performance-recorded foley — fabric, footstep, and prop sweetening layered against dialogue stems for short film sound design.",
-      "icon": "Music",
-      "tags": [
-        "FOLEY",
-        "SWEETENING",
-        "LAYER"
-      ],
-      "featured": false,
-      "published": true,
-      "order": 10,
-      "updatedAt": "2026-10-28T04:18:53.975Z"
+      "order": 6,
+      "updatedAt": "2026-10-28T04:28:58.759Z"
     },
     {
       "id": "exp-017",
@@ -210,7 +149,7 @@
       "featured": false,
       "published": true,
       "order": 1,
-      "updatedAt": "2026-10-28T04:18:53.975Z"
+      "updatedAt": "2026-10-28T04:28:58.759Z"
     },
     {
       "id": "exp-012",
@@ -227,7 +166,7 @@
       "featured": true,
       "published": true,
       "order": 2,
-      "updatedAt": "2026-10-28T04:18:53.975Z"
+      "updatedAt": "2026-10-28T04:28:58.759Z"
     },
     {
       "id": "exp-013",
@@ -244,7 +183,7 @@
       "featured": false,
       "published": true,
       "order": 3,
-      "updatedAt": "2026-10-28T04:18:53.975Z"
+      "updatedAt": "2026-10-28T04:28:58.759Z"
     },
     {
       "id": "exp-014",
@@ -261,7 +200,7 @@
       "featured": false,
       "published": true,
       "order": 4,
-      "updatedAt": "2026-10-28T04:18:53.975Z"
+      "updatedAt": "2026-10-28T04:28:58.759Z"
     },
     {
       "id": "exp-015",
@@ -278,7 +217,7 @@
       "featured": false,
       "published": true,
       "order": 5,
-      "updatedAt": "2026-10-28T04:18:53.975Z"
+      "updatedAt": "2026-10-28T04:28:58.759Z"
     },
     {
       "id": "exp-016",
@@ -295,7 +234,7 @@
       "featured": false,
       "published": true,
       "order": 6,
-      "updatedAt": "2026-10-28T04:18:53.975Z"
+      "updatedAt": "2026-10-28T04:28:58.759Z"
     },
     {
       "id": "exp-018",
@@ -312,7 +251,7 @@
       "featured": false,
       "published": true,
       "order": 7,
-      "updatedAt": "2026-10-28T04:18:53.975Z"
+      "updatedAt": "2026-10-28T04:28:58.759Z"
     },
     {
       "id": "exp-019",
@@ -329,7 +268,7 @@
       "featured": false,
       "published": true,
       "order": 8,
-      "updatedAt": "2026-10-28T04:18:53.975Z"
+      "updatedAt": "2026-10-28T04:28:58.759Z"
     },
     {
       "id": "exp-020",
@@ -346,7 +285,7 @@
       "featured": false,
       "published": true,
       "order": 9,
-      "updatedAt": "2026-10-28T04:18:53.975Z"
+      "updatedAt": "2026-10-28T04:28:58.759Z"
     },
     {
       "id": "exp-021",
@@ -363,25 +302,85 @@
       "featured": false,
       "published": true,
       "order": 10,
-      "updatedAt": "2026-10-28T04:18:53.975Z"
+      "updatedAt": "2026-10-28T04:28:58.759Z"
+    },
+    {
+      "id": "exp-007",
+      "title": "Image Manipulation",
+      "category_id": "cat-mvrlqvzd-b3qu",
+      "status": "2020 — Present",
+      "description": "Composited photo illustrations — mask-stack blending, frequency-separation retouch, and creative-probability explorations.",
+      "icon": "Brush",
+      "tags": [
+        "MASKS",
+        "FREQ SEP",
+        "COMPOSITE"
+      ],
+      "featured": false,
+      "published": true,
+      "order": 1,
+      "updatedAt": "2026-10-28T04:28:58.759Z"
+    },
+    {
+      "id": "exp-001",
+      "title": "Poster Design",
+      "category_id": "cat-mvrlqvzd-b3qu",
+      "status": "2021 — PRESENT",
+      "description": "Hand-composed film posters — typographic hierarchy, optical kerning, and analog-print finishing for theatrical and fan-art runs.",
+      "icon": "Layout",
+      "tags": [
+        "TYPOGRAPHY",
+        "PRINT",
+        "FILM"
+      ],
+      "featured": true,
+      "published": true,
+      "order": 2,
+      "updatedAt": "2026-10-28T04:28:58.759Z"
+    },
+    {
+      "id": "exp-002",
+      "title": "YouTube Thumbnail Design",
+      "category_id": "cat-mvrlqvzd-b3qu",
+      "status": "2021 — Present",
+      "description": "High-CTR thumbnail composition — color-counterpoint, facial-cue framing, and click-through optimization across 100+ video titles.",
+      "icon": "Image",
+      "tags": [
+        "CTR",
+        "COLOR",
+        "COMPOSITION"
+      ],
+      "featured": false,
+      "published": true,
+      "order": 3,
+      "updatedAt": "2026-10-28T04:28:58.759Z"
+    },
+    {
+      "id": "exp-mvrm472g-kyh3",
+      "title": "Visual Composition (Video Editing)",
+      "category_id": "cat-mvrlwz9o-gm7j",
+      "status": "2022 — Present",
+      "description": "Frame-level composition theory — golden-ratio, leading lines, and negative-space discipline applied across all visual output.",
+      "icon": "Layout",
+      "tags": [
+        "Rule of Thirds",
+        "Golden Ratio",
+        "etc"
+      ],
+      "featured": false,
+      "published": true,
+      "order": 1,
+      "updatedAt": "2026-10-28T04:28:58.759Z"
     }
   ],
   "software": [
-    {
-      "id": "sw-001",
-      "name": "Adobe Photoshop",
-      "slug": "adobephotoshop",
-      "progress": 89,
-      "category_id": "cat-mvrlqvzd-b3qu",
-      "order": 1
-    },
     {
       "id": "sw-002",
       "name": "Adobe Premiere Pro",
       "slug": "adobepremierepro",
       "progress": 88,
       "category_id": "cat-visual",
-      "order": 2
+      "order": 1
     },
     {
       "id": "sw-003",
@@ -389,15 +388,7 @@
       "slug": "adobeaftereffects",
       "progress": 75,
       "category_id": "cat-visual",
-      "order": 3
-    },
-    {
-      "id": "sw-004",
-      "name": "Adobe Illustrator",
-      "slug": "adobeillustrator",
-      "progress": 70,
-      "category_id": "cat-mvrlqvzd-b3qu",
-      "order": 4
+      "order": 2
     },
     {
       "id": "sw-005",
@@ -405,7 +396,7 @@
       "slug": "davinciresolve",
       "progress": 10,
       "category_id": "cat-visual",
-      "order": 5
+      "order": 3
     },
     {
       "id": "sw-006",
@@ -413,7 +404,7 @@
       "slug": "blender",
       "progress": 5,
       "category_id": "cat-visual",
-      "order": 6
+      "order": 4
     },
     {
       "id": "sw-013",
@@ -462,6 +453,22 @@
       "progress": 85,
       "category_id": "cat-code",
       "order": 6
+    },
+    {
+      "id": "sw-001",
+      "name": "Adobe Photoshop",
+      "slug": "adobephotoshop",
+      "progress": 89,
+      "category_id": "cat-mvrlqvzd-b3qu",
+      "order": 1
+    },
+    {
+      "id": "sw-004",
+      "name": "Adobe Illustrator",
+      "slug": "adobeillustrator",
+      "progress": 70,
+      "category_id": "cat-mvrlqvzd-b3qu",
+      "order": 2
     }
   ]
 }
