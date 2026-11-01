@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "updatedAt": "2026-11-01T03:27:34.787Z",
+  "updatedAt": "2026-11-01T04:00:00.000Z",
   "categories": [
     {
       "id": "cat-mvrlqvzd-b3qu",
@@ -430,6 +430,38 @@
       "progress": 85,
       "category_id": "cat-code",
       "order": 6
+    },
+    {
+      "id": "sw-015",
+      "name": "Adobe Premiere Pro",
+      "slug": "adobepremierepro",
+      "progress": 88,
+      "category_id": "cat-mvrlwz9o-gm7j",
+      "order": 1
+    },
+    {
+      "id": "sw-016",
+      "name": "Adobe After Effects",
+      "slug": "adobeaftereffects",
+      "progress": 78,
+      "category_id": "cat-mvrlwz9o-gm7j",
+      "order": 2
+    },
+    {
+      "id": "sw-017",
+      "name": "DaVinci Resolve",
+      "slug": "davinciresolve",
+      "progress": 72,
+      "category_id": "cat-mvrlwz9o-gm7j",
+      "order": 3
+    },
+    {
+      "id": "sw-018",
+      "name": "Blender",
+      "slug": "blender",
+      "progress": 55,
+      "category_id": "cat-mvrlwz9o-gm7j",
+      "order": 4
     }
   ]
 }

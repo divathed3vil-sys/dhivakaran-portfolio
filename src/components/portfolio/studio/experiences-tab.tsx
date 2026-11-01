@@ -772,11 +772,11 @@ export function ExperiencesTab() {
           onClose={() => setEditingTarget(null)}
           onDelete={
             editingTarget.kind === 'category' && editingTarget.id
-              ? () => handleDeleteCategory(editingTarget.id)
+              ? () => handleDeleteCategory(editingTarget.id!)
               : editingTarget.kind === 'experience' && editingTarget.id
-              ? () => handleDeleteExperience(editingTarget.id)
+              ? () => handleDeleteExperience(editingTarget.id!)
               : editingTarget.kind === 'software' && editingTarget.id
-              ? () => handleDeleteSoftware(editingTarget.id)
+              ? () => handleDeleteSoftware(editingTarget.id!)
               : undefined
           }
         />

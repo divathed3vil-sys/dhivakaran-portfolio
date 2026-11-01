@@ -43,6 +43,7 @@ export type Experience = {
   featured: boolean;
   published: boolean;
   order: number;
+  updatedAt?: string; // set on publish, not required for draft state
 };
 
 export type Software = {
