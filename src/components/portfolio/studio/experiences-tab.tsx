@@ -126,10 +126,13 @@ export function ExperiencesTab() {
   // ---- UI state ----
   const [selectedCatId, setSelectedCatId] = useState<string | null>(null);
   const [editingTarget, setEditingTarget] = useState<EditingTarget | null>(null);
-  const [iconPickerFor, setIconPickerFor] = useState<{ kind: 'experience' | 'category'; id: string | null } | null>(null);
-  const [swIconPickerFor, setSwIconPickerFor] = useState<string | null>(null);
   const [publishState, setPublishState] = useState<PublishState>({ phase: 'idle' });
   const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Publishing guard — true while commit/deploy/build is in progress.
+  // Disables add/edit/delete/drag to prevent draft state from being
+  // corrupted by edits made during a publish cycle (the "blending" bug).
+  const isPublishing = !['idle', 'error', 'ready'].includes(publishState.phase);
 
   // ---- Merge server + draft ----
   const mergedCategories: Category[] = useMemo(() => {
@@ -433,17 +436,31 @@ export function ExperiencesTab() {
           }
           const state = status.readyState;
           if (state === 'READY') {
+            // BUG FIX: Previously called invalidateQueries (async, non-blocking)
+            // then immediately cleared draft state. If the user made new edits
+            // during the refetch window, the next publish would build its
+            // payload from STALE serverData (blending old + new).
+            //
+            // Fix: show 'ready — syncing' status, FORCE a refetch and AWAIT
+            // it, THEN clear the draft. This guarantees serverData is fresh
+            // before any new edits are allowed.
+            setPublishState({
+              phase: 'ready',
+              deployId: result.deploymentId,
+              msg: `✓ Live — syncing latest data...`,
+            });
+            if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
+            // Force refetch + wait for completion (not just invalidate)
+            await queryClient.refetchQueries({ queryKey: ['experiences'] });
+            // NOW safe to clear draft — serverData is up-to-date
+            setCatOverrides({}); setNewCatIds([]); setDeletedCatIds(new Set()); setCatOrderOverride([]);
+            setExpOverrides({}); setNewExpIds([]); setDeletedExpIds(new Set()); setExpOrderOverrides({});
+            setSwOverrides({}); setNewSwIds([]); setDeletedSwIds(new Set()); setSwOrderOverrides({});
             setPublishState({
               phase: 'ready',
               deployId: result.deploymentId,
               msg: `✓ Live — published ${finalCategories.length} categories, ${finalExperiences.length} experiences, ${finalSoftware.length} software`,
             });
-            queryClient.invalidateQueries({ queryKey: ['experiences'] });
-            // Clear draft
-            setCatOverrides({}); setNewCatIds([]); setDeletedCatIds(new Set()); setCatOrderOverride([]);
-            setExpOverrides({}); setNewExpIds([]); setDeletedExpIds(new Set()); setExpOrderOverrides({});
-            setSwOverrides({}); setNewSwIds([]); setDeletedSwIds(new Set()); setSwOrderOverrides({});
-            if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
             setTimeout(() => setPublishState({ phase: 'idle' }), 8000);
           } else if (state === 'ERROR' || state === 'CANCELED') {
             setPublishState({ phase: 'error', msg: `Deploy ${state.toLowerCase()} — see Vercel dashboard` });
@@ -509,7 +526,8 @@ export function ExperiencesTab() {
               />
             ))}
             <button
-              onClick={() => setEditingTarget({ kind: 'category', id: null })}
+              onClick={() => !isPublishing && setEditingTarget({ kind: 'category', id: null })}
+              disabled={isPublishing}
               style={{
                 display: 'flex',
                 alignItems: 'center',
@@ -518,8 +536,9 @@ export function ExperiencesTab() {
                 borderRadius: '3px',
                 border: '1px dashed rgba(255,255,255,0.15)',
                 background: 'transparent',
-                color: 'var(--night-muted)',
-                cursor: 'pointer',
+                color: isPublishing ? 'var(--night-muted)' : 'var(--night-muted)',
+                opacity: isPublishing ? 0.4 : 1,
+                cursor: isPublishing ? 'not-allowed' : 'pointer',
                 fontFamily: 'var(--font-mono), monospace',
                 fontSize: '0.7rem',
                 letterSpacing: '0.06em',
@@ -534,6 +553,29 @@ export function ExperiencesTab() {
           </div>
         </SortableContext>
       </DndContext>
+
+      {/* ── PUBLISHING OVERLAY — when isPublishing, show a subtle banner
+          at the top of the content area warning that edits are locked ── */}
+      {isPublishing && (
+        <div style={{
+          padding: '0.6rem 1rem',
+          marginBottom: '1rem',
+          background: 'rgba(214,41,41,0.1)',
+          border: '1px solid rgba(214,41,41,0.3)',
+          borderRadius: '3px',
+          fontFamily: 'var(--font-mono), monospace',
+          fontSize: '0.7rem',
+          color: 'var(--accent)',
+          letterSpacing: '0.06em',
+          textTransform: 'uppercase',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.5rem',
+        }}>
+          <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'var(--accent)', animation: 'experiences-pulse 1.5s var(--ease-spring-soft) infinite' }} />
+          Publishing in progress — editing locked until deploy completes
+        </div>
+      )}
 
       {/* ── SELECTED CATEGORY CONTENT ── */}
       {selectedCategory ? (
@@ -588,7 +630,7 @@ export function ExperiencesTab() {
 
           {/* EXPERIENCES sub-section */}
           <div style={{ marginBottom: '2rem' }}>
-            <SubSectionHeader label="Experiences" count={mergedExperiences.length} onAdd={() => setEditingTarget({ kind: 'experience', id: null })} />
+            <SubSectionHeader label="Experiences" count={mergedExperiences.length} onAdd={() => setEditingTarget({ kind: 'experience', id: null })} disabled={isPublishing} />
             <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleExpDragEnd}>
               <SortableContext items={mergedExperiences.map((e) => e.id)} strategy={verticalListSortingStrategy}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
@@ -610,7 +652,7 @@ export function ExperiencesTab() {
 
           {/* SOFTWARE sub-section */}
           <div>
-            <SubSectionHeader label="Software" count={mergedSoftware.length} onAdd={() => setEditingTarget({ kind: 'software', id: null })} />
+            <SubSectionHeader label="Software" count={mergedSoftware.length} onAdd={() => setEditingTarget({ kind: 'software', id: null })} disabled={isPublishing} />
             <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleSwDragEnd}>
               <SortableContext items={mergedSoftware.map((s) => s.id)} strategy={verticalListSortingStrategy}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
@@ -728,8 +770,6 @@ export function ExperiencesTab() {
           onSaveExperience={handleSaveExperience}
           onSaveSoftware={handleSaveSoftware}
           onClose={() => setEditingTarget(null)}
-          onOpenIconPicker={(kind, id) => setIconPickerFor({ kind, id })}
-          onOpenSoftwareIconPicker={(id) => setSwIconPickerFor(id)}
           onDelete={
             editingTarget.kind === 'category' && editingTarget.id
               ? () => handleDeleteCategory(editingTarget.id)
@@ -742,66 +782,6 @@ export function ExperiencesTab() {
         />
       )}
 
-      {/* ── ICON PICKER (for experience / category lucide icons) ── */}
-      {iconPickerFor && (
-        <IconPicker
-          value={
-            iconPickerFor.id
-              ? (iconPickerFor.kind === 'experience'
-                  ? (expOverrides[iconPickerFor.id]?.icon || serverData?.experiences.find((e) => e.id === iconPickerFor.id)?.icon || 'Box')
-                  : (catOverrides[iconPickerFor.id]?.icon || serverData?.categories.find((c) => c.id === iconPickerFor.id)?.icon || 'Box'))
-              : (iconPickerFor.kind === 'experience' ? 'Layout' : 'Aperture')
-          }
-          onSelect={(name) => {
-            if (iconPickerFor.id) {
-              // Update existing draft
-              if (iconPickerFor.kind === 'experience') {
-                const target = serverData?.experiences.find((e) => e.id === iconPickerFor.id);
-                if (target) {
-                  setExpOverrides((prev) => ({ ...prev, [iconPickerFor.id!]: { ...(prev[iconPickerFor.id!] || target), icon: name } }));
-                }
-              } else {
-                const target = serverData?.categories.find((c) => c.id === iconPickerFor.id);
-                if (target) {
-                  setCatOverrides((prev) => ({ ...prev, [iconPickerFor.id!]: { ...(prev[iconPickerFor.id!] || target), icon: name } }));
-                }
-              }
-            } else {
-              // Update new-draft override (held in catOverrides/expOverrides under 'new-draft' key)
-              if (iconPickerFor.kind === 'experience') {
-                setExpOverrides((prev) => ({ ...prev, '__new_draft__': { ...(prev['__new_draft__'] || {}), icon: name } as Experience }));
-              } else {
-                setCatOverrides((prev) => ({ ...prev, '__new_draft__': { ...(prev['__new_draft__'] || {}), icon: name } as Category }));
-              }
-            }
-            setIconPickerFor(null);
-          }}
-          onClose={() => setIconPickerFor(null)}
-        />
-      )}
-
-      {/* ── SOFTWARE ICON PICKER ── */}
-      {swIconPickerFor && (
-        <SoftwareIconPicker
-          value={
-            swIconPickerFor === 'new'
-              ? (swOverrides['__new_draft__']?.slug || 'adobephotoshop')
-              : (swOverrides[swIconPickerFor]?.slug || serverData?.software.find((s) => s.id === swIconPickerFor)?.slug || 'adobephotoshop')
-          }
-          onSelect={(slug) => {
-            if (swIconPickerFor === 'new') {
-              setSwOverrides((prev) => ({ ...prev, '__new_draft__': { ...(prev['__new_draft__'] || {}), slug } as Software }));
-            } else {
-              const target = serverData?.software.find((s) => s.id === swIconPickerFor);
-              if (target) {
-                setSwOverrides((prev) => ({ ...prev, [swIconPickerFor]: { ...(prev[swIconPickerFor] || target), slug } }));
-              }
-            }
-            setSwIconPickerFor(null);
-          }}
-          onClose={() => setSwIconPickerFor(null)}
-        />
-      )}
     </div>
   );
 }
@@ -933,7 +913,7 @@ function SortableCategoryPill({
 
 // ---------- Sub-section header ----------
 
-function SubSectionHeader({ label, count, onAdd }: { label: string; count: number; onAdd: () => void }) {
+function SubSectionHeader({ label, count, onAdd, disabled }: { label: string; count: number; onAdd: () => void; disabled?: boolean }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
       <span className="text-mono text-label" style={{ color: 'var(--night-muted)', fontSize: '0.75rem' }}>
@@ -941,6 +921,7 @@ function SubSectionHeader({ label, count, onAdd }: { label: string; count: numbe
       </span>
       <button
         onClick={onAdd}
+        disabled={disabled}
         style={{
           display: 'flex',
           alignItems: 'center',
@@ -949,7 +930,8 @@ function SubSectionHeader({ label, count, onAdd }: { label: string; count: numbe
           background: 'transparent',
           border: '1px solid rgba(255,255,255,0.1)',
           color: 'var(--canvas)',
-          cursor: 'pointer',
+          cursor: disabled ? 'not-allowed' : 'pointer',
+          opacity: disabled ? 0.4 : 1,
           borderRadius: '2px',
           fontFamily: 'var(--font-mono), monospace',
           fontSize: '0.65rem',
@@ -957,8 +939,8 @@ function SubSectionHeader({ label, count, onAdd }: { label: string; count: numbe
           textTransform: 'uppercase',
           transition: 'border-color 0.3s var(--ease-spring-soft)',
         }}
-        onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'var(--accent)'; }}
-        onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'; }}
+        onMouseEnter={(e) => { if (!disabled) e.currentTarget.style.borderColor = 'var(--accent)'; }}
+        onMouseLeave={(e) => { if (!disabled) e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'; }}
       >
         <Plus size={10} strokeWidth={1.5} /> Add {label}
       </button>
@@ -1255,8 +1237,6 @@ function ExperiencesDetailPanel({
   onSaveExperience,
   onSaveSoftware,
   onClose,
-  onOpenIconPicker,
-  onOpenSoftwareIconPicker,
   onDelete,
 }: {
   target: EditingTarget;
@@ -1267,8 +1247,6 @@ function ExperiencesDetailPanel({
   onSaveExperience: (exp: Experience) => void;
   onSaveSoftware: (sw: Software) => void;
   onClose: () => void;
-  onOpenIconPicker: (kind: 'experience' | 'category', id: string | null) => void;
-  onOpenSoftwareIconPicker: (id: string | null) => void;
   onDelete?: () => void;
 }) {
   const isEdit = target.id !== null;
@@ -1324,6 +1302,16 @@ function ExperiencesDetailPanel({
   );
   const [tagInput, setTagInput] = useState('');
 
+  // BUG FIX: Icon pickers now live INSIDE the DetailPanel (not in the
+  // parent). Previously, the pickers were rendered in the parent and
+  // updated the parent's override state DIRECTLY — bypassing this
+  // DetailPanel's local draft state. When the user clicked Save, the
+  // DetailPanel's stale draft (with the OLD icon) overwrote the picker's
+  // choice. Now the pickers update the local draft state directly, so
+  // Save always persists the picked icon.
+  const [showLucidePicker, setShowLucidePicker] = useState(false);
+  const [showSoftwarePicker, setShowSoftwarePicker] = useState(false);
+
   const handleSave = () => {
     if (target.kind === 'category') {
       if (!catDraft.title.trim()) return;
@@ -1343,7 +1331,7 @@ function ExperiencesDetailPanel({
       return (
         <div style={{ padding: '0.85rem', background: 'rgba(214,41,41,0.08)', border: '1px solid rgba(214,41,41,0.25)', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
           <button
-            onClick={() => onOpenIconPicker('category', target.id)}
+            onClick={() => setShowLucidePicker(true)}
             style={{ padding: 0, background: 'transparent', border: 0, cursor: 'pointer', color: 'var(--accent)' }}
             aria-label="Change category icon"
           >
@@ -1364,7 +1352,7 @@ function ExperiencesDetailPanel({
       return (
         <div style={{ padding: '0.85rem', background: 'rgba(22,22,22,0.6)', border: '1px solid rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
           <button
-            onClick={() => onOpenIconPicker('experience', target.id)}
+            onClick={() => setShowLucidePicker(true)}
             style={{ padding: 0, background: 'transparent', border: 0, cursor: 'pointer', color: 'var(--accent)' }}
             aria-label="Change experience icon"
           >
@@ -1387,7 +1375,7 @@ function ExperiencesDetailPanel({
       <div style={{ padding: '0.85rem', background: 'rgba(22,22,22,0.6)', border: '1px solid rgba(255,255,255,0.08)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.6rem' }}>
           <button
-            onClick={() => onOpenSoftwareIconPicker(target.id)}
+            onClick={() => setShowSoftwarePicker(true)}
             style={{ padding: 0, background: 'transparent', border: 0, cursor: 'pointer' }}
             aria-label="Change software icon"
           >
@@ -1419,6 +1407,7 @@ function ExperiencesDetailPanel({
   })();
 
   return (
+    <>
     <StudioDetailPanel
       title={panelTitle}
       preview={preview}
@@ -1448,7 +1437,7 @@ function ExperiencesDetailPanel({
           </Field>
           <Field label="Icon (Lucide)">
             <button
-              onClick={() => onOpenIconPicker('category', target.id)}
+              onClick={() => setShowLucidePicker(true)}
               style={iconButtonStyle}
               onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'var(--accent)'; }}
               onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'var(--night-hr)'; }}
@@ -1502,7 +1491,7 @@ function ExperiencesDetailPanel({
           </Field>
           <Field label="Icon (Lucide)">
             <button
-              onClick={() => onOpenIconPicker('experience', target.id)}
+              onClick={() => setShowLucidePicker(true)}
               style={iconButtonStyle}
               onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'var(--accent)'; }}
               onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'var(--night-hr)'; }}
@@ -1583,7 +1572,7 @@ function ExperiencesDetailPanel({
           </Field>
           <Field label="Brand Icon (loads from simple-icons CDN — no Supabase)">
             <button
-              onClick={() => onOpenSoftwareIconPicker(target.id)}
+              onClick={() => setShowSoftwarePicker(true)}
               style={iconButtonStyle}
               onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'var(--accent)'; }}
               onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'var(--night-hr)'; }}
@@ -1623,6 +1612,35 @@ function ExperiencesDetailPanel({
         </>
       )}
     </StudioDetailPanel>
+
+      {/* ── ICON PICKERS (rendered INSIDE DetailPanel so they update the
+          local draft state directly — fixes the "icons can't be changed" bug
+          where the picker's choice was overwritten by stale draft on Save) ── */}
+      {showLucidePicker && target.kind !== 'software' && (
+        <IconPicker
+          value={target.kind === 'experience' ? expDraft.icon : catDraft.icon}
+          onSelect={(name) => {
+            if (target.kind === 'experience') {
+              setExpDraft((d) => ({ ...d, icon: name }));
+            } else {
+              setCatDraft((d) => ({ ...d, icon: name }));
+            }
+            setShowLucidePicker(false);
+          }}
+          onClose={() => setShowLucidePicker(false)}
+        />
+      )}
+      {showSoftwarePicker && target.kind === 'software' && (
+        <SoftwareIconPicker
+          value={swDraft.slug}
+          onSelect={(slug) => {
+            setSwDraft((d) => ({ ...d, slug }));
+            setShowSoftwarePicker(false);
+          }}
+          onClose={() => setShowSoftwarePicker(false)}
+        />
+      )}
+    </>
   );
 }
 
