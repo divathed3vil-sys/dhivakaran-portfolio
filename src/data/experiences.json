@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "updatedAt": "2026-10-28T07:53:50.589Z",
+  "updatedAt": "2026-11-01T03:27:34.787Z",
   "categories": [
     {
       "id": "cat-mvrlqvzd-b3qu",
@@ -12,14 +12,14 @@
     {
       "id": "cat-mvrlwz9o-gm7j",
       "title": "Video Editing & VFX",
-      "subtitle": "Video",
+      "subtitle": "Self Learned",
       "order": 2,
       "icon": "Aperture"
     },
     {
       "id": "cat-code",
-      "title": "Code & Systems",
-      "subtitle": "Programming, OS, hardware, infrastructure",
+      "title": "Technical proficiency",
+      "subtitle": "Self Taught - Programming, OS, hardware, infrastructure",
       "order": 3,
       "icon": "Terminal"
     }
@@ -40,7 +40,7 @@
       "featured": false,
       "published": true,
       "order": 1,
-      "updatedAt": "2026-10-28T07:53:50.589Z"
+      "updatedAt": "2026-11-01T03:27:34.787Z"
     },
     {
       "id": "exp-007",
@@ -57,7 +57,7 @@
       "featured": false,
       "published": true,
       "order": 2,
-      "updatedAt": "2026-10-28T07:53:50.589Z"
+      "updatedAt": "2026-11-01T03:27:34.787Z"
     },
     {
       "id": "exp-001",
@@ -74,7 +74,7 @@
       "featured": true,
       "published": true,
       "order": 3,
-      "updatedAt": "2026-10-28T07:53:50.589Z"
+      "updatedAt": "2026-11-01T03:27:34.787Z"
     },
     {
       "id": "exp-002",
@@ -91,7 +91,7 @@
       "featured": false,
       "published": true,
       "order": 4,
-      "updatedAt": "2026-10-28T07:53:50.589Z"
+      "updatedAt": "2026-11-01T03:27:34.787Z"
     },
     {
       "id": "exp-003",
@@ -108,7 +108,7 @@
       "featured": false,
       "published": true,
       "order": 1,
-      "updatedAt": "2026-10-28T07:53:50.589Z"
+      "updatedAt": "2026-11-01T03:27:34.787Z"
     },
     {
       "id": "exp-004",
@@ -125,7 +125,7 @@
       "featured": false,
       "published": true,
       "order": 2,
-      "updatedAt": "2026-10-28T07:53:50.589Z"
+      "updatedAt": "2026-11-01T03:27:34.787Z"
     },
     {
       "id": "exp-005",
@@ -142,7 +142,7 @@
       "featured": false,
       "published": true,
       "order": 3,
-      "updatedAt": "2026-10-28T07:53:50.589Z"
+      "updatedAt": "2026-11-01T03:27:34.787Z"
     },
     {
       "id": "exp-006",
@@ -159,7 +159,7 @@
       "featured": false,
       "published": true,
       "order": 4,
-      "updatedAt": "2026-10-28T07:53:50.589Z"
+      "updatedAt": "2026-11-01T03:27:34.787Z"
     },
     {
       "id": "exp-009",
@@ -176,7 +176,7 @@
       "featured": true,
       "published": true,
       "order": 5,
-      "updatedAt": "2026-10-28T07:53:50.589Z"
+      "updatedAt": "2026-11-01T03:27:34.787Z"
     },
     {
       "id": "exp-mvrm472g-kyh3",
@@ -193,7 +193,7 @@
       "featured": false,
       "published": true,
       "order": 6,
-      "updatedAt": "2026-10-28T07:53:50.589Z"
+      "updatedAt": "2026-11-01T03:27:34.787Z"
     },
     {
       "id": "exp-017",
@@ -210,7 +210,7 @@
       "featured": false,
       "published": true,
       "order": 1,
-      "updatedAt": "2026-10-28T07:53:50.589Z"
+      "updatedAt": "2026-11-01T03:27:34.787Z"
     },
     {
       "id": "exp-012",
@@ -227,7 +227,7 @@
       "featured": true,
       "published": true,
       "order": 2,
-      "updatedAt": "2026-10-28T07:53:50.589Z"
+      "updatedAt": "2026-11-01T03:27:34.787Z"
     },
     {
       "id": "exp-013",
@@ -244,7 +244,7 @@
       "featured": false,
       "published": true,
       "order": 3,
-      "updatedAt": "2026-10-28T07:53:50.589Z"
+      "updatedAt": "2026-11-01T03:27:34.787Z"
     },
     {
       "id": "exp-014",
@@ -261,7 +261,7 @@
       "featured": false,
       "published": true,
       "order": 4,
-      "updatedAt": "2026-10-28T07:53:50.589Z"
+      "updatedAt": "2026-11-01T03:27:34.787Z"
     },
     {
       "id": "exp-015",
@@ -278,7 +278,7 @@
       "featured": false,
       "published": true,
       "order": 5,
-      "updatedAt": "2026-10-28T07:53:50.589Z"
+      "updatedAt": "2026-11-01T03:27:34.787Z"
     },
     {
       "id": "exp-016",
@@ -295,7 +295,7 @@
       "featured": false,
       "published": true,
       "order": 6,
-      "updatedAt": "2026-10-28T07:53:50.589Z"
+      "updatedAt": "2026-11-01T03:27:34.787Z"
     },
     {
       "id": "exp-018",
@@ -312,7 +312,7 @@
       "featured": false,
       "published": true,
       "order": 7,
-      "updatedAt": "2026-10-28T07:53:50.589Z"
+      "updatedAt": "2026-11-01T03:27:34.787Z"
     },
     {
       "id": "exp-019",
@@ -329,7 +329,7 @@
       "featured": false,
       "published": true,
       "order": 8,
-      "updatedAt": "2026-10-28T07:53:50.589Z"
+      "updatedAt": "2026-11-01T03:27:34.787Z"
     },
     {
       "id": "exp-020",
@@ -346,7 +346,7 @@
       "featured": false,
       "published": true,
       "order": 9,
-      "updatedAt": "2026-10-28T07:53:50.589Z"
+      "updatedAt": "2026-11-01T03:27:34.787Z"
     },
     {
       "id": "exp-021",
@@ -363,7 +363,7 @@
       "featured": false,
       "published": true,
       "order": 10,
-      "updatedAt": "2026-10-28T07:53:50.589Z"
+      "updatedAt": "2026-11-01T03:27:34.787Z"
     }
   ],
   "software": [
